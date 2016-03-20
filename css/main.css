@@ -1,0 +1,30 @@
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+body {
+    position: fixed;
+    top: 0;
+    left: 0;
+    overflow: auto;
+    font-size: 1rem;
+}
+.page-wrapper {
+    min-height: 100%;
+    height: auto !important; /* This line and the next line are not necessary unless you need IE6 support */
+    height: 100%;
+    margin-bottom: -10rem;
+}
+.footer {
+    margin-bottom: -10rem;
+    height: 10rem;
+}
+.hero {
+    padding: 80px 0;
+}
+.marketing-card {
+    min-height: 150px;
+}
