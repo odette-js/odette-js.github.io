@@ -3584,15 +3584,6 @@ app.scope(function (app) {
         modelMaker = function (attributes, options) {
             return Model(attributes, options);
         },
-        // registers and actually adds child to hash
-        // _addToHash = function (parent, newModel, where) {
-        //     var children = parent.directive(CHILDREN);
-        //     // add to collection
-        //     children.add(newModel);
-        //     // register with parent
-        //     children.register(ID, newModel.id, newModel);
-        //     children.register('cid', newModel.cid, newModel);
-        // },
         // ties child events to new child
         _delegateChildEvents = function (parent, model) {
             var childsEventDirective, childEvents = _.result(parent, CHILD + 'Events');
