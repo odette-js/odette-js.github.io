@@ -3,14 +3,22 @@ html, body {
     width: 100%;
     margin: 0;
     padding: 0;
-    overflow: hidden;
 }
-body {
-    position: fixed;
-    top: 0;
-    left: 0;
-    overflow: auto;
-    font-size: 1rem;
+.notselectable {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Chrome/Safari/Opera */
+  -khtml-user-select: none;    /* Konqueror */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* IE/Edge */
+  user-select: none;
+}
+.selectable {
+  -webkit-touch-callout: auto; /* iOS Safari */
+  -webkit-user-select: auto;   /* Chrome/Safari/Opera */
+  -khtml-user-select: auto;    /* Konqueror */
+  -moz-user-select: auto;      /* Firefox */
+  -ms-user-select: auto;       /* IE/Edge */
+  user-select: auto;
 }
 .page-wrapper {
     min-height: 100%;
@@ -26,5 +34,16 @@ body {
     padding: 80px 0;
 }
 .marketing-card {
+    margin-top: 50px;
     min-height: 150px;
+}
+[data-custom="text-reveal"] {
+    opacity: 0;
+    display: inline-block;
+    transform: translateY(100%);
+    transition: all 300ms;
+}
+[data-custom="text-reveal"].showing {
+    opacity: 1;
+    transform: translateY(0);
 }

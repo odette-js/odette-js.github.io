@@ -2779,7 +2779,11 @@ app.scope(function (app) {
                 return this.iterate(fn.bind(NULL, this, one, two, three, four, five, six));
             };
         },
-        wrappedListMethods = extend(wrap(joinHandlers, function (name) {
+        wrappedListMethods = extend({
+            seeker: function (handler, context) {
+                return _.duffRight(this.items, handler, context);
+            }
+        }, wrap(joinHandlers, function (name) {
             return function (arg) {
                 return this.items[name](arg);
             };
@@ -7836,8 +7840,9 @@ app.scope(function (app) {
             var capture = !!capture_,
                 directive = manager.directive(EVENTS),
                 removeFromList = function (list, name) {
-                    return list && list.duffRight(function (obj) {
-                        if ((!name || name === obj[NAME]) && (!handler || obj.handler === handler) && (!group || obj.group === group) && (!selector || obj.selector === selector)) {
+                    var newList = [];
+                    return list && list.seeker(function (obj) {
+                        if ((!name || name === obj.passedName) && (!handler || obj.handler === handler) && (!group || obj.group === group) && (!selector || obj.selector === selector)) {
                             directive.detach(obj);
                         }
                     });
