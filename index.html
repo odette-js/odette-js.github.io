@@ -12,45 +12,31 @@
     </head>
     <body class="notselectable">
         <main>
+        <div class="navbar-fixed">
+            <nav class="purple lighten-2">
+                <div class="nav-wrapper container">
+                    <a href="#" class="brand-logo left col">Odette</a>
+                    <ul id="nav-mobile" class="right">
+                        <li><a class="nav-link" href="about.html">About</a></li>
+                        <li><a class="nav-link" href="api.html">API</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
         <div class="row center-align yellow lighten-3">
             <div class="col s12">
                 <div class="hero">
                     <h1>Odette.js</h1>
-                    <h5 class="lead">
-                        <div data-custom="text-reveal" data-time="1000">Comprehensive.&nbsp;</div>
-                        <div data-custom="text-reveal" data-time="1500">Powerful.&nbsp;</div>
-                        <div data-custom="text-reveal" data-time="2000">Polite.</div>
-                    </h5>
+                    <ul class="lead">
+                        <li data-custom="text-reveal" data-time="1000">Comprehensive.&nbsp;</li>
+                        <li data-custom="text-reveal" data-time="1500">Powerful.&nbsp;</li>
+                        <li data-custom="text-reveal" data-time="2000">Polite.</li>
+                    </ul>
                 </div>
             </div>
         </div>
         <div class="container">
-            <div class="row center-align">
-                <div class="marketing-card col s12 m6 l4">
-                        <div class="waves-effect btn btn-default purple lighten-2">Decoupled Views</div>
-                        <p class="lead">Keep your data separate, shared, and happy. Keep your views clean and structured.</p>
-                </div>
-                <div class="marketing-card col s12 m6 l4">
-                        <div class="waves-effect btn btn-default purple lighten-2">Abstracted DOM</div>
-                        <p class="lead">It's <span data-custom="time-year"></span>. Why is there not an abstracted DOM layer yet? We have one.</p>
-                </div>
-                <div class="marketing-card col s12 m6 l4">
-                        <div class="waves-effect btn btn-default purple lighten-2">Multi Window Centric</div>
-                        <p class="lead">Monotize your site as fast as you can code it. Cross origin? No problem. Other people's content? Easy.</p>
-                </div>
-                <div class="marketing-card col s12 m6 l4">
-                        <div class="waves-effect btn btn-default purple lighten-2">Customized Elements</div>
-                        <p class="lead">Customize your elements' behavior, and lifecycle. Control everything from creation to destruction.</p>
-                </div>
-                <div class="marketing-card col s12 m6 l4">
-                        <div class="waves-effect btn btn-default purple lighten-2">Custom Events</div>
-                        <p class="lead">No one has events like this. Trigger attribute changes, attaching, detaching, destroying, and more.</p>
-                </div>
-                <div class="marketing-card col s12 m6 l4">
-                        <div class="waves-effect btn btn-default purple lighten-2">No CSS</div>
-                        <p class="lead">You like Bootstrap? Materialize? Awesome! Use it. Odette can help bring those elements to life.</p>
-                </div>
-            </div>
+            <div class="row center-align marketing-cards"></div>
         </div>
         </main>
         <footer class="page-footer purple lighten-2">
@@ -61,12 +47,9 @@
                         <p class="grey-text text-lighten-4">You can use rows and columns here to organize your footer content.</p>
                     </div>
                     <div class="col l4 offset-l2 s12">
-                        <h5 class="white-text">Links</h5>
+                        <h5 class="white-text">Connect</h5>
                         <ul>
-                            <li><a class="grey-text text-lighten-3" href="#!">Link 1</a></li>
-                            <li><a class="grey-text text-lighten-3" href="#!">Link 2</a></li>
-                            <li><a class="grey-text text-lighten-3" href="#!">Link 3</a></li>
-                            <li><a class="grey-text text-lighten-3" href="#!">Link 4</a></li>
+                            <li><a class="grey-text text-lighten-3" href="#!">Github</a></li>
                         </ul>
                     </div>
                 </div>
@@ -78,12 +61,16 @@
                             <span class="fa fa-copyright"></span> <span data-custom="time-year"></span>
                         </div>
                         <div class="col s6 right-align">
-                            <span>Made By Weirdos <span class="fa fa-stop-circle"></span></span>
+                            <span>Made By Oddballs <span class="fa fa-stop-circle"></span></span>
                         </div>
                     </div>
                 </div>
             </div>
         </footer>
+        <script type="x-underscore/template" id="marketing-card">
+            <div class="waves-effect btn btn-default purple lighten-2 full-width"><%- headline %></div>
+            <p class="lead"><%= content %></p>
+        </script>
         <script src="/js/waves.js"></script>
         <script src="/js/odette.js"></script>
         <script src="/js/main.js"></script>
