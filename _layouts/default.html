@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+
+  {% include head.html %}
+
+  <body class="notselectable">
+
+
+    <main class="page-content">
+        {% include header.html %}
+        {{ content }}
+    </main>
+    {% include footer.html %}
+    {% include templates/index.html %}
+    {% include scripts.html %}
+  </body>
+
+</html>

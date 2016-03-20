@@ -4384,12 +4384,10 @@ app.scope(function (app) {
                 return this.handlers[key] && this.handlers[key][LENGTH]();
             },
             dispatch: function (name, evnt) {
-                var handler, items, listLength, returnValue, i = 0,
-                    events = this,
+                var events = this,
                     stack = events[STACK],
                     handlers = events[HANDLERS],
                     list = handlers[name],
-                    // removeList = events[REMOVE_QUEUE],
                     running = events.running,
                     cached = running[name],
                     stopped = evnt[PROPAGATION_IS_STOPPED],
@@ -4410,9 +4408,8 @@ app.scope(function (app) {
                     events.cancelled(stack, evnt, i);
                 }
                 evnt.finished();
-                returnValue = evnt.returnValue;
                 running[name] = !!cached;
-                return returnValue;
+                return evnt.returnValue;
             },
             subset: function (list) {
                 return list.slice(0);
@@ -5286,8 +5283,8 @@ app.scope(function (app) {
         factories = _.factories,
         Model = factories.Model,
         Collection = factories.Collection,
-        _EXTRA_MODULE_ARGS = '_extraModuleArguments',
-        MODULES = 'modules',
+        _EXTRA_MODULE_ARGS = 'extraModuleArguments',
+        MODULES = 'Modules',
         startableMethods = {
             start: function (evnt) {
                 var startable = this;
@@ -5341,7 +5338,7 @@ app.scope(function (app) {
                     name = name_,
                     globalname = name,
                     namespace = name.split(PERIOD),
-                    module = parent.directive(CHILDREN).get(name_);
+                    module = parent.directive(MODULES).get(name_);
                 if (module) {
                     // hey, i found it. we're done here
                     parent = module.parent;
@@ -5356,7 +5353,7 @@ app.scope(function (app) {
                         namespace.shift();
                     }
                 }
-                parentModulesDirective = parent.directive(CHILDREN);
+                parentModulesDirective = parent.directive(MODULES);
                 name = namespace.join(PERIOD);
                 module = parentModulesDirective.get(ID, name);
                 if (!module) {
@@ -5378,10 +5375,10 @@ app.scope(function (app) {
                         parent.add(module);
                     }
                     parentModulesDirective.register(ID, name, module);
-                    app[CHILDREN].register(ID, globalname, module);
+                    app[MODULES].register(ID, globalname, module);
                 }
                 if (isWindow(windo) || isFunction(windo) || isFunction(fn)) {
-                    module.isInitialized = BOOLEAN_TRUE;
+                    module.mark('initialized');
                     module.run(windo, fn);
                 }
                 return module;
@@ -5434,8 +5431,7 @@ app.scope(function (app) {
         }),
         Module = factories.Model.extend('Module', moduleMethods, BOOLEAN_TRUE),
         appextendresult = app.extend(extend({}, moduleMethods, {
-            // _startPromise: _.when(domPromise),
-            _extraModuleArguments: [],
+            extraModuleArguments: [],
             /**
              * @func
              * @name Specless#baseModuleArguments
@@ -5481,13 +5477,13 @@ app.scope(function (app) {
                 return this.baseModuleArguments().concat(this[_EXTRA_MODULE_ARGS], args || []);
             },
             require: function (modulename) {
-                var module = this[CHILDREN].get(ID, modulename) || exception({
-                    message: 'that module does not exist yet'
+                var module = this.module(modulename);
+                return module.is('initialized') ? module.get('exports') : exception({
+                    message: 'that module has not been initialized yet'
                 });
-                return module.get('exports');
             }
         }));
-    app.defineDirective('modules', function () {
+    app.defineDirective(MODULES, function () {
         return Collection();
     });
 });
@@ -5583,7 +5579,7 @@ app.scope(function (app) {
                 (settings.escape || noMatch).source, (settings.interpolate || noMatch).source, (settings.evaluate || noMatch).source
             ].join('|') + '|$', 'g');
             var index = 0;
-            var source = "HTML+='";
+            var source = "__HTML__+='";
             text.replace(matcher, function (match, escape, interpolate, evaluate, offset) {
                 source += text.slice(index, offset).replace(escapeRegExp, escapeChar);
                 index = offset + match.length;
@@ -5592,7 +5588,7 @@ app.scope(function (app) {
                 } else if (interpolate) {
                     source += "'+\n((__t=(this." + interpolate + "))==null?'':__t)+\n'";
                 } else if (evaluate) {
-                    source += "';\n" + evaluate + "\nHTML+='";
+                    source += "';\n" + evaluate + "\n__HTML__+='";
                 }
                 // Adobe VMs need the match returned to produce the correct offset.
                 return match;
@@ -5600,14 +5596,12 @@ app.scope(function (app) {
             source += "';\n";
             // If a variable is not specified, place data values in local scope.
             // if (!settings.variable) source = 'with(this||{}){\n' + source + '}\n';
-            source = "var __t,HTML='',__j=Array.prototype.join," + "print=function(){HTML+=__j.call(arguments,'');};\n" + source + 'return HTML;\n';
-            var render;
-            try {
-                render = new Function.constructor(settings.variable || '_', source);
-            } catch (e) {
-                e.source = source;
-                throw e;
-            }
+            source = "var __t,__HTML__='',__j=Array.prototype.join," + "print=function(){__HTML__+=__j.call(arguments,'');};\n" + source + 'return __HTML__;\n';
+            var render = _.wraptry(function () {
+                return new Function.constructor(settings.variable || '_', source);
+            }, function (e) {
+                _.console.error(e);
+            });
             var template = function (data) {
                 return render.call(data || {}, _);
             };
@@ -7015,8 +7009,7 @@ app.scope(function (app) {
                 collectTemplates: function () {
                     return $('script[id]').each(function (script) {
                         compile(script.element().id, script.html(), manager);
-                        script.remove();
-                    });
+                    }).remove();
                 },
                 unregisteredElement: function (manager) {
                     unregisteredElements.keep(manager.registeredElementName(), manager.id, manager);

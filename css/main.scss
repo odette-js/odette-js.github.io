@@ -1,9 +1,23 @@
+---
+# Only the main Sass file needs front matter (the dashes are enough)
+---
+@charset "utf-8";
+
+// @import "materialize/prefixer";
+@import "materialize/mixins";
+@import "materialize/color";
+
+// Variables;
+@import "materialize/variables";
+
+
 html, body {
     height: 100%;
     width: 100%;
     margin: 0;
     padding: 0;
 }
+
 .notselectable {
     -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none;   /* Chrome/Safari/Opera */
@@ -19,6 +33,23 @@ html, body {
     -moz-user-select: auto;      /* Firefox */
     -ms-user-select: auto;       /* IE/Edge */
     user-select: auto;
+}
+
+.social-container {
+    color: color("grey", "lighten-3");
+    fill: color("grey", "lighten-3");
+    display: block;
+    float: left;
+    height: 2rem;
+    span {
+        line-height: 2rem;
+        max-height: 100%;
+        margin-right: 15px;
+        float: left;
+        &.fa {
+            font-size: 2rem;
+        }
+    }
 }
 .page-wrapper {
     min-height: 100%;
