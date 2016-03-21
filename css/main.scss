@@ -188,7 +188,7 @@ footer.page-footer {
     opacity: 0;
     display: inline-block;
     transform: translateY(100%);
-    transition: transform 250ms;
+    transition: all 250ms;
 }
 [data-custom="text-reveal"].showing {
     opacity: 1;
