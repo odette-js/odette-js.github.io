@@ -16,6 +16,7 @@ baseurl: "" # the subpath of your site, e.g. /blog
 url: "http://odettejs.org" # the base hostname & protocol for your site
 # twitter_username: jekyllrb
 github_username:  odette-js/Odette
+gitter_chat: odette-js
 
 # Build settings
 markdown: kramdown

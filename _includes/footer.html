@@ -1,5 +1,5 @@
 
-<footer class="page-footer nav-side-slide purple lighten-2">
+<footer class="page-footer nav-side-slide purple lighten-2 z-depth-1">
     <div class="container">
         <div class="row">
             <div class="col l6 s12">
@@ -9,17 +9,8 @@
             <div class="col l4 offset-l2 s12">
                 <h5 class="white-text">Connect</h5>
                 <ul>
-                  {% if site.github_username %}
-                  <li>
-                    {% include icon-github.html username=site.github_username %}
-                  </li>
-                  {% endif %}
-
-                  {% if site.twitter_username %}
-                  <li>
-                    {% include icon-twitter.html username=site.twitter_username %}
-                  </li>
-                  {% endif %}
+                  <li>{% include icon-github.html username=site.github_username %}</li>
+                  <li>{% include icon-gitter.html username=site.gitter_chat %}</li>
                 </ul>
             </div>
         </div>
@@ -27,12 +18,8 @@
     <div class="footer-copyright">
         <div class="container">
             <div class="row">
-                <div class="col s6">
-                    <span class="fa fa-copyright"></span> <span data-custom="time-year"></span>
-                </div>
-                <div class="col s6 right-align">
-                    <span>Made By Oddballs <span class="fa fa-stop-circle"></span></span>
-                </div>
+                <div class="col s12 m6"><span class="fa fa-copyright"></span> <span data-custom="time-year"></span></div>
+                <div class="col s12 m6"><span>Made of Material {% include svg/materialize.svg %} By Oddballs <span class="fa fa-stop-circle"></span></span></div>
             </div>
         </div>
     </div>

@@ -1,5 +1,3 @@
-// initialize the waves plugin
-Waves.init();
 application.scope().run(function (app, _, factories) {
     app.addRegion({
         marketingCards: '.marketing-cards'

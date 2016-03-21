@@ -40,9 +40,12 @@ application.scope().run(function (app, _, factories) {
                     var isOpen = this.is('clickTogglerOpen'),
                         futureOpen = !isOpen,
                         target = this.data('target'),
-                        together = target ? this.wrap().add(target) : this;
+                        wrapped = this.wrap(),
+                        together = target ? wrapped.add(target) : this;
                     together.data('toggled', futureOpen);
-                    this.remark('clickTogglerOpen', futureOpen);
+                    wrapped.add('[data-target="' + target + '"]').each(function (manager) {
+                        manager.remark('clickTogglerOpen', futureOpen);
+                    });
                 }
             }
         });
