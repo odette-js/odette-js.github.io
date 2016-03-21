@@ -2235,7 +2235,7 @@ app.scope(function (app) {
             insertAt: function (els, index) {
                 var manager = this,
                     owner = manager.owner,
-                    fragmentManager = isAppendable(els) ? owner.returnsManager(els) : DOMM(els).fragment(),
+                    fragmentManager = isAppendable(els) ? owner.returnsManager(els) : owner.$(els).fragment(),
                     fragment = fragmentManager.element(),
                     children = index == NULL ? NULL : manager.children(),
                     child = children && children.index(index) || NULL,
@@ -2719,7 +2719,7 @@ app.scope(function (app) {
             changeValue: changeValue(domIterates),
             add: attachPrevious(function (context, query) {
                 var found = context.owner.$(query);
-                return context.unwrap().concat(found);
+                return context.unwrap().concat(found.unwrap());
             }),
             addBack: attachPrevious(function (context, selector) {
                 var previous = context._previous;
