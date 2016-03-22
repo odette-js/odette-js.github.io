@@ -1,0 +1,3 @@
+application.scope(function (app) {
+    //
+});

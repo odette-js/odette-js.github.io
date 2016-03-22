@@ -1,0 +1,21 @@
+---
+layout: post
+title:  "Region"
+date:   2016-03-20 12:35:34 -0500
+permalink: /api/v0/region
+---
+
+
+<p class="center-align">Regions hold Views. In any combination, of any amount. You can keep them as organized or disorganized as you like. Just like the DOM.</p>
+
+<ul class="list">
+    <li class="list-item">Methods</li>
+    <ul class="list">
+        <li class="list-item">add</li>
+        <li class="list-item">adopt</li>
+        <li class="list-item">attach</li>
+        <li class="list-item">disown</li>
+        <li class="list-item">render</li>
+        <li class="list-item">setElement</li>
+    </ul>
+</ul>

@@ -1,0 +1,58 @@
+---
+layout: post
+title:  "View"
+date:   2016-03-20 12:35:34 -0500
+permalink: /api/v0/view
+---
+
+
+
+<div class="row">
+    <div class="col s12">
+        <p>Views are the glue between your data and your templates. Views should hold high level operations that dictate the behavior of your application. They should hold a large amount of your application or "business" logic.</p>
+        <ul class="list navigation-links">
+            <li class="left clear-left"><a href="#destroy">destroy</a></li>
+            <li class="left clear-left"><a href="#establishRegions">establishRegions</a></li>
+            <li class="left clear-left"><a href="#filter">filter</a></li>
+            <li class="left clear-left"><a href="#getRegion">getRegion</a></li>
+            <li class="left clear-left"><a href="#parentView">parentView</a></li>
+            <li class="left clear-left"><a href="#render">render</a></li>
+            <li class="left clear-left"><a href="#tagName">tagName</a></li>
+            <li class="left clear-left"><a href="#template">template</a></li>
+            <li class="left clear-left"><a href="#templateIsElement">templateIsElement</a></li>
+            <li class="left clear-left"><a href="#valueOf">valueOf</a></li>
+        </ul>
+    </div>
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content code-step">
+                <p>Let's make a new view.</p>
+                <div class="code code-section" data-custom="code-exec">var view = factories.View({
+    model: factories.Model()
+});</div>
+            </div>
+        </div>
+    </div>
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content code-step">
+                <p>It isn't doing anything yet. Let's put it somewhere.</p>
+                <div class="code code-section" data-custom="code-exec">app.addRegion({
+    main: '.main-region'
+});
+var mainRegion = app.getRegion('main');
+mainRegion.add(view);
+</div>
+            </div>
+        </div>
+    </div>
+    <div class="col s12"></div>
+    <div class="col s12"></div>
+    <div class="col s12"></div>
+    <div class="col s12"></div>
+    <div class="col s12"></div>
+    <div class="col s12"></div>
+    <div class="col s12"></div>
+    <div class="col s12"></div>
+    <div class="col s12"></div>
+</div>
