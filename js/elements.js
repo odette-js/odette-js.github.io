@@ -71,5 +71,16 @@ application.scope().run(function (app, _, factories) {
                 });
             }
         });
+        hljs.configure({
+            languages: ['html', 'javascript'],
+            tabReplace: '    ', // 4 spaces
+            classPrefix: '' // don't append class prefix
+            // … other options aren't changed
+        });
+        $.registerElement('code-exec', {
+            onCreate: function (manager) {
+                hljs.highlightBlock(manager.element());
+            }
+        });
     });
 });

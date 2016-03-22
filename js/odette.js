@@ -8955,7 +8955,7 @@ app.scope(function (app) {
                 } else {
                     // defauts back to wrapping the element
                     // creates internal element
-                    el = element.create(result(view, 'tagName'));
+                    el = element.create(view.tagName());
                     // subclassed to expand the attributes that can be used
                 }
                 element.set(el, BOOLEAN_FALSE);
@@ -8965,24 +8965,12 @@ app.scope(function (app) {
             },
             unset: function () {
                 var element = this;
-                // element.undelegateEvents();
-                // element.undelegateTriggers();
                 delete element.view.el;
                 delete element.el;
             },
             set: function (el, render) {
                 var directive = this;
                 directive.view.el = directive.el = el;
-                // directive.degenerateUIBindings();
-                // if (render !== BOOLEAN_FALSE) {
-                //     directive.render(render);
-                //     directive.generateUIBindings();
-                //     directive.bindUI();
-                //     if (newelementisDifferent) {
-                //         directive.delegateEvents();
-                //         directive.delegateTriggers();
-                //     }
-                // }
             },
             render: function (html) {
                 var element = this;
@@ -9253,9 +9241,15 @@ app.scope(function (app) {
         }, BOOLEAN_TRUE),
         // view needs to be pitted against a document
         View = Region.extend('View', {
-            tagName: 'div',
-            filter: BOOLEAN_TRUE,
-            templateIsElement: BOOLEAN_FALSE,
+            tagName: function () {
+                return 'div';
+            },
+            filter: function () {
+                return BOOLEAN_TRUE;
+            },
+            templateIsElement: function () {
+                return BOOLEAN_FALSE;
+            },
             getRegion: getRegion,
             template: function () {
                 return EMPTY_STRING;
@@ -9306,7 +9300,7 @@ app.scope(function (app) {
                     // you might be able to do this a better way
                     neverRendered = !view.is(RENDERED);
                 view.unmark(RENDERED);
-                if (!result(view, 'filter')) {
+                if (!view.filter()) {
                     return view;
                 }
                 element = view.directive(ELEMENT);
@@ -9315,15 +9309,11 @@ app.scope(function (app) {
                 // request extra data or something before rendering: dom is still completely intact
                 view[DISPATCH_EVENT]('before:' + RENDER);
                 // renders the html
-                if (isFunction(view.template)) {
-                    json = view.model && view.model.toJSON();
-                    // try to generate template
-                    html = view.template(json);
-                } else {
-                    html = view.template;
-                }
+                json = view.model && view.model.toJSON();
+                // try to generate template
+                html = view.template(json);
                 settingElement = view.el;
-                if (result(view, 'templateIsElement')) {
+                if (view.templateIsElement()) {
                     settingElement = view.el.owner.fragment(html).children();
                     html = BOOLEAN_FALSE;
                 }

@@ -1,16 +1,17 @@
 <div class="side-nav fixed">
-<a href="#" data-custom="click-toggler" data-target=".nav-side-slide" class="button-collapse hide-on-large-only white-text"><i class="fa fa-circle-o"></i></a>
-<ul class="side-nav-list">
-  <li class="nav-list-item"><a class="waves-effect" href="#!">Ajax</a></li>
-  <li class="nav-list-item"><a class="waves-effect" href="#!">Application</a></li>
-  <li class="nav-list-item"><a class="waves-effect" href="#!">Buster</a></li>
-  <li class="nav-list-item"><a class="waves-effect" href="#!">Collection</a></li>
-  <li class="nav-list-item"><a class="waves-effect" href="#!">Directive</a></li>
-  <li class="nav-list-item"><a class="waves-effect" href="#!">DOMA</a></li>
-  <li class="nav-list-item"><a class="waves-effect" href="#!">Model</a></li>
-  <li class="nav-list-item"><a class="waves-effect" href="#!">Module</a></li>
-  <li class="nav-list-item"><a class="waves-effect" href="#!">Promise</a></li>
-  <li class="nav-list-item"><a class="waves-effect" href="#!">Region</a></li>
-  <li class="nav-list-item"><a class="waves-effect" href="#!">View</a></li>
-</ul>
+    <a href="#" data-custom="click-toggler" data-target=".nav-side-slide" class="nav-list-item inner-collapser purple lighten-3 white-text">
+        <i class="fa fa-circle-o"></i>
+    </a>
+    <ul class="side-nav-list list">
+        <li class="list-item hover-effect bold"><a class="waves-effect" href="{{ site.baseurl }}/">Home</a></li>
+        <li class="list-item hover-effect bold"><a class="waves-effect" href="{{ site.baseurl }}/about">About</a></li>
+        <li class="list-item hover-effect bold"><a class="waves-effect" href="{{ site.baseurl }}/api/">API</a></li>
+        <ul class="inner-list">
+            {% for post in site.posts %}
+                <li class="list-item hover-effect">
+                    <a class="waves-effect" href="{{ post.url }}">{{ post.title }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </ul>
 </div>

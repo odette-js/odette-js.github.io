@@ -9,14 +9,33 @@
 // Variables;
 @import "materialize/variables";
 
-
 html, body {
     height: 100%;
     width: 100%;
     margin: 0;
     padding: 0;
+    line-height: 1.8rem;
 }
+/**
+ * Clearfix
+ */
+%clearfix {
 
+    &:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+}
+.fa {
+    line-height: inherit;
+}
+.row {
+    margin-bottom: 0;
+}
+.bold {
+    font-weight: bold;
+}
 .notselectable {
     -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none;   /* Chrome/Safari/Opera */
@@ -36,6 +55,45 @@ html, body {
 .text-uppercase {
     text-transform: uppercase;
 }
+.contain {
+    padding: 1rem;
+}
+.con {
+    padding: 0 1rem;
+}
+.card {
+    margin: 0.75rem 0;
+}
+.clear-left {
+    clear: left;
+}
+.hljs {
+    background-color: transparent;
+    &.javascript {
+        .keyword {
+            color: color('light-blue', 'base');
+        }
+        .string {
+            color: color('yellow', 'darken-3');
+        }
+    }
+}
+.code {
+    padding: 0;
+    white-space: pre;
+    word-break: break-word;
+    font-family: courier;
+}
+.code-section {
+    background-color: color('grey', 'lighten-4');
+    padding: 1rem;
+}
+.card .card-content.code-step {
+    p {
+        margin-bottom: 1rem;
+    }
+}
+
 
 .side-nav.fixed {
     width: 16rem;
@@ -43,6 +101,26 @@ html, body {
     left: auto;
     @media #{$medium-and-down} {
         transition: margin 250ms;
+    }
+}
+
+// .navigation-links a {
+//     line-height: 1.8rem;
+// }
+
+.list {
+    @extend %clearfix;
+    // overflow: hidden;
+    .list-item {
+        display: block;
+    }
+    .list-item a {
+        padding: 0 2rem;
+    }
+    .inner-list {
+        .list-item a {
+            padding-left: 3rem;
+        }
     }
 }
 
@@ -58,7 +136,7 @@ html, body {
             width: 10rem;
         }
     }
-    .button-collapse {
+    .button-collapser {
         transition: all 250ms;
         position: absolute;
         top: 0;
@@ -66,7 +144,7 @@ html, body {
         height: 4rem;
         width: 4rem;
         line-height: 4rem;
-        font-size: 1.5rem;
+        font-size: 2.5rem;
     }
 }
 
@@ -76,27 +154,55 @@ html, body {
     }
 }
 
+.list-item {
+    display: block;
+    overflow: hidden;
+    &.hover-effect {
+        cursor: pointer;
+        &:hover {
+            background-color: color("grey", "lighten-3");
+        }
+    }
+}
+
+
 .sidebar-wrapper {
-    .nav-list-item {
+    .side-nav-list {
+        clear: right;
+        margin-top: 0;
+    }
+    a.inner-collapser {
+        font-size: 2.5rem;
+        text-align: right;
+        color: color('purple', 'lighten-3');
+        // .side-nav.fixed a
+        float: right;
+        width: 100%;
+        padding: 0 2rem;
+        height: 4rem;
+        @media #{$medium-and-up} {
+            text-align: center;
+        }
+    }
+    .side-nav-list {
+        text-align: left;
+    }
+    .list-item {
         height: 3rem;
         line-height: 3rem;
         padding: 0;
         transition: background-color 250ms;
-        &:hover {
-            background-color: color("grey", "lighten-3");
-        }
         a {
             padding: 0 2rem;
             height: inherit;
             line-height: inherit;
         }
     }
-    &[data-toggled] {
-        .side-nav {
-            margin-right: -16rem;
-        }
-        .button-collapse {
-            margin-right: -20rem;
+    @media #{$medium-and-down} {
+        &[data-toggled] {
+            .side-nav {
+                margin-right: -16rem;
+            }
         }
     }
     .side-nav {
@@ -106,9 +212,12 @@ html, body {
     }
 }
 
-.top-nav {
-    height: 4rem;
-}
+// .top-nav {
+//     height: 4rem;
+//     nav {
+//         height: 100%;
+//     }
+// }
 
 .page-content {
     height: 100%;
@@ -180,6 +289,10 @@ footer.page-footer {
         height: 8rem;
         line-height: 8rem;
         text-align: center;
+        .col {
+            height: 4rem;
+            line-height: 4rem;
+        }
         svg {
             height: 0.8rem;
             fill: rgba(255, 255, 255, 0.8);
@@ -204,18 +317,20 @@ footer.page-footer {
     font-size: 1.64rem;
 }
 .marketing-card {
-    margin-top: 20px;
-    min-height: 10rem;
-}
-@media only screen and (min-width: 601px) {
-    .marketing-card {
-        min-height: 15rem;
+    // margin-top: 20px;
+    // min-height: 10rem;
+    .lead {
+        padding-top: 1rem;
     }
-}
-
-@media only screen and (min-width: 992px) {
-    .marketing-card {
-        min-height: 18rem;
+    &:nth-child(2n+1) {
+        @media #{$medium-and-down} {
+            clear: left;
+        }
+    }
+    &:nth-child(3n+1) {
+        @media #{$large-and-up} {
+            clear: left;
+        }
     }
 }
 .full-width {
