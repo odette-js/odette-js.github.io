@@ -1,9 +1,9 @@
 ---
 layout: post
-title:  "Buster"
+title:  "Application"
 date:   2016-03-20 12:35:34 -0500
-categories: api v0
-permalink: /api/v0/buster
+categories: API
+permalink: /api/v0/application
 ---
 
 

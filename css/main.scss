@@ -20,7 +20,6 @@ html, body {
  * Clearfix
  */
 %clearfix {
-
     &:after {
         content: "";
         display: table;
@@ -69,14 +68,32 @@ html, body {
 }
 .hljs {
     background-color: transparent;
+    .string {
+        color: color('yellow', 'darken-3');
+    }
     &.javascript {
         .keyword {
             color: color('light-blue', 'base');
         }
-        .string {
-            color: color('yellow', 'darken-3');
+        .literal {
+            color: color('purple', 'darken-2');
+        }
+        .comment {
+            color: color('grey', 'base');
         }
     }
+    &.html {
+        .name {
+            color: color('materialize-red', 'base');
+        }
+        .attr {
+            color: color('green', 'darken-1');
+        }
+    }
+}
+.title-headline {
+    color: color('light-blue', 'base');
+    margin-top: 2rem;
 }
 .code {
     padding: 0;
@@ -85,10 +102,13 @@ html, body {
     font-family: courier;
 }
 .code-section {
+    margin: 1rem 0;
     background-color: color('grey', 'lighten-4');
     padding: 1rem;
+    line-height: 1.4rem;
 }
 .card .card-content.code-step {
+    padding: 1.333rem 1.333rem 0.333rem;
     p {
         margin-bottom: 1rem;
     }
@@ -108,6 +128,9 @@ html, body {
 //     line-height: 1.8rem;
 // }
 
+.clearfix {
+    @extend %clearfix;
+}
 .list {
     @extend %clearfix;
     // overflow: hidden;
@@ -141,6 +164,7 @@ html, body {
         position: absolute;
         top: 0;
         left: 0;
+        cursor: pointer;
         height: 4rem;
         width: 4rem;
         line-height: 4rem;
@@ -170,22 +194,21 @@ html, body {
     .side-nav-list {
         clear: right;
         margin-top: 0;
+        text-align: left;
     }
     a.inner-collapser {
         font-size: 2.5rem;
         text-align: right;
         color: color('purple', 'lighten-3');
-        // .side-nav.fixed a
         float: right;
         width: 100%;
         padding: 0 2rem;
         height: 4rem;
+        line-height: 4rem;
+        cursor: pointer;
         @media #{$medium-and-up} {
             text-align: center;
         }
-    }
-    .side-nav-list {
-        text-align: left;
     }
     .list-item {
         height: 3rem;

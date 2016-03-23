@@ -31,20 +31,23 @@ application.scope().run(function (app, _, factories) {
                 }
             }
         });
+        var toggleHash = {};
         $.registerElement('click-toggler', {
             events: {
                 click: 'toggle'
             },
             prototype: {
                 toggle: function () {
-                    var isOpen = this.is('clickTogglerOpen'),
+                    var manager = this,
+                        target = manager.data('target'),
+                        isOpen = toggleHash[target],
                         futureOpen = !isOpen,
-                        target = this.data('target'),
-                        wrapped = this.wrap(),
-                        together = target ? wrapped.add(target) : this;
+                        wrapped = manager.wrap(),
+                        together = target ? wrapped.add(target) : manager;
                     together.data('toggled', futureOpen);
                     wrapped.add('[data-target="' + target + '"]').each(function (manager) {
-                        manager.remark('clickTogglerOpen', futureOpen);
+                        // manager.remark('clickTogglerOpen', futureOpen);
+                        toggleHash[target] = futureOpen;
                     });
                 }
             }
@@ -80,6 +83,7 @@ application.scope().run(function (app, _, factories) {
         $.registerElement('code-exec', {
             onCreate: function (manager) {
                 hljs.highlightBlock(manager.element());
+                manager.remark('highlighted');
             }
         });
     });

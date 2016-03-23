@@ -1,9 +1,9 @@
 ---
 layout: post
-title:  "Module"
+title:  "DOMA"
 date:   2016-03-20 12:35:34 -0500
-categories: api v0
-permalink: /api/v0/module
+categories: API
+permalink: /api/v0/doma
 ---
 
 

@@ -1,17 +1,19 @@
 <div class="side-nav fixed">
-    <a href="#" data-custom="click-toggler" data-target=".nav-side-slide" class="nav-list-item inner-collapser purple lighten-3 white-text">
+    <a data-custom="click-toggler" data-target=".nav-side-slide" class="nav-list-item inner-collapser purple lighten-3 white-text">
         <i class="fa fa-circle-o"></i>
     </a>
     <ul class="side-nav-list list">
-        <li class="list-item hover-effect bold"><a class="waves-effect" href="{{ site.baseurl }}/">Home</a></li>
-        <li class="list-item hover-effect bold"><a class="waves-effect" href="{{ site.baseurl }}/about">About</a></li>
-        <li class="list-item hover-effect bold"><a class="waves-effect" href="{{ site.baseurl }}/api/">API</a></li>
-        <ul class="inner-list">
-            {% for post in site.posts %}
-                <li class="list-item hover-effect">
-                    <a class="waves-effect" href="{{ post.url }}">{{ post.title }}</a>
-                </li>
-            {% endfor %}
-        </ul>
+        <li class="list-item hover-effect bold">
+            <a class="waves-effect" href="{{ site.baseurl }}/">Home</a>
+        </li>
+        <li class="list-item hover-effect bold">
+            <a class="waves-effect" href="{{ site.baseurl }}/about">About</a>
+        </li>{% for category in site.categories %}
+        <li class="list-item hover-effect bold">
+            <a class="waves-effect" href="{{ site.baseurl }}/api/">{{ category | first }}</a>
+        </li>{% for posts in category %}
+        <ul class="inner-list">{% for post in posts %}
+            <li class="list-item hover-effect"><a href="{{ post.url }}">{{ post.title }}</a></li>{% endfor %}
+        </ul>{% endfor %}{% endfor %}
     </ul>
 </div>

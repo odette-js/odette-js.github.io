@@ -1,0 +1,109 @@
+---
+layout: post
+title:  "View"
+date:   2016-03-20 12:35:34 -0500
+categories: API
+permalink: /api/v0/view
+---
+
+
+
+<p>Views are the glue between your data and your templates. Views should hold high level operations that dictate the behavior of your application. They should hold a large amount of your application or "business" logic.</p>
+<ul class="list navigation-links">
+    <li class="left clear-left"><a href="#establishRegions">addRegion</a></li>
+    <li class="left clear-left"><a href="#destroy">destroy</a></li>
+    <li class="left clear-left"><a href="#establishRegions">establishRegions</a></li>
+    <li class="left clear-left"><a href="#filter">filter</a></li>
+    <li class="left clear-left"><a href="#getRegion">getRegion</a></li>
+    <li class="left clear-left"><a href="#parentView">parentView</a></li>
+    <li class="left clear-left"><a href="#establishRegions">removeRegion</a></li>
+    <li class="left clear-left"><a href="#render">render</a></li>
+    <li class="left clear-left"><a href="#tagName">tagName</a></li>
+    <li class="left clear-left"><a href="#template">template</a></li>
+    <li class="left clear-left"><a href="#templateIsElement">templateIsElement</a></li>
+    <li class="left clear-left"><a href="#valueOf">valueOf</a></li>
+</ul>
+<div class="card">
+    <div class="card-content code-step">
+        <p>Let's make a new view.</p>
+        <div class="code code-section" data-custom="code-exec">&lt;div class=&quot;main-region&quot;&gt;&lt;/div&gt;&NewLine;&lt;script type=&quot;text/x-handlebars-template&quot; id=&quot;put-text-here&quot;&gt;&lbrace;&lbrace;text&rbrace;&rbrace;&lt;/script&gt;</div>
+        <div class="code code-section" data-custom="code-exec">var MyView = factories.View.extend({
+template: $.compile('put-text-here')
+});
+var view = MyView({
+    model: factories.Model({
+        text: 'woodchucks'
+    })
+});
+mainRegion.add(view);
+app.addRegion({
+    main: '.main-region'
+});
+var mainRegion = app.getRegion('main');</div>
+    </div>
+</div>
+<p>Yay! Woodchucks! Things like this are super easy. This simple stuff should be put into a <a href="/api/v0/doma#customElement">Custom Element</a> though. Try there first if you're doing simple repeatable things like this. You'll probably be much more satisfied with a data-custom attribute than creating whole <a href="/api/v0/view">views</a> for simple elements like the previous example.</p>
+<p>Now to the meat of it all. Your dom structure.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <p>First you'll probably want to make a <a href="/api/v0/region">Region</a>. (someplace to put your views)</p>
+        <div class="code code-section" data-custom="code-exec">var view = factories.View();
+view.addRegion({
+    content: '.content'
+});</div>
+        <p>Now you can add as many views as you want.</p>
+        <div class="code code-section" data-custom="code-exec">var anotherView = factories.View();
+view.addChildView('content', anotherView);</div>
+        <p>You can even add your data directly to the view.</p>
+        <div class="code code-section" data-custom="code-exec">view.addChildView('content', [{
+    text:'here'
+}, {
+    text: 'there'
+}]);</div>
+    </div>
+</div>
+<h5 id="filter" class="title-headline">#filter</h5>
+<p>Filters can be utilized to prevent a view from showing and attaching itself to its parent's element at when it (the view being filtered) is rendered.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <p>Filters are always functions. A default filter looks like the following code.</p>
+        <div class="code code-section" data-custom="code-exec">filter: function () {
+    return true;
+},</div>
+        <p>Filters eventually boil down to: should I be rendered, or should I be skipped?</p>
+    </div>
+</div>
+<h5 id="getRegion" class="title-headline">#getRegion</h5>
+<p>Regions are created as soon as the View they belong to is created. This allows them to hold other <a href="/api/v0/view">Views</a> and keep queued up until they need to render out their data.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <p>You can get an established <a href="/api/v0/region">Region</a> object using the following code.</p>
+        <div class="code code-section" data-custom="code-exec">var myView = MyView();
+myView.getRegion('content');</div>
+    </div>
+</div>
+<h5 id="parentView" class="title-headline">#parentView</h5>
+<p>The parent view can also be retrieved by any <a href="/api/v0/view">View</a> that has been added to a region, and has not yet been subsequently removed.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <p>To get the parent view, you can just call the method: <a href="#parentView">parentView</a>.</p>
+        <div class="code code-section" data-custom="code-exec">var secondView = factories.View();
+myView.showChildView('content', secondView);
+secondView.parentView(); // returns myView;</div>
+        <p>The region is also available as a property on the view, at parent.</p>
+        <div class="code code-section" data-custom="code-exec">secondView.parent === myView.getRegion('content'); // returns true;</div>
+    </div>
+</div>
+
+<h5 id="tagName" class="title-headline">#tagName</h5>
+<p>The tagName of the <a href="/api/v0/view">View</a>'s element can also be set on the prototype or as an instance variable. It is always a method.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <p>Pro tip: use the returns utility to always return what you passed into it if you don't need any special logic surrounding which tagName to use.</p>
+        <div class="code code-section" data-custom="code-exec">var MyView = factories.View.extend({
+    tagName: _.returns('div')
+});</div>
+    </div>
+</div>
+<h5 id="template" class="title-headline">#template</h5>
+<p>A <a href="#fixed-nav-container">View</a>'s template is the html that goes inside of it. Odette has a nifty little tendancy to collect all of your templates before you ever need them, provided they are loaded before Odette. If they are, then your dom query can be reduced to a single query for all script tags with ids, or you can custom query for all of your tags and stitch them together any way you like. Data from the <a href="/api/v0/model">Model</a> will be transferred directly to the template so it can be displayed during the <a href="#render">render</a> pipeline.</p>

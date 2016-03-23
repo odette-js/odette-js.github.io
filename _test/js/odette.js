@@ -9265,6 +9265,20 @@ app.scope(function (app) {
                 }
                 return found;
             },
+            addChildView: function (region_, views) {
+                var view = this,
+                    region = view.getRegion(region_);
+                return region ? region.add(views) : exception({
+                    message: 'that region does not exist'
+                });
+            },
+            removeChildView: function (region_, views) {
+                var view = this,
+                    region = view.getRegion(region_);
+                return region ? region.remove(views) : exception({
+                    message: 'that region does not exist'
+                });
+            },
             constructor: function (secondary) {
                 var view = this;
                 Parent[CONSTRUCTOR].call(view, secondary);

@@ -1,9 +1,9 @@
 ---
 layout: post
-title:  "Model"
+title:  "Directive"
 date:   2016-03-20 12:35:34 -0500
-categories: api v0
-permalink: /api/v0/model
+categories: API
+permalink: /api/v0/directive
 ---
 
 
