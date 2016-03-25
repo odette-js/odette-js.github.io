@@ -15,7 +15,7 @@ application.scope().run(function (app, _, factories) {
             // make sure promise is an object
             _.expect(_.isObject(promise)).toEqual(true);
             // make sure it has the right "state"
-            _.expect(promise.get('state')).toEqual('pending');
+            _.expect(promise.get('state')).toEqual(false);
             // resolve the promise
             promise.resolve();
             // make sure that it hit the function once and only once
@@ -30,7 +30,7 @@ application.scope().run(function (app, _, factories) {
         });
         _.describe('can tell you what state it is in such as', function () {
             _.it('pending', function () {
-                _.expect(promise.get('state')).toEqual('pending');
+                _.expect(promise.get('state')).toEqual(false);
             });
             _.it('success', function () {
                 promise.resolve();
@@ -42,9 +42,6 @@ application.scope().run(function (app, _, factories) {
             });
         });
         _.describe('or it can give you a boolean value for resolutions like', function () {
-            _.it('pending', function () {
-                _.expect(promise.is('pending')).toEqual(true);
-            });
             _.it('success', function () {
                 promise.resolve();
                 _.expect(promise.is('fulfilled')).toEqual(true);

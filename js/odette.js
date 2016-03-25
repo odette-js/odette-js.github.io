@@ -4713,7 +4713,7 @@ app.scope(function (app) {
         FULFILLED = 'fulfilled',
         RESOLVED = 'resolved',
         REJECTED = 'rejected',
-        IS_EMPTYING = 'isEmptying',
+        EMPTYING = 'emptying',
         ALL_STATES = 'allStates',
         STASHED_ARGUMENT = 'stashedArgument',
         flatten = _.flatten,
@@ -4737,7 +4737,6 @@ app.scope(function (app) {
             var shouldstop, finalName = name,
                 allstates = result(promise, ALL_STATES),
                 collected = [];
-            promise.mark(RESOLVED);
             while (!shouldstop) {
                 if (_.posit(collected, finalName)) {
                     finalName = BOOLEAN_FALSE;
@@ -4763,13 +4762,7 @@ app.scope(function (app) {
         },
         executeIfNeeded = function (promise, name) {
             return function () {
-                promise.handle(name, arguments);
-                // each(flatten(arguments), function (fn) {
-                //     if (isFunction(fn)) {
-                //         promise.handle(name, fn);
-                //     }
-                // });
-                return promise;
+                return promise.handle(name, arguments);
             };
         },
         addHandler = function (key) {
@@ -4811,7 +4804,6 @@ app.scope(function (app) {
             },
             constructor: function () {
                 var promise = this;
-                promise.mark('pending');
                 Model[CONSTRUCTOR].call(promise);
                 // promise.restart();
                 // cannot have been resolved in any way yet
@@ -4826,7 +4818,7 @@ app.scope(function (app) {
             },
             defaults: function () {
                 return {
-                    state: 'pending',
+                    state: BOOLEAN_FALSE,
                     // resolved: BOOLEAN_FALSE,
                     stashedArgument: NULL,
                     stashedHandlers: {},
@@ -4839,9 +4831,6 @@ app.scope(function (app) {
             allStates: function () {
                 return extend({}, result(this, 'baseStates'), result(this, 'auxiliaryStates') || {});
             },
-            pending: function () {
-                return this.get(STATE) === 'pending';
-            },
             resolveAs: function (resolveAs_, opts_, reason_) {
                 var opts = opts_,
                     resolveAs = resolveAs_,
@@ -4849,10 +4838,7 @@ app.scope(function (app) {
                 if (promise.is(RESOLVED)) {
                     return promise;
                 }
-                if (!isString(resolveAs)) {
-                    opts = resolveAs;
-                    resolveAs = BOOLEAN_FALSE;
-                }
+                promise.mark(RESOLVED);
                 promise.set({
                     resolved: BOOLEAN_TRUE,
                     // default state if none is given, is to have it succeed
@@ -4889,13 +4875,13 @@ app.scope(function (app) {
                     handlers = promise.get('stashedHandlers')[name];
                 if (handlers && handlers[LENGTH]) {
                     countLimit = handlers[LENGTH];
-                    promise.set(IS_EMPTYING, BOOLEAN_TRUE);
+                    promise.mark(EMPTYING);
                     while (handlers[0] && --countLimit >= 0) {
                         handler = handlers.shift();
                         // should already be bound
                         handler(arg);
                     }
-                    promise.set(IS_EMPTYING, BOOLEAN_FALSE);
+                    promise.unmark(EMPTYING);
                 }
                 return promise;
             },
@@ -4908,13 +4894,14 @@ app.scope(function (app) {
                         byName.push(bind(fn, promise));
                     }
                 });
+                return promise;
             },
             handle: function (name, fn_) {
                 var promise = this,
                     arg = promise.get(STASHED_ARGUMENT),
                     fn = fn_;
                 promise.stash(name, fn);
-                if (promise.is(RESOLVED) && !promise.get(IS_EMPTYING)) {
+                if (promise.is(RESOLVED) && !promise.is(EMPTYING)) {
                     dispatch(promise, promise.get(STATE));
                 }
                 return promise;

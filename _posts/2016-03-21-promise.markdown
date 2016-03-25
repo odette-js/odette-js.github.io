@@ -115,16 +115,24 @@ promise.circle(function () {
 promise.handle('circle', function () {
     console.log('first-circle');
 });
-promise.addHandler('circle');
-promise.circle(function () {
-    console.log('second-circle');
-});
-promise.resolve(); // logs 'first-circle' and 'second-circle'
+promise.resolve(); // logs 'first-circle'
 promise.handle('circle', function () {
-    console.log('third-circle');
-}); // logs 'third-circle'
-promise.circle(function () {
-    console.log('fourth-circle');
-}); // logs 'fourth-circle'</code></pre>
+    console.log('second-circle');
+}); // logs 'second-circle'</code></pre>
+    </div>
+</div>
+<h5 id="resolved" class="title-headline">#resolved</h5>
+<p>Sometimes you just want to check to see if the promise in question has been resolved yet, this can be done by checking the status marked on the status manager, or through a convenience method called pending.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <p>An example of how to check if a promise is "resolved" or not.</p>
+        <pre class="code code-section"><code class="language-javascript">promise.is('resolved'); // returns false
+promise.resolve();
+promise.is('resolved'); // returns true</code></pre>
+<p>This holds true even when the promise fails or errs out.</p>
+<pre class="code code-section"><code class="language-javascript">promise = _.Promise();
+promise.is('resolved'); // returns false
+promise.reject();
+promise.is('resolved'); // returns true</code></pre>
     </div>
 </div>
