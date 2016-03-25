@@ -279,7 +279,7 @@ app.scope(function (app) {
             return isInstance(instance, factories.Collection) ? instance_ : instance.unwrap();
         },
         REGISTRY = 'registry',
-        Registry = factories.Directive.extend(upCase(REGISTRY), {
+        Registry = factories.Registry = factories.Directive.extend(upCase(REGISTRY), {
             constructor: function () {
                 this.reset();
                 return this;
@@ -320,7 +320,7 @@ app.scope(function (app) {
                 this.count = count || 0;
                 return [cached, cachedCount];
             }
-        }, BOOLEAN_TRUE),
+        }),
         recreatingSelfList = gapSplit('eq map mapCall filter pluck where whereNot cycle uncycle flatten gather'),
         eachHandlers = {
             each: duff,
@@ -440,7 +440,7 @@ app.scope(function (app) {
             eq: eq
         }),
         LIST = 'list',
-        List = factories.Directive.extend(upCase(LIST), extend({
+        List = factories.List = factories.Directive.extend(upCase(LIST), extend({
             constructor: function (items) {
                 this.reset(items);
                 return this;
@@ -498,11 +498,11 @@ app.scope(function (app) {
                     return result(item, TO_JSON);
                 });
             }
-        }, wrappedListMethods), BOOLEAN_TRUE),
+        }, wrappedListMethods)),
         directiveResult = app.defineDirective(LIST, function () {
             return new List[CONSTRUCTOR]();
         }),
-        Collection = factories.Directive.extend('Collection', extend({
+        Collection = factories.Collection = factories.Directive.extend('Collection', extend({
             empty: _.flow(directives.parody(LIST, 'reset'), directives.parody(REGISTRY, 'reset')),
             get: directives.parody(REGISTRY, 'get'),
             register: directives.parody(REGISTRY, 'keep'),
@@ -570,8 +570,8 @@ app.scope(function (app) {
             return function (handler, context) {
                 return this.list[key](handler, context || this);
             };
-        })), BOOLEAN_TRUE),
-        SortedCollection = Collection.extend('SortedCollection', {
+        }))),
+        SortedCollection = factories.SortedCollection = Collection.extend('SortedCollection', {
             constructor: function (list_, skip) {
                 var sorted = this;
                 Collection[CONSTRUCTOR].call(sorted);
@@ -648,8 +648,8 @@ app.scope(function (app) {
             shift: function () {
                 return this.remove(this.first());
             }
-        }, BOOLEAN_TRUE),
-        StringObject = factories.Extendable.extend('StringObject', {
+        }),
+        StringObject = factories.StringObject = factories.Extendable.extend('StringObject', {
             constructor: function (value, parent) {
                 var string = this;
                 string.value = value;
@@ -681,8 +681,8 @@ app.scope(function (app) {
             generate: function () {
                 return this.isValid() ? this.valueOf() : EMPTY_STRING;
             }
-        }, BOOLEAN_TRUE),
-        StringManager = SortedCollection.extend('StringManager', {
+        }),
+        StringManager = factories.StringManager = SortedCollection.extend('StringManager', {
             Child: StringObject,
             add: function (string) {
                 var sm = this,
@@ -802,6 +802,6 @@ app.scope(function (app) {
                 sm.increment();
                 return sm;
             }
-        }, BOOLEAN_TRUE);
+        });
     app.defineDirective(REGISTRY, Registry[CONSTRUCTOR]);
 });

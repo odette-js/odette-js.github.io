@@ -15,7 +15,7 @@ application.scope().run(function (app, _, factories) {
         _.describe('can understand unfriendly windows', function () {
             _.it('can receive messages on windows', function (done) {
                 var iframe = $.createElement('iframe');
-                app.getRegion('main').el.append(iframe);
+                app.RegionManager.get('main').el.append(iframe);
                 var buster = factories.Buster(window, iframe, {
                     iframeSrc: 'http://localhost:8000/test/framed.html'
                 });
@@ -34,7 +34,7 @@ application.scope().run(function (app, _, factories) {
             _.it('can receive messages on windows', function (done) {
                 pagePromise.success(function (response) {
                     var iframe = $.createElement('iframe');
-                    app.getRegion('main').el.append(iframe);
+                    app.RegionManager.get('main').el.append(iframe);
                     var buster = factories.Buster(window, iframe, {
                         iframeContent: response
                     });
@@ -53,7 +53,7 @@ application.scope().run(function (app, _, factories) {
         _.describe('can understand friendly windows', function () {
             _.it('can receive messages on windows', function (done) {
                 var iframe = $.createElement('iframe');
-                app.getRegion('main').el.append(iframe);
+                app.RegionManager.get('main').el.append(iframe);
                 var buster = factories.Buster(window, iframe, {
                     iframeSrc: 'http://localhost:8080/test/framed.html'
                 });

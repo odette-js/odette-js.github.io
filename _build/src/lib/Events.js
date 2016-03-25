@@ -152,7 +152,7 @@ app.scope(function (app) {
             attachEventObject(target, name, obj, onceModification);
         },
         uniqueKey = 'c',
-        Events = factories.Directive.extend('Events', {
+        Events = factories.Events = factories.Directive.extend('Events', {
             /**
              * @description attach event handlers to the Model event loop
              * @func
@@ -305,5 +305,5 @@ app.scope(function (app) {
                 }, NULL);
                 return returnValue;
             }
-        }, BOOLEAN_TRUE);
+        });
 });

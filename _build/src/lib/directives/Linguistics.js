@@ -52,7 +52,7 @@ app.scope(function (app) {
                 fn: negative_bound
             };
         },
-        Linguistics = factories.Events.extend(LINGUISTICS, {
+        Linguistics = factories.Linguistics = factories.Events.extend(LINGUISTICS, {
             then: push(SUCCESS),
             always: push(EVERY),
             otherwise: push(FAILURES),
@@ -171,8 +171,9 @@ app.scope(function (app) {
                 }
                 return sequencer;
             }
-        }, BOOLEAN_TRUE),
-        LinguisticsManager = factories.Model.extend(LINGUISTICS + 'Manager', {
+        }),
+        LINGUISTICS_MANAGER = LINGUISTICS + 'Manager',
+        LinguisticsManager = factories[LINGUISTICS_MANAGER] = factories.Model.extend(LINGUISTICS_MANAGER, {
             when: function (key) {
                 var newish = new Linguistics[CONSTRUCTOR](this.target);
                 this.add(newish);
@@ -183,6 +184,6 @@ app.scope(function (app) {
                 this.target = target;
                 return this;
             }
-        }, BOOLEAN_TRUE);
+        });
     app.defineDirective(LINGUISTICS, LinguisticsManager[CONSTRUCTOR]);
 });

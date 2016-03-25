@@ -4,7 +4,7 @@ app.scope(function (app) {
         factories = _.factories,
         CHANGE_COUNTER = 'counter',
         CHANGING = 'changing',
-        DataDirective = factories.Directive.extend('DataDirective', {
+        DataDirective = factories.DataDirective = factories.Directive.extend('DataDirective', {
             constructor: function () {
                 var dataDirective = this;
                 dataDirective[CURRENT] = {};
@@ -66,6 +66,6 @@ app.scope(function (app) {
             each: function (fn) {
                 return each(this[CURRENT], fn, this);
             }
-        }, BOOLEAN_TRUE);
+        });
     app.defineDirective(DATA, DataDirective[CONSTRUCTOR]);
 });

@@ -26,6 +26,9 @@ html, body {
         clear: both;
     }
 }
+.clearfix-overflow {
+    overflow: hidden;
+}
 .fa {
     line-height: inherit;
 }
@@ -81,6 +84,11 @@ html, body {
         .comment {
             color: color('grey', 'base');
         }
+        .return {
+            .keyword {
+                color: color('materialize-red', 'base');
+            }
+        }
     }
     &.html {
         .name {
@@ -91,6 +99,9 @@ html, body {
         }
     }
 }
+:not(pre)>code[class*=language-], pre[class*=language-] {
+    background: color('grey', 'lighten-5');
+}
 .title-headline {
     color: color('light-blue', 'base');
     margin-top: 2rem;
@@ -100,12 +111,21 @@ html, body {
     white-space: pre;
     word-break: break-word;
     font-family: courier;
+    display: block;
+    overflow: auto;
 }
-.code-section {
-    margin: 1rem 0;
+.inline-code {
     background-color: color('grey', 'lighten-4');
+    padding: 0 5px;
+}
+pre.code-section {
+    margin: 1rem 0;
+    background-color: color('grey', 'lighten-5');
     padding: 1rem;
     line-height: 1.4rem;
+    code {
+        display: block;
+    }
 }
 .card .card-content.code-step {
     padding: 1.333rem 1.333rem 0.333rem;
@@ -147,7 +167,7 @@ html, body {
     }
 }
 
-.navbar-fixed {
+.top-nav {
     nav {
         right: 0;
         left: 0;
@@ -172,11 +192,11 @@ html, body {
     }
 }
 
-.with-sidebar .navbar-fixed nav {
-    @media #{$large-and-up} {
-        padding-left: 16rem;
-    }
-}
+// .with-sidebar .navbar-fixed nav {
+//     @media #{$large-and-up} {
+//         padding-left: 16rem;
+//     }
+// }
 
 .list-item {
     display: block;

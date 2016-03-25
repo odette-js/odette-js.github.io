@@ -57,7 +57,7 @@ app.scope(function (app) {
                 if (selector) {
                     element[SELECTOR] = selector;
                 }
-                if (isInstance(selector, factories.DOMM)) {
+                if (isInstance(selector, factories.DOMA)) {
                     return;
                 }
                 if (isString(selector)) {

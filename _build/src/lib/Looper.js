@@ -93,7 +93,7 @@ app.scope(function (app) {
                 };
             }
         }()),
-        Looper = factories.Directive.extend('Looper', {
+        Looper = factories.Looper = factories.Directive.extend('Looper', {
             constructor: function (_runner) {
                 var fns, stopped = BOOLEAN_TRUE,
                     halted = BOOLEAN_FALSE,
@@ -339,7 +339,7 @@ app.scope(function (app) {
                     }
                 });
             }
-        }, BOOLEAN_TRUE);
+        });
     Looper.playWhileBlurred = BOOLEAN_TRUE;
     app.undefine(function () {});
     _.exports({

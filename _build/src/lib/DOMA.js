@@ -111,7 +111,7 @@ app.scope(function (app) {
             var render = _.wraptry(function () {
                 return new Function.constructor(settings.variable || '_', source);
             }, function (e) {
-                _.console.error(e);
+                console.error(e);
             });
             var template = function (data) {
                 return render.call(data || {}, _);
@@ -153,7 +153,7 @@ app.scope(function (app) {
         },
         getClosestWindow = function (windo_) {
             var windo = windo_ || win;
-            return isWindow(windo) ? windo : (windo && windo[DEFAULT_VIEW] ? windo[DEFAULT_VIEW] : (windo.ownerGlobal ? windo.ownerGlobal : DOMM(windo).parent(WINDOW)[INDEX](0) || win));
+            return isWindow(windo) ? windo : (windo && windo[DEFAULT_VIEW] ? windo[DEFAULT_VIEW] : (windo.ownerGlobal ? windo.ownerGlobal : DOMA(windo).parent(WINDOW)[INDEX](0) || win));
         },
         getComputed = function (el, ctx) {
             var ret = getClosestWindow(ctx).getComputedStyle(el);
@@ -274,13 +274,13 @@ app.scope(function (app) {
             var attr = attr_ || api,
                 eachHandler = makeEachTrigger(attr, api);
             return function (fn, fn2, capturing) {
-                var domm = this;
+                var doma = this;
                 if (isFunction(fn) || isFunction(fn2)) {
-                    domm.on(attr, fn, fn2, capturing);
+                    doma.on(attr, fn, fn2, capturing);
                 } else {
-                    domm.each(eachHandler);
+                    doma.each(eachHandler);
                 }
-                return domm;
+                return doma;
             };
         },
         triggerEventWrapperManager = function (attr_, api) {
@@ -718,7 +718,7 @@ app.scope(function (app) {
             var div = createElement(DIV, NULL, NULL, manager);
             // collect custom element
             div.html(str);
-            return DOMM(div).children().remove().unwrap();
+            return DOMA(div).children().remove().unwrap();
         },
         makeBranch = function (str, manager) {
             return makeTree(str, manager)[0];
@@ -756,7 +756,7 @@ app.scope(function (app) {
             return list.concat.apply(list, items ? map(items, handler) : context.map(handler));
         },
         createElements = function (tagName, context) {
-            return DOMM(foldl(gapSplit(tagName), function (memo, name) {
+            return DOMA(foldl(gapSplit(tagName), function (memo, name) {
                 memo.push(createElement(name, NULL, NULL, context));
                 return memo;
             }, []), NULL, NULL, NULL, context);
@@ -766,7 +766,7 @@ app.scope(function (app) {
             if (isFragment(els)) {
                 frag = els;
             } else {
-                if (DOMM.isInstance(els)) {
+                if (DOMA.isInstance(els)) {
                     els = els.unwrap();
                 }
                 if (!isArrayLike(els)) {
@@ -878,7 +878,7 @@ app.scope(function (app) {
                     // ensures it's still a dom object
                     result = fn(prev, one, two, three, four, five),
                     // don't know if we went up or down, so use null as context
-                    obj = new DOMM[CONSTRUCTOR](result, NULL, BOOLEAN_TRUE, NULL, prev.context.owner);
+                    obj = new DOMA[CONSTRUCTOR](result, NULL, BOOLEAN_TRUE, NULL, prev.context.owner);
                 obj._previous = prev;
                 return obj;
             };
@@ -912,18 +912,18 @@ app.scope(function (app) {
         closer = function (center, current, challenger) {
             return distance(center, current) < distance(center, challenger);
         },
-        createSelector = function (domm, args, fn) {
+        createSelector = function (doma, args, fn) {
             var fun, selector, name = args.shift();
             if (isString(args[0]) || args[0] == NULL) {
                 selector = args.shift();
             }
             if (isString(args[0])) {
-                args[0] = domm[args[0]];
+                args[0] = doma[args[0]];
             }
             if (!isFunction(args[0])) {
                 return this;
             }
-            fn = bind(fn, domm);
+            fn = bind(fn, doma);
             fun = args[0];
             duff(gapSplit(name), function (nme) {
                 var split = eventToNamespace(nme),
@@ -941,7 +941,7 @@ app.scope(function (app) {
         },
         expandEventListenerArguments = function (fn) {
             return function () {
-                var selector, domm = this,
+                var selector, doma = this,
                     args = toArray(arguments),
                     nameOrObject = args.shift();
                 if (isObject(nameOrObject)) {
@@ -949,12 +949,12 @@ app.scope(function (app) {
                         selector = args.shift();
                     }
                     each(nameOrObject, function (handler, key) {
-                        createSelector(domm, [key, selector, handler].concat(args), fn);
+                        createSelector(doma, [key, selector, handler].concat(args), fn);
                     });
-                    return domm;
+                    return doma;
                 } else {
                     args.unshift(nameOrObject);
-                    return createSelector(domm, args, fn);
+                    return createSelector(doma, args, fn);
                 }
             };
         },
@@ -1165,7 +1165,7 @@ app.scope(function (app) {
             pause: 'paused'
         },
         directEvents = gapSplit('blur focus focusin focusout load resize scroll unload click dblclick mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave change select submit keydown keypress keyup error contextmenu'),
-        // collected here so DOMM can do what it wants
+        // collected here so DOMA can do what it wants
         allDirectMethods = directEvents.concat(_.keys(videoDirectEvents), _.keys(directAttributes)),
         isAttached = function (element_, owner) {
             var isAttachedResult, parent, potential, manager = owner.returnsManager(element_),
@@ -1465,7 +1465,7 @@ app.scope(function (app) {
         query = function (str, ctx) {
             return toArray((ctx || doc_).querySelectorAll(str));
         },
-        DOMM_SETUP = factories.DOMM_SETUP = function (doc_) {
+        DOMA_SETUP = factories.DOMA_SETUP = function (doc_) {
             var registeredElements, $, setup, wrapped, manager = returnsManager(doc_, BOOLEAN_TRUE),
                 unregisteredElements = factories.Registry();
             if (manager.documentId) {
@@ -1478,7 +1478,7 @@ app.scope(function (app) {
             };
             $ = function (sel, ctx) {
                 var context = ctx || manager;
-                return DOMM(sel, context, BOOLEAN_FALSE, manager === context, manager);
+                return DOMA(sel, context, BOOLEAN_FALSE, manager === context, manager);
             };
             manager.documentId = uniqueId('doc');
             wrapped = extend(wrap({
@@ -1507,7 +1507,7 @@ app.scope(function (app) {
                 data: factories.Associator(),
                 documentId: manager.documentId,
                 document: manager,
-                constructor: DOMM[CONSTRUCTOR],
+                constructor: DOMA[CONSTRUCTOR],
                 registeredElements: registeredElements,
                 templateSettings: {
                     evaluate: /<%([\s\S]+?)%>/g,
@@ -1801,7 +1801,7 @@ app.scope(function (app) {
             }())
         },
         cachedObjectEventConstructor = factories.ObjectEvent[CONSTRUCTOR],
-        DomEvent = factories.ObjectEvent.extend('DomEvent', {
+        DomEvent = factories.DomEvent = factories.ObjectEvent.extend('DomEvent', {
             constructor: function (evnt, opts) {
                 var e = this;
                 if (DomEvent.isInstance(evnt)) {
@@ -1839,7 +1839,7 @@ app.scope(function (app) {
                 }
                 this.stopPropagation();
             }
-        }, BOOLEAN_TRUE),
+        }),
         DomEventsDirective = factories.EventsDirective.extend('DomEventsDirective', {
             remove: function (list, evnt) {
                 list.remove(evnt);
@@ -2018,7 +2018,7 @@ app.scope(function (app) {
                 found = attrs[where] = attrs[where] || StringManager();
             return found;
         },
-        DomManager = factories.Events.extend(DOM_MANAGER_STRING, extend(classApi, {
+        DomManager = factories.DomManager = factories.Events.extend(DOM_MANAGER_STRING, extend(classApi, {
             'directive:creation:EventManager': DomEventsDirective,
             isValidDomManager: BOOLEAN_TRUE,
             $: manager_query,
@@ -2219,7 +2219,7 @@ app.scope(function (app) {
                 if (isString(element)) {
                     return !!query(element, manager.element())[LENGTH];
                 }
-                if (element.isValidDOMM) {
+                if (element.isValidDOMA) {
                     element = element.index(0);
                 }
                 target = manager.owner.returnsManager(element);
@@ -2395,6 +2395,9 @@ app.scope(function (app) {
                     return manager;
                 }
                 manager.mark(REMOVING);
+                if (manager.isIframe && handler && isFunction(handler)) {
+                    setTimeout(bind(handler, NULL, manager));
+                }
                 if (fragment) {
                     fragment.appendChild(el);
                 } else {
@@ -2402,9 +2405,6 @@ app.scope(function (app) {
                 }
                 dispatchDetached([el], manager.owner);
                 manager.remark(REMOVING, cachedRemoving);
-                if (manager.isIframe && handler && isFunction(handler)) {
-                    setTimeout(bind(handler, NULL, manager));
-                }
                 return manager;
             },
             frame: function (head, body) {
@@ -2527,7 +2527,7 @@ app.scope(function (app) {
             };
         }), wrap(videoDirectEvents, triggerEventWrapperManager), wrap(directEvents, function (attr) {
             return triggerEventWrapperManager(attr);
-        })), BOOLEAN_TRUE),
+        }))),
         _removeEventListener = function (manager, name, group, selector, handler, capture_) {
             var capture = !!capture_,
                 directive = manager.directive(EVENTS),
@@ -2542,7 +2542,7 @@ app.scope(function (app) {
             return name ? removeFromList(directive[HANDLERS][capture + COLON + name], name) : each(directive[HANDLERS], removeFromList);
         },
         /**
-         * @class DOMM
+         * @class DOMA
          * @augments Model
          * @augments Collection
          */
@@ -2656,14 +2656,14 @@ app.scope(function (app) {
                 return element && element[property];
             };
         },
-        DOMM = factories.Collection.extend('DOMM', extend(makeValueTarget(CLASS, CLASSNAME, propertyApi, BOOLEAN_TRUE), {
+        DOMA = factories.DOMA = factories.Collection.extend('DOMA', extend(makeValueTarget(CLASS, CLASSNAME, propertyApi, BOOLEAN_TRUE), {
             /**
              * @func
-             * @name DOMM#constructor
-             * @param {String | Node | Function} str - string to query the dom with, or a function to run on document load, or an element to wrap in a DOMM instance
-             * @returns {DOMM} instance
+             * @name DOMA#constructor
+             * @param {String | Node | Function} str - string to query the dom with, or a function to run on document load, or an element to wrap in a DOMA instance
+             * @returns {DOMA} instance
              */
-            isValidDOMM: BOOLEAN_TRUE,
+            isValidDOMA: BOOLEAN_TRUE,
             destroy: function (handler_) {
                 var handler = isFunction(handler_) ? handler_ : NULL;
                 return this.each(function (manager) {
@@ -2676,7 +2676,7 @@ app.scope(function (app) {
                     context = dom.context = validContext ? ctx.index(0) : documentContext,
                     owner = dom.owner = documentContext,
                     unwrapped = context.element();
-                if (str && !isWindow(str) && str.isValidDOMM) {
+                if (str && !isWindow(str) && str.isValidDOMA) {
                     return str;
                 }
                 if (isFunction(str)) {
@@ -2747,7 +2747,7 @@ app.scope(function (app) {
                 return this;
             },
             elements: function () {
-                // to array of DOMManagers
+                // to array of DOMAanagers
                 return map(this.unwrap(), function (manager) {
                     // to element
                     return manager.element();
@@ -2755,13 +2755,13 @@ app.scope(function (app) {
             },
             /**
              * @func
-             * @name DOMM#isWin
+             * @name DOMA#isWin
              * @description asks if the first or specified index of the object is a window type object
              * @returns {Boolean}
              */
             /**
              * @func
-             * @name DOMM#isDoc
+             * @name DOMA#isDoc
              * @description asks if the first or specified index of the object is a document type object
              * @returns {Boolean}
              */
@@ -2770,9 +2770,9 @@ app.scope(function (app) {
             },
             /**
              * @func
-             * @name DOMM#filter
+             * @name DOMA#filter
              * @param {String|Function|Object} filtr - filter variable that will filter by matching the object that is passed in, or by selector if it is a string, or simply with a custom function
-             * @returns {DOMM} new DOMM instance object
+             * @returns {DOMA} new DOMA instance object
              */
             filter: attachPrevious(function (context, filter) {
                 return domFilter(context.unwrap(), filter);
@@ -2785,9 +2785,9 @@ app.scope(function (app) {
             }),
             /**
              * @func
-             * @name DOMM#find
+             * @name DOMA#find
              * @param {String} str - string to use query to find against
-             * @returns {DOMM} matching elements
+             * @returns {DOMA} matching elements
              */
             $: attachPrevious(function (context, str) {
                 var matchers = [],
@@ -2800,9 +2800,9 @@ app.scope(function (app) {
             }),
             /**
              * @func
-             * @name DOMM#children
+             * @name DOMA#children
              * @param {Number} [eq] - index of the children to gather. If none is provided, then all children will be added
-             * @returns {DOMM} all / matching children
+             * @returns {DOMA} all / matching children
              */
             children: attachPrevious(function (context, eq) {
                 return foldl(context.unwrap(), function (memo, manager) {
@@ -2811,22 +2811,22 @@ app.scope(function (app) {
             }),
             /**
              * @func
-             * @name DOMM#once
+             * @name DOMA#once
              * @param {String} space delimited list of event names to attach handlers to
              * @param {Function} fn - handler to put on the event loop
-             * @returns {DOMM} instance
+             * @returns {DOMA} instance
              */
             /**
              * @func
-             * @name DOMM#css
+             * @name DOMA#css
              * @param {...*} splat of objects and key value pairs that create a single object to be applied to the element
-             * @returns {DOMM} instance
+             * @returns {DOMA} instance
              */
             css: styleManipulator,
             style: styleManipulator,
             /**
              * @func
-             * @name DOMM#allDom
+             * @name DOMA#allDom
              * @returns {Boolean} value indicating whether or not there were any non dom elements found in the collection
              */
             allElements: function () {
@@ -2836,49 +2836,49 @@ app.scope(function (app) {
             },
             /**
              * @func
-             * @name DOMM#height
+             * @name DOMA#height
              * @returns {Number} height of the first object, adjusting for the different types of possible objects such as dom element, document or window
              */
             height: dimensionFinder(HEIGHT, 'scrollHeight', INNER_HEIGHT),
             /**
              * @func
-             * @name DOMM#width
+             * @name DOMA#width
              * @returns {Number} width of the first object, adjusting for the different types of possible objects such as dom element, document or window
              */
             width: dimensionFinder(WIDTH, 'scrollWidth', INNER_WIDTH),
             /**
              * @func
-             * @name DOMM#data
+             * @name DOMA#data
              * @param {...*} splat of objects and key value pairs that create a single object to be applied to the element
              * @returns {Object|*} can return the value that is asked for by the initial function call
              */
             /**
              * @func
-             * @name DOMM#attr
+             * @name DOMA#attr
              * @param {...*} splat of objects and key value pairs that create a single object to be applied to the element
-             * @returns {DOMM | *} if multiple attributes were requested then a plain hash is returned, otherwise the DOMM instance is returned
+             * @returns {DOMA | *} if multiple attributes were requested then a plain hash is returned, otherwise the DOMA instance is returned
              */
             attr: attrApi(domIterates),
             data: dataApi(domIterates),
             prop: propApi(domIterates),
             /**
              * @func
-             * @name DOMM#eq
-             * @param {Number|Array} [num=0] - index or list of indexes to create a new DOMM element with.
-             * @returns {DOMM} instance
+             * @name DOMA#eq
+             * @param {Number|Array} [num=0] - index or list of indexes to create a new DOMA element with.
+             * @returns {DOMA} instance
              */
             eq: attachPrevious(function (context, num) {
                 return eq(context.unwrap(), num);
             }),
             /**
              * @func
-             * @name DOMM#box
+             * @name DOMA#box
              * @param {Number} [num=0] - index to get the boxmodel of
              */
             /**
              * @func
-             * @name DOMM#end
-             * @returns {DOMM} object that started the traversal chain
+             * @name DOMA#end
+             * @returns {DOMA} object that started the traversal chain
              */
             end: function () {
                 var that = this;
@@ -2889,7 +2889,7 @@ app.scope(function (app) {
             },
             /**
              * @func
-             * @name DOMM#append
+             * @name DOMA#append
              */
             append: function (els, clone) {
                 return this.insertAt(els, NULL, clone);
@@ -2903,20 +2903,20 @@ app.scope(function (app) {
             },
             /**
              * @func
-             * @name DOMM#next
-             * @returns {DOMM} instance
+             * @name DOMA#next
+             * @returns {DOMA} instance
              */
             next: horizontalTraverser('next', 1),
             /**
              * @func
-             * @name DOMM#previous
-             * @returns {DOMM} instance
+             * @name DOMA#previous
+             * @returns {DOMA} instance
              */
             prev: horizontalTraverser('prev', -1),
             /**
              * @func
-             * @name DOMM#skip
-             * @returns {DOMM} instance
+             * @name DOMA#skip
+             * @returns {DOMA} instance
              */
             skip: horizontalTraverser('skip', 0),
             siblings: attachPrevious(function (context, filtr) {
@@ -2926,8 +2926,8 @@ app.scope(function (app) {
             }),
             /**
              * @func
-             * @name DOMM#insertAt
-             * @returns {DOMM} instance
+             * @name DOMA#insertAt
+             * @returns {DOMA} instance
              */
             insertAt: function (els_, index, clone) {
                 var manager = this,
@@ -2984,9 +2984,9 @@ app.scope(function (app) {
             }),
             /**
              * @func
-             * @name DOMM#parent
+             * @name DOMA#parent
              * @param {Number} [count=1] - number of elements to go up in the parent chain
-             * @returns {DOMM} instance of collected, unique parents
+             * @returns {DOMA} instance of collected, unique parents
              */
             parent: attachPrevious(function (context, original) {
                 // ensure unique
@@ -3002,33 +3002,33 @@ app.scope(function (app) {
             }),
             /**
              * @func
-             * @name DOMM#has
+             * @name DOMA#has
              * @param {Node|Array} els - list of elements to check the current instance against
-             * @returns {Boolean} whether or not the current domm element has all of the elements that were passed in
+             * @returns {Boolean} whether or not the current doma element has all of the elements that were passed in
              */
             has: function (els) {
-                var domm = this,
+                var doma = this,
                     collection = Collection(els),
                     length = collection[LENGTH]();
                 return !!length && collection.find(function (el) {
-                    return domm.posit(el) ? BOOLEAN_FALSE : BOOLEAN_TRUE;
+                    return doma.posit(el) ? BOOLEAN_FALSE : BOOLEAN_TRUE;
                 });
             },
             /**
              * @func
-             * @name DOMM#html
-             * @returns {DOMM} instance
+             * @name DOMA#html
+             * @returns {DOMA} instance
              */
             html: htmlTextManipulator(INNER_HTML),
             /**
              * @func
-             * @name DOMM#text
-             * @returns {DOMM} instance
+             * @name DOMA#text
+             * @returns {DOMA} instance
              */
             text: htmlTextManipulator(INNER_TEXT),
             /**
              * @func
-             * @name DOMM#childOf
+             * @name DOMA#childOf
              */
             map: function (handler, context) {
                 return Collection(map(this.unwrap(), handler, context));
@@ -3039,11 +3039,11 @@ app.scope(function (app) {
             toString: function () {
                 return stringify(this);
             }
-        }, wrap(allEachMethods, applyToEach), wrap(firstMethods, applyToFirst), wrap(readMethods, applyToTarget)), BOOLEAN_TRUE),
+        }, wrap(allEachMethods, applyToEach), wrap(firstMethods, applyToFirst), wrap(readMethods, applyToTarget))),
         setupWindow = function (windo) {
-            windo.DOMM = DOMM_SETUP(windo[DOCUMENT]);
-            windo.$ = has(windo, '$') ? windo.$ : windo.DOMM;
-            return windo.DOMM;
+            windo.DOMA = DOMA_SETUP(windo[DOCUMENT]);
+            windo.$ = has(windo, '$') ? windo.$ : windo.DOMA;
+            return windo.DOMA;
         },
         $ = setupWindow(win);
     app.undefine(setupWindow);

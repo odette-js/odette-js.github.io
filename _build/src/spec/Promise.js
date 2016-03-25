@@ -15,43 +15,43 @@ application.scope().run(function (app, _, factories) {
             // make sure promise is an object
             _.expect(_.isObject(promise)).toEqual(true);
             // make sure it has the right "state"
-            _.expect(promise.state()).toEqual('pending');
+            _.expect(promise.get('state')).toEqual('pending');
             // resolve the promise
             promise.resolve();
             // make sure that it hit the function once and only once
             _.expect(madeit).toEqual(1);
             // make sure it has the correct state after resolution
-            _.expect(promise.state()).toEqual('success');
+            _.expect(promise.get('state')).toEqual('success');
         });
         _.it('can tell you if it has resolved or not', function () {
-            _.expect(promise.resolved()).toEqual(false);
+            _.expect(promise.is('resolved')).toEqual(false);
             promise.resolve();
-            _.expect(promise.resolved()).toEqual(true);
+            _.expect(promise.is('resolved')).toEqual(true);
         });
         _.describe('can tell you what state it is in such as', function () {
             _.it('pending', function () {
-                _.expect(promise.state()).toEqual('pending');
+                _.expect(promise.get('state')).toEqual('pending');
             });
             _.it('success', function () {
                 promise.resolve();
-                _.expect(promise.state()).toEqual('success');
+                _.expect(promise.get('state')).toEqual('success');
             });
             _.it('failure', function () {
                 promise.reject();
-                _.expect(promise.state()).toEqual('failure');
+                _.expect(promise.get('state')).toEqual('failure');
             });
         });
         _.describe('or it can give you a boolean value for resolutions like', function () {
             _.it('pending', function () {
-                _.expect(promise.isPending()).toEqual(true);
+                _.expect(promise.is('pending')).toEqual(true);
             });
             _.it('success', function () {
                 promise.resolve();
-                _.expect(promise.isFulfilled()).toEqual(true);
+                _.expect(promise.is('fulfilled')).toEqual(true);
             });
             _.it('failure', function () {
                 promise.reject();
-                _.expect(promise.isRejected()).toEqual(true);
+                _.expect(promise.is('rejected')).toEqual(true);
             });
         });
         _.describe('can resolve to different states such as', function () {

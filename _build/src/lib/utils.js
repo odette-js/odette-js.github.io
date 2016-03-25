@@ -582,9 +582,9 @@ var factories = {},
         child = constructorWrapper(constructor);
         child.__super__ = parent;
         constructor[PROTOTYPE][CONSTRUCTOR_KEY] = child;
-        if (nameIsStr && attach && !_._preventConstructorAttach) {
-            factories[name] = child;
-        }
+        // if (nameIsStr && attach && !_._preventConstructorAttach) {
+        //     factories[name] = child;
+        // }
         return child;
     },
     constructorWrapper = function (Constructor) {
@@ -876,21 +876,24 @@ var factories = {},
     toArray = function (object, delimiter) {
         return isArrayLike(object) ? isArray(object) ? object : arrayLikeToArray(object) : (isString(object) ? object.split(isString(delimiter) ? delimiter : EMPTY_STRING) : (delimiter === BOOLEAN_TRUE ? objectToArray(object) : [object]));
     },
-    flattenArray = function (list, deep_) {
+    flattenArray = function (list, deep_, handle) {
         var deep = !!deep_;
         return foldl(list, function (memo, item_) {
             var item;
             if (isArrayLike(item_)) {
-                item = deep ? flattenArray.call(NULL, item_, deep) : item_;
+                item = deep ? flattenArray(item_, deep, handle) : item_;
                 return memo.concat(item);
             } else {
+                if (handle) {
+                    handle(item_);
+                }
                 memo.push(item_);
                 return memo;
             }
         }, []);
     },
-    flatten = function (list, deep) {
-        return flattenArray(isArrayLike(list) ? list : objectToArray(list), deep);
+    flatten = function (list, deep, handler) {
+        return flattenArray(isArrayLike(list) ? list : objectToArray(list), deep, handler);
     },
     gather = function (list, handler) {
         var newList = [];
@@ -1158,7 +1161,7 @@ var factories = {},
             err = e;
             returnValue = errthat ? errthat(e) : returnValue;
         } finally {
-            returnValue = finalfunction ? finalfunction(err) : returnValue;
+            returnValue = finalfunction ? finalfunction(returnValue) : returnValue;
         }
         return returnValue;
     },

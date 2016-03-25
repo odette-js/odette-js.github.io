@@ -18,7 +18,7 @@ app.scope(function (app) {
             return this.id;
         },
         SERIALIZED_DATA = '_sharedData',
-        ObjectEvent = factories.Directive.extend('ObjectEvent', {
+        ObjectEvent = factories.ObjectEvent = factories.Directive.extend('ObjectEvent', {
             constructor: function (target, data, name, options, when) {
                 var evnt = this;
                 evnt[PROPAGATION_IS_STOPPED] = evnt[IMMEDIATE_PROP_IS_STOPPED] = BOOLEAN_FALSE;
@@ -75,8 +75,8 @@ app.scope(function (app) {
                     actions.call(evnt);
                 }
             }
-        }, BOOLEAN_TRUE),
-        EventsDirective = factories.Directive.extend('EventsDirective', {
+        }),
+        EventsDirective = factories.EventsDirective = factories.Directive.extend('EventsDirective', {
             constructor: function (target) {
                 var eventsDirective = this;
                 eventsDirective.target = target;
@@ -280,6 +280,6 @@ app.scope(function (app) {
                 }
                 return directive;
             }
-        }, BOOLEAN_TRUE);
+        });
     app.defineDirective(EVENTS, factories.EventsDirective[CONSTRUCTOR]);
 });

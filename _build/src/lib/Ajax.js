@@ -75,7 +75,7 @@ app.scope(function (app) {
          * @classdesc XHR object wrapper Triggers events based on xhr state changes and abstracts many anomalies that have to do with IE
          */
         Promise = factories.Promise,
-        Ajax = Promise.extend('Ajax', {
+        Ajax = factories.Ajax = Promise.extend('Ajax', {
             /**
              * @func
              * @name Ajax#constructor
@@ -146,7 +146,7 @@ app.scope(function (app) {
              * @returns {ajax}
              * @name Ajax#attachResponseHandler
              */
-            auxilaryStates: function () {
+            auxiliaryStates: function () {
                 return {
                     'status:200': SUCCESS,
                     'status:202': SUCCESS,
@@ -201,7 +201,7 @@ app.scope(function (app) {
                 }
                 return ajax;
             }
-        }, BOOLEAN_TRUE);
+        });
     _.exports(_.foldl(validTypes, function (memo, key_) {
         var key = key_;
         key = key.toLowerCase();

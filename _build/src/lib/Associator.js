@@ -12,7 +12,7 @@ app.scope(function (app) {
         isObject = _.isObject,
         removeAt = _.removeAt,
         objectToString = {}.toString,
-        Associator = factories.Directive.extend('Associator', {
+        Associator = factories.Associator = factories.Directive.extend('Associator', {
             /**
              * @func
              * @name Associator#get
@@ -96,5 +96,5 @@ app.scope(function (app) {
                 }
                 return current;
             }
-        }, BOOLEAN_TRUE);
+        });
 });

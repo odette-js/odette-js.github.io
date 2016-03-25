@@ -1642,43 +1642,43 @@ application.scope().run(function (app, _, factories) {
             // make sure promise is an object
             _.expect(_.isObject(promise)).toEqual(true);
             // make sure it has the right "state"
-            _.expect(promise.state()).toEqual('pending');
+            _.expect(promise.get('state')).toEqual('pending');
             // resolve the promise
             promise.resolve();
             // make sure that it hit the function once and only once
             _.expect(madeit).toEqual(1);
             // make sure it has the correct state after resolution
-            _.expect(promise.state()).toEqual('success');
+            _.expect(promise.get('state')).toEqual('success');
         });
         _.it('can tell you if it has resolved or not', function () {
-            _.expect(promise.resolved()).toEqual(false);
+            _.expect(promise.is('resolved')).toEqual(false);
             promise.resolve();
-            _.expect(promise.resolved()).toEqual(true);
+            _.expect(promise.is('resolved')).toEqual(true);
         });
         _.describe('can tell you what state it is in such as', function () {
             _.it('pending', function () {
-                _.expect(promise.state()).toEqual('pending');
+                _.expect(promise.get('state')).toEqual('pending');
             });
             _.it('success', function () {
                 promise.resolve();
-                _.expect(promise.state()).toEqual('success');
+                _.expect(promise.get('state')).toEqual('success');
             });
             _.it('failure', function () {
                 promise.reject();
-                _.expect(promise.state()).toEqual('failure');
+                _.expect(promise.get('state')).toEqual('failure');
             });
         });
         _.describe('or it can give you a boolean value for resolutions like', function () {
             _.it('pending', function () {
-                _.expect(promise.isPending()).toEqual(true);
+                _.expect(promise.is('pending')).toEqual(true);
             });
             _.it('success', function () {
                 promise.resolve();
-                _.expect(promise.isFulfilled()).toEqual(true);
+                _.expect(promise.is('fulfilled')).toEqual(true);
             });
             _.it('failure', function () {
                 promise.reject();
-                _.expect(promise.isRejected()).toEqual(true);
+                _.expect(promise.is('rejected')).toEqual(true);
             });
         });
         _.describe('can resolve to different states such as', function () {
@@ -2001,7 +2001,7 @@ application.scope().run(function (app, _, factories) {
 });
 application.scope().run(function (app, _, factories) {
     var elementData = _.associator;
-    _.describe('DOMM', function () {
+    _.describe('DOMA', function () {
         var divs, count, $empty = $(),
             $win = $(window),
             $doc = $(document),
@@ -2042,7 +2042,7 @@ application.scope().run(function (app, _, factories) {
             // done();
         });
         _.it('is essentially a collection', function () {
-            _.expect(_.isInstance($empty, factories.DOMM)).toEqual(true);
+            _.expect(_.isInstance($empty, factories.DOMA)).toEqual(true);
             _.expect(_.isInstance($empty, factories.Collection)).toEqual(true);
         });
         _.it('it knows it\'s own client rect', function () {
@@ -2087,7 +2087,7 @@ application.scope().run(function (app, _, factories) {
             div.children().remove();
             _.expect(div.children().length()).toEqual(0);
         });
-        _.describe('except it has some methods that are highly pertinant to DOM manipulation... ergo: DOMM', function () {
+        _.describe('except it has some methods that are highly pertinant to DOM manipulation... ergo: DOMA', function () {
             _.it('can check if its items are windows', function () {
                 _.expect($win.isWindow()).toEqual(true);
                 _.expect($doc.isWindow()).toEqual(false);
@@ -2294,9 +2294,9 @@ application.scope().run(function (app, _, factories) {
             });
         });
         _.describe('the each function is special because', function () {
-            _.it('it wraps each element in a DOMM object before passing it through your iterator', function () {
+            _.it('it wraps each element in a DOMA object before passing it through your iterator', function () {
                 divs.each(function (el, idx) {
-                    _.expect(_.isInstance(el, factories.DOMM)).toEqual(false);
+                    _.expect(_.isInstance(el, factories.DOMA)).toEqual(false);
                     _.expect(factories.DomManager.isInstance(el)).toEqual(true);
                     _.expect(divs.element(idx) === el.element());
                 });
@@ -2511,7 +2511,7 @@ application.scope().run(function (app, _, factories) {
                 return '<span></span><div class="here"></div>';
             }
         });
-        app.addRegion('main', '.test-div');
+        app.RegionManager.add('main', '.test-div');
         _.beforeEach(function () {
             count = 0;
             view = factories.View();
@@ -2533,7 +2533,7 @@ application.scope().run(function (app, _, factories) {
         _.it('can even have extra elements tied to it... but only when it is rendered', function () {
             _.expect(_.isString(complexView.ui.there)).toEqual(true);
             complexView.render();
-            _.expect(_.isInstance(complexView.ui.there, factories.DOMM)).toEqual(true);
+            _.expect(_.isInstance(complexView.ui.there, factories.DOMA)).toEqual(true);
         });
         _.it('can be rendered', function () {
             _.expect(complexView.el.html()).toEqual('');
@@ -2542,7 +2542,7 @@ application.scope().run(function (app, _, factories) {
         });
         _.it('can be attached to a region', function () {
             _.expect(complexView.el.element().parentNode).toEqual(null);
-            app.getRegion('main').add(complexView);
+            app.RegionManager.get('main').add(complexView);
             _.expect(complexView.el.element().parentNode).not.toEqual(null);
         });
         _.it('can be filtered', function () {
@@ -2550,19 +2550,19 @@ application.scope().run(function (app, _, factories) {
             complexView.filter = function () {
                 return false;
             };
-            app.getRegion('main').add(complexView);
+            app.RegionManager.get('main').add(complexView);
             _.expect(complexView.el.element().parentNode).toEqual(null);
         });
         _.it('can have extra elements', function () {
             _.expect(_.isObject(complexView.ui)).toEqual(true);
             _.expect(_.isString(complexView.ui.there)).toEqual(true);
             complexView.render();
-            _.expect(_.isInstance(complexView.ui.there, factories.DOMM)).toEqual(true);
+            _.expect(_.isInstance(complexView.ui.there, factories.DOMA)).toEqual(true);
             _.expect(complexView.ui.there.length()).toEqual(1);
         });
         _.it('can also attach events to it\'s element', function () {
             _.expect(count).toEqual(0);
-            app.getRegion('main').add(complexView);
+            app.RegionManager.get('main').add(complexView);
             _.expect(count).toEqual(0);
             complexView.el.click();
             _.expect(count).toEqual(1);
@@ -2573,7 +2573,7 @@ application.scope().run(function (app, _, factories) {
         });
         _.it('as well as it\'s ui elements', function () {
             _.expect(count).toEqual(0);
-            app.getRegion('main').add(complexView);
+            app.RegionManager.get('main').add(complexView);
             _.expect(count).toEqual(0);
             complexView.ui.there.click();
             _.expect(count).toEqual(1);
@@ -2583,7 +2583,7 @@ application.scope().run(function (app, _, factories) {
             _.expect(count).toEqual(2);
         });
         _.it('views can be detached', function () {
-            app.getRegion('main').add(complexView);
+            app.RegionManager.get('main').add(complexView);
             _.expect(count).toEqual(0);
             complexView.ui.there.click();
             _.expect(count).toEqual(1);
@@ -2591,7 +2591,7 @@ application.scope().run(function (app, _, factories) {
             _.expect(count).toEqual(1);
         });
         _.it('and still keep their elements and events intact', function () {
-            app.getRegion('main').add(complexView);
+            app.RegionManager.get('main').add(complexView);
             _.expect(count).toEqual(0);
             complexView.ui.there.click();
             _.expect(count).toEqual(1);
@@ -2601,19 +2601,19 @@ application.scope().run(function (app, _, factories) {
             _.expect(count).toEqual(2);
         });
         _.it('they can even be reattached', function () {
-            app.getRegion('main').add(complexView);
+            app.RegionManager.get('main').add(complexView);
             _.expect(count).toEqual(0);
             complexView.ui.there.click();
             _.expect(count).toEqual(1);
             complexView.remove();
             _.expect(count).toEqual(1);
-            app.getRegion('main').add(complexView);
+            app.RegionManager.get('main').add(complexView);
             _.expect(count).toEqual(1);
             complexView.ui.there.click();
             _.expect(count).toEqual(2);
         });
         _.it('when they are destroyed however, their events are detached from the element and the view is automatically removed', function () {
-            app.getRegion('main').add(complexView);
+            app.RegionManager.get('main').add(complexView);
             _.expect(count).toEqual(0);
             var there = complexView.ui.there;
             there.click();
@@ -2642,7 +2642,7 @@ application.scope().run(function (app, _, factories) {
         _.describe('can understand unfriendly windows', function () {
             _.it('can receive messages on windows', function (done) {
                 var iframe = $.createElement('iframe');
-                app.getRegion('main').el.append(iframe);
+                app.RegionManager.get('main').el.append(iframe);
                 var buster = factories.Buster(window, iframe, {
                     iframeSrc: 'http://localhost:8000/test/framed.html'
                 });
@@ -2661,7 +2661,7 @@ application.scope().run(function (app, _, factories) {
             _.it('can receive messages on windows', function (done) {
                 pagePromise.success(function (response) {
                     var iframe = $.createElement('iframe');
-                    app.getRegion('main').el.append(iframe);
+                    app.RegionManager.get('main').el.append(iframe);
                     var buster = factories.Buster(window, iframe, {
                         iframeContent: response
                     });
@@ -2680,7 +2680,7 @@ application.scope().run(function (app, _, factories) {
         _.describe('can understand friendly windows', function () {
             _.it('can receive messages on windows', function (done) {
                 var iframe = $.createElement('iframe');
-                app.getRegion('main').el.append(iframe);
+                app.RegionManager.get('main').el.append(iframe);
                 var buster = factories.Buster(window, iframe, {
                     iframeSrc: 'http://localhost:8080/test/framed.html'
                 });

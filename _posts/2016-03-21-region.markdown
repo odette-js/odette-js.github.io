@@ -7,16 +7,32 @@ permalink: /api/v0/region
 ---
 
 
-<p class="center-align">Regions hold Views. In any combination, of any amount. You can keep them as organized or disorganized as you like. Just like the DOM.</p>
-
-<ul class="list">
-    <li class="list-item">Methods</li>
-    <ul class="list">
-        <li class="list-item">add</li>
-        <li class="list-item">adopt</li>
-        <li class="list-item">attach</li>
-        <li class="list-item">disown</li>
-        <li class="list-item">render</li>
-        <li class="list-item">setElement</li>
-    </ul>
+<p>Regions hold and manage views. X number of views at any given time at all times. Any type of view can be added to a Region as long as it is an instance of factories.View. We can also set default views, and the Views themselves can have default models.</p>
+<ul class="list navigation-links">
+    <li class="left clear-left"><a href="#add">add</a></li>
+    <li class="left clear-left"><a href="#render">render</a></li>
 </ul>
+<h5 id="add" class="title-headline">#add</h5>
+<p>We can simply give our regions data to render our in it's default view state if we do not have to do anything special.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <p>Consider the following, which will not only create 2 views, but also models that those views can latch onto.</p>
+        <pre class="code code-section"><code class="language-javascript">var region = app.getRegion('myRegion');
+region.add([{
+    text: 'one'
+}, {
+    text: 'two'
+}]);</code></pre>
+    </div>
+</div>
+<h5 id="render" class="title-headline">#render</h5>
+<p>We can render a set of views all at the same time by simply calling render on the region, and all of its children will be rendered.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <p>Consider the following, which will not only create 2 views, but also models that those views can latch onto.</p>
+        <pre class="code code-section"><code class="language-javascript">app.addChildView('main', factories.View());
+app.addChildView('main', factories.View());
+var mainRegion = app.getRegion('main');
+mainRegion.render(); // re-renders the two views that were just passed in.</code></pre>
+    </div>
+</div>

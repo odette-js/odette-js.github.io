@@ -40,7 +40,7 @@ app.scope(function (app) {
                 return startable;
             }
         },
-        Startable = factories.Model.extend('Startable', startableMethods, BOOLEAN_TRUE),
+        Startable = factories.Startable = factories.Model.extend('Startable', startableMethods),
         doStart = function (e) {
             if (this.get('startWithParent')) {
                 this[START](e);
@@ -106,7 +106,7 @@ app.scope(function (app) {
             run: function (windo, fn_) {
                 var module = this;
                 var fn = isFunction(windo) ? windo : fn_;
-                var args = isWindow(windo) ? [windo.DOMM] : [];
+                var args = isWindow(windo) ? [windo.DOMA] : [];
                 if (isFunction(fn)) {
                     fn.apply(module, module.createArguments(args));
                 }
@@ -149,7 +149,7 @@ app.scope(function (app) {
                 };
             }
         }),
-        Module = factories.Model.extend('Module', moduleMethods, BOOLEAN_TRUE),
+        Module = factories.Module = factories.Model.extend('Module', moduleMethods),
         appextendresult = app.extend(extend({}, moduleMethods, {
             extraModuleArguments: [],
             /**

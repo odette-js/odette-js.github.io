@@ -59,7 +59,7 @@ app.scope(function (app) {
                 return new Destruction(instance, name, directive);
             });
         },
-        Directive = factories.Extendable.extend('Directive', {
+        Directive = factories.Directive = factories.Extendable.extend('Directive', {
             mark: parody(STATUS, 'mark'),
             unmark: parody(STATUS, 'unmark'),
             remark: parody(STATUS, 'remark'),
@@ -78,7 +78,7 @@ app.scope(function (app) {
                 delete this[name];
                 return result;
             }
-        }, BOOLEAN_TRUE),
+        }),
         StatusMarker = factories.Extendable.extend(STATUS, {
             constructor: function () {
                 this[STATUSES] = {};
@@ -97,10 +97,10 @@ app.scope(function (app) {
                 this[STATUSES][status] = direction === UNDEFINED ? !this[STATUSES][status] : !!direction;
             },
             is: function (status) {
-                return this[STATUSES][status];
+                return !!this[STATUSES][status];
             },
             isNot: function (status) {
-                return !this.is(status);
+                return !this[STATUSES][status];
             }
         });
     defineDirective(STATUS, StatusMarker[CONSTRUCTOR]);

@@ -7,8 +7,6 @@ app.scope(function (app) {
         ADDED = 'added',
         UNWRAP = 'unwrap',
         REMOVED = 'removed',
-        DESTROY = 'destroy',
-        BEFORE_DESTROY = BEFORE_COLON + DESTROY,
         STOP_LISTENING = 'stopListening',
         _DELEGATED_CHILD_EVENTS = '_delegatedParentEvents',
         _PARENT_DELEGATED_CHILD_EVENTS = '_parentDelgatedChildEvents',
@@ -50,7 +48,7 @@ app.scope(function (app) {
                 childsEventDirective[_DELEGATED_CHILD_EVENTS] = UNDEFINED;
             }
         },
-        Children = factories.Collection.extend(CHILDREN, {
+        Children = factories.Children = factories.Collection.extend(CHILDREN, {
             constructor: function (instance) {
                 this[TARGET] = instance;
                 return this;
@@ -148,8 +146,8 @@ app.scope(function (app) {
                 model.add(newChildren);
                 return model;
             }
-        }, BOOLEAN_TRUE),
-        Parent = factories.Events.extend('Parent', {
+        }),
+        Parent = factories.Parent = factories.Events.extend('Parent', {
             isChildType: function (child) {
                 return isInstance(child, this.Child);
             },
@@ -254,8 +252,10 @@ app.scope(function (app) {
             },
             destroy: function () {
                 var removeRet, model = this;
-                // notify things like parent that it's about to destroy itself
-                model[DISPATCH_EVENT](BEFORE_DESTROY);
+                if (!model.is(DESTROYING)) {
+                    // notify things like parent that it's about to destroy itself
+                    model[DISPATCH_EVENT](BEFORE_DESTROY);
+                }
                 // actually detach
                 removeRet = model[PARENT] && model[PARENT].remove(model);
                 // stop listening to other views
@@ -264,13 +264,13 @@ app.scope(function (app) {
                 model.stopListening();
                 return model;
             }
-        }, BOOLEAN_TRUE),
+        }),
         /**
          * @class Model
          * @augments Events
          */
         uniqueCounter = 0,
-        Model = factories.Parent.extend('Model', {
+        Model = factories.Model = factories.Parent.extend('Model', {
             // this id prefix is nonsense
             // define the actual key
             idAttribute: ID,
@@ -571,7 +571,7 @@ app.scope(function (app) {
             //     model[DISPATCH_EVENT](SORT);
             //     return model;
             // }
-        }, BOOLEAN_TRUE);
+        });
     // children should actually extend from collection.
     // it should require certain things of the children it is tracking
     // and should be able to listen to them

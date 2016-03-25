@@ -1,11 +1,15 @@
 ---
-layout: sidebar
+layout: post
 js: /js/api/index.js
-title: docs
+date:   2016-03-20 12:35:34 -0500
+author: michael mclaughlin
+title: API
 ---
 
-{% include hero.html text="API" %}
-
-<div class="container">
-    <div data-custom="bacon" data-paragraphs="10" class="row"></div>
-</div>
+<p>Odette's api is, very simply, a bunch of apis that wrap smaller apis. Odette does this by taking problems and breaking them off into self maintaining chunks. There are many patterns that are followed by other frameworks, as well as the dom itself that odette intentionally stays away from in order to maintain as much simplicity and singularity as possible.</p>
+<h5 id="conventions" class="title-headline">#conventions</h5>
+<p>If you are ever coding your methods with a leading underscore to denote privacy or a high need for non-overwriting, then your method actually belongs on another object entirely. Try creating or extending a <a href="/api/v0/directive">Directive</a> and wrap your current api around it. Do not worry, that directive is hot swappable, overwriteable, and can be extendable, if you want it to be.</p>
+<p>If you are ever creating method names in the following pattern _someMethodThatOnlyIShouldCall then you probably need to create another directive, or simply put that function onto an existing directive.</p>
+<p>Another pattern that has been intentionally avoided, has been the use of "on" as a prefix to method names that react to events. While this can be very convenient it inherently promotes bad patterns while writing code, as users have to worry about overwriting, and eventually, it all just becomes a mess when scaling up to larger, less managable sized apps, which is how all apps should be coded in the first place.</p>
+<h5 class="title-headline" id="elements">#elements</h5>
+<p>Dom elements should never be touched, they should be referred to by query string, collected by the DOMA, and controlled via its DomManager's or another individuals' api. By using the DomManager or DOMA methods you should be able to do everything that you could think of, and normalize the element, and the DOM api that it interacts with.</p>

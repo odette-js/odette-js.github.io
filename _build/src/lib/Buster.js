@@ -500,7 +500,7 @@ app.scope(function (app) {
                     connectReceived.call(buster, e);
                 }).send();
             }
-        }, BOOLEAN_TRUE);
+        });
     if (app.topAccess()) {
         $(win[TOP]).on(MESSAGE, receive);
     }

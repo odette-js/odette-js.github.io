@@ -2001,7 +2001,7 @@ application.scope().run(function (app, _, factories) {
 });
 application.scope().run(function (app, _, factories) {
     var elementData = _.associator;
-    _.describe('DOMM', function () {
+    _.describe('DOMA', function () {
         var divs, count, $empty = $(),
             $win = $(window),
             $doc = $(document),
@@ -2042,7 +2042,7 @@ application.scope().run(function (app, _, factories) {
             // done();
         });
         _.it('is essentially a collection', function () {
-            _.expect(_.isInstance($empty, factories.DOMM)).toEqual(true);
+            _.expect(_.isInstance($empty, factories.DOMA)).toEqual(true);
             _.expect(_.isInstance($empty, factories.Collection)).toEqual(true);
         });
         _.it('it knows it\'s own client rect', function () {
@@ -2087,7 +2087,7 @@ application.scope().run(function (app, _, factories) {
             div.children().remove();
             _.expect(div.children().length()).toEqual(0);
         });
-        _.describe('except it has some methods that are highly pertinant to DOM manipulation... ergo: DOMM', function () {
+        _.describe('except it has some methods that are highly pertinant to DOM manipulation... ergo: DOMA', function () {
             _.it('can check if its items are windows', function () {
                 _.expect($win.isWindow()).toEqual(true);
                 _.expect($doc.isWindow()).toEqual(false);
@@ -2294,9 +2294,9 @@ application.scope().run(function (app, _, factories) {
             });
         });
         _.describe('the each function is special because', function () {
-            _.it('it wraps each element in a DOMM object before passing it through your iterator', function () {
+            _.it('it wraps each element in a DOMA object before passing it through your iterator', function () {
                 divs.each(function (el, idx) {
-                    _.expect(_.isInstance(el, factories.DOMM)).toEqual(false);
+                    _.expect(_.isInstance(el, factories.DOMA)).toEqual(false);
                     _.expect(factories.DomManager.isInstance(el)).toEqual(true);
                     _.expect(divs.element(idx) === el.element());
                 });
@@ -2533,7 +2533,7 @@ application.scope().run(function (app, _, factories) {
         _.it('can even have extra elements tied to it... but only when it is rendered', function () {
             _.expect(_.isString(complexView.ui.there)).toEqual(true);
             complexView.render();
-            _.expect(_.isInstance(complexView.ui.there, factories.DOMM)).toEqual(true);
+            _.expect(_.isInstance(complexView.ui.there, factories.DOMA)).toEqual(true);
         });
         _.it('can be rendered', function () {
             _.expect(complexView.el.html()).toEqual('');
@@ -2555,7 +2555,7 @@ application.scope().run(function (app, _, factories) {
             _.expect(_.isObject(complexView.ui)).toEqual(true);
             _.expect(_.isString(complexView.ui.there)).toEqual(true);
             complexView.render();
-            _.expect(_.isInstance(complexView.ui.there, factories.DOMM)).toEqual(true);
+            _.expect(_.isInstance(complexView.ui.there, factories.DOMA)).toEqual(true);
             _.expect(complexView.ui.there.length()).toEqual(1);
         });
         _.it('can also attach events to it\'s element', function () {
@@ -2640,7 +2640,7 @@ application.scope().run(function (app, _, factories) {
         _.describe('can understand unfriendly windows', function () {
             _.it('can receive messages on windows', function (done) {
                 var iframe = $.createElement('iframe');
-                app.getRegion('main').el.append(iframe);
+                app.RegionManager.get('main').el.append(iframe);
                 var buster = factories.Buster(window, iframe, {
                     iframeSrc: 'http://localhost:8000/test/framed.html'
                 });
@@ -2659,7 +2659,7 @@ application.scope().run(function (app, _, factories) {
             _.it('can receive messages on windows', function (done) {
                 pagePromise.success(function (response) {
                     var iframe = $.createElement('iframe');
-                    app.getRegion('main').el.append(iframe);
+                    app.RegionManager.get('main').el.append(iframe);
                     var buster = factories.Buster(window, iframe, {
                         iframeContent: response
                     });
@@ -2678,7 +2678,7 @@ application.scope().run(function (app, _, factories) {
         _.describe('can understand friendly windows', function () {
             _.it('can receive messages on windows', function (done) {
                 var iframe = $.createElement('iframe');
-                app.getRegion('main').el.append(iframe);
+                app.RegionManager.get('main').el.append(iframe);
                 var buster = factories.Buster(window, iframe, {
                     iframeSrc: 'http://localhost:8080/test/framed.html'
                 });
