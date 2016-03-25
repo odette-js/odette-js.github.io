@@ -8,8 +8,6 @@ permalink: /api/v0/view
 ---
 
 
-
-<p>Views are the glue between your data and your templates. Views should hold high level operations that dictate the behavior of your application. They should hold a large amount of your application or "business" logic.</p>
 <ul class="list navigation-links">
     <li class="left clear-left"><a href="#addChildView">addChildView</a></li>
     <li class="left clear-left"><a href="#destroy">destroy</a></li>
