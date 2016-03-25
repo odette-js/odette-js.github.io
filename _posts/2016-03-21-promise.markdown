@@ -12,8 +12,7 @@ permalink: /api/v0/promise
 <pre class="code code-section"><code class="language-javascript">var promise = _.Promise();</code></pre>
 <p>An optional array, collection of functions, or singular function can also be passed as the first argument to be attached to the success state.</p>
 <ul class="list navigation-links">
-    <li class="left clear-left"><a href="#addState">addHandler</a></li>
-    <li class="left clear-left"><a href="#addState">addState</a></li>
+    <li class="left clear-left"><a href="#addHandler">addHandler</a></li>
     <li class="left clear-left"><a href="#allStates">allStates</a></li>
     <li class="left clear-left"><a href="#auxiliaryStates">auxiliaryStates</a></li>
     <li class="left clear-left"><a href="#baseStates">baseStates</a></li>
@@ -47,17 +46,6 @@ promise.circle(function () {
 });</code></pre>
     </div>
 </div>
-<h5 id="addState" class="title-headline">#addState</h5>
-<div class="card">
-    <div class="card-content code-step">
-        <p>Creates a convenience method on the instance that the method is invoked on. The first argument is the newly created method name, and the second is the resolution that the functions passed into that method will be called under.</p>
-        <pre class="code code-section"><code class="language-javascript">promise.addState('success');
-promise.success(function () {
-    console.log('worked');
-});
-promise.resolveAs('success'); // logs "worked"</code></pre>
-    </div>
-</div>
 <h5 id="allStates" class="title-headline">#allStates</h5>
 <div class="card">
     <div class="card-content code-step">
@@ -69,7 +57,7 @@ promise.resolveAs('success'); // logs "worked"</code></pre>
 //     error: 'always',
 //     always: true
 // }</code></pre>
-        <p>As you can see from the tree above, the success, failure, and error handlers all resolve to always, which terminates with a non string value.</p>
+        <p>As you can see from the tree above, the success, failure, and error handlers all resolve to always, which terminates the tree with a non string value.</p>
     </div>
 </div>
 <h5 id="auxiliaryStates" class="title-headline">#auxiliaryStates</h5>

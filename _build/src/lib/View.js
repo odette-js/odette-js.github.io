@@ -43,21 +43,10 @@ app.scope(function (app) {
         // very useful for componentizing your ui
         Parent = factories.Parent,
         Model = factories.Model,
-        adopt = function (region, view) {
-            var children = region[CHILDREN];
-            if (!view) {
-                return region;
-            }
-            if (view[PARENT]) {
-                if (view[PARENT] === region) {
-                    return;
-                } else {
-                    view[PARENT].disown(view);
-                }
-            }
-            view[PARENT] = region;
-            children.add(view);
-            return region;
+        makesView = function (region, view_) {
+            return View.isInstance(view_) ? view_ : region.Child({
+                model: Model.isInstance(view_) ? view_ : view_ = Model(view_)
+            });
         },
         disown = function (region, view) {
             var children = region[CHILDREN];
@@ -82,12 +71,13 @@ app.scope(function (app) {
                 }
                 return unwrapped;
             },
-            adopt: function (view) {
-                var region = this,
+            adopt: function (view_) {
+                var view, region = this,
                     children = region[CHILDREN];
-                if (!view) {
+                if (!view_) {
                     return region;
                 }
+                view = makesView(region, view_);
                 if (view[PARENT]) {
                     if (view[PARENT] === region) {
                         return region;
@@ -296,6 +286,7 @@ app.scope(function (app) {
                 return view;
             }
         }),
+        Child = Region[CONSTRUCTOR][PROTOTYPE].Child = View,
         _View = factories.View,
         establishRegion = function (key, selector) {
             var regionManagerDirective = this,
