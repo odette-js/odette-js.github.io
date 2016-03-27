@@ -3,14 +3,14 @@ layout: post
 title:  "Promise"
 date:   2016-03-20 12:35:34 -0500
 categories: API
-author: michael mclaughlin
+author: Michael McLaughlin
 permalink: /api/v0/promise
 ---
 
 <p>Promises are a great way to steer clear of heavily nested javascript structures that rely on passing in callbacks, by flattening the structural logic into a singular, definable, and maliable resolution tree. Most promises today are not well thought out, and even when they are, they can be highly limiting and extremely dumb. Odette's promises are backed by an extendable resolution tree that can be used to resolve to multiple "states" at a time, and create a logic pathway for your code.</p>
 <p>Because of a promises usefulness, it has actually been included on the utilities object _ as well as the factories object for your extensability needs. All promises can be created in the following manner:</p>
 <pre class="code code-section"><code class="language-javascript">var promise = _.Promise();</code></pre>
-<p>An optional array, collection of functions, or singular function can also be passed as the first argument to be attached to the success state.</p>
+<p>An optional array, nested arrays, or singular function can also be passed as the first argument to be attached to the success state. Errors are a special type of state resoltion. Not only can you resolve into an error state, but if there is an execution error in your code, the promise will automatically switch it's resoltion state to error. Also, promises are not resolved with an event object, but rather, the first argument that they are resolved with.</p>
 <ul class="list navigation-links">
     <li class="left clear-left"><a href="#addHandler">addHandler</a></li>
     <li class="left clear-left"><a href="#allStates">allStates</a></li>
@@ -18,15 +18,12 @@ permalink: /api/v0/promise
     <li class="left clear-left"><a href="#baseStates">baseStates</a></li>
     <li class="left clear-left"><a href="#childEvents">childEvents</a></li>
     <li class="left clear-left"><a href="#defaults">defaults</a></li>
-    <li class="left clear-left"><a href="#events">events</a></li>
-    <li class="left clear-left"><a href="#execute">execute</a></li>
+    <li class="left clear-left"><a href="#fulfill">fulfill</a></li>
     <li class="left clear-left"><a href="#handle">handle</a></li>
     <li class="left clear-left"><a href="#isChildType">isChildType</a></li>
-    <li class="left clear-left"><a href="#pending">pending</a></li>
     <li class="left clear-left"><a href="#reject">reject</a></li>
-    <li class="left clear-left"><a href="#resolve">resolve</a></li>
     <li class="left clear-left"><a href="#resolveAs">resolveAs</a></li>
-    <li class="left clear-left"><a href="#stashHandler">stashHandler</a></li>
+    <li class="left clear-left"><a href="#stash">stash</a></li>
     <li class="left clear-left"><a href="#when">when</a></li>
 </ul>
 <h5 id="addHandler" class="title-headline">#addHandler</h5>
@@ -68,6 +65,7 @@ promise.circle(function () {
         <pre class="code code-section"><code class="language-javascript">{
     auxiliaryStates: function () {
         return {
+            'status:0': 'failure',
             'status:200': 'success',
             'status:202': 'success',
             'status:205': 'success',
@@ -91,21 +89,24 @@ promise.circle(function () {
         <p>These auxiliary states, compounded with the original state resolution types, give a full tree that can be followed until it resolves to always. For example, a request with a status of 200 would follow the following resolution tree: <code class="inline-code">status:200 > success > always</code>, whereas a request with a status of 400 would follow this resolution tree: <code class="inline-code">status:400 > failure > always</code></p>
     </div>
 </div>
-<h5 id="baseStates" class="title-headline">#baseStates</h5>
+</div>
+<h5 id="fulfill" class="title-headline">#fulfill</h5>
+<p>A Promise can be fulfilled in either a failure state, or a success state. Fulfill resolves into a success state.</p>
 <div class="card">
     <div class="card-content code-step">
-        <p>An example of the base state resolution is shown below. These states can be overwritten, but you should rarely ever need to, since there are other methods available for more extensibility.</p>
-        <pre class="code code-section"><code class="language-javascript">promise.baseStates();
-// {
-//     success: 'always',
-//     failure: 'always',
-//     error: 'always',
-//     always: true
-// }</code></pre>
+        <p>To fulfill a promise in the success state and only trigger the success and always handlers, simply call the fulfill method.</p>
+        <pre class="code code-section"><code class="language-javascript">var promise = _.Promise();
+promise.success(function () {
+    console.log(arguments);
+    console.log('succeeded');
+}).failure(function () {
+    console.log('failed');
+}).always(function () {
+    console.log('finished');
+});
+promise.fulfill(1, 2); // logs "[1]", "succeeded", "finished"</code></pre>
     </div>
 </div>
-<h5 id="isChildType" class="title-headline">#isChildType</h5>
-<p>An isChildType method is used to quickly check the validity of a child that is being added to a when statement. At default, a simple check is made for the success, failure, and always methods, instead of checking the instance. This method can be overwritten in cases where a more specific child check is needed for state resolution.</p>
 <h5 id="handle" class="title-headline">#handle</h5>
 <p>When the handle method is called, with a string as the first, and a function as the second argument, the function will first be stashed in a queue against that state, then the promise will check to see if it is resolved, and if it is, then it will empty it's resolved state's queue.</p>
 <div class="card">
@@ -121,18 +122,74 @@ promise.handle('circle', function () {
 }); // logs 'second-circle'</code></pre>
     </div>
 </div>
-<h5 id="resolved" class="title-headline">#resolved</h5>
-<p>Sometimes you just want to check to see if the promise in question has been resolved yet, this can be done by checking the status marked on the status manager, or through a convenience method called pending.</p>
+<h5 id="isChildType" class="title-headline">#isChildType</h5>
+<p>An isChildType method is used to quickly check the validity of a child that is being added to a when statement. At default, a simple check is made for the success, failure, and always methods, instead of checking the instance. This method can be overwritten in cases where a more specific child check is needed for state resolution.</p>
+<h5 id="reject" class="title-headline">#reject</h5>
+<p>A Promise can be resolved in either a failure state, or a success state. Reject resolves into a failure state. Consider the following code for the next couple of examples.</p>
 <div class="card">
     <div class="card-content code-step">
-        <p>An example of how to check if a promise is "resolved" or not.</p>
-        <pre class="code code-section"><code class="language-javascript">promise.is('resolved'); // returns false
-promise.resolve();
-promise.is('resolved'); // returns true</code></pre>
-<p>This holds true even when the promise fails or errs out.</p>
-<pre class="code code-section"><code class="language-javascript">promise = _.Promise();
-promise.is('resolved'); // returns false
-promise.reject();
-promise.is('resolved'); // returns true</code></pre>
+        <p>To resolve a promise in the rejected state and only trigger the failure and always handlers, simply call the reject method.</p>
+        <pre class="code code-section"><code class="language-javascript">var promise = _.Promise();
+promise.success(function () {
+    console.log('succeeded');
+}).failure(function () {
+    console.log('failed');
+}).always(function () {
+    console.log('finished');
+});
+promise.reject(); // logs failed, finished</code></pre>
+    </div>
+</div>
+<h5 id="resolveAs" class="title-headline">#resolveAs</h5>
+<p>Odette's promises can be resolved in as many ways as they can be configured. In order to resolve promises in the correct state and trigger the subsequent tree, Promises proved a resolveAs method which simplifies this process.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <p>Note: In order to resolve the promise to a non base state, (always, success, failure, error) you need to first add to the auxiliary states. Please see <a href="#auxiliaryStates">Auxiliary States</a> above.</p>
+        <p>If you have all of your auxiliary states setup, then you can simply resolve the promise and the tree will be triggered. Below is an example which uses the same auxiliary states used in the <a href="/api/v0/ajax">Ajax</a> constructor, which is outlined in the <a href="#auxiliaryStates">Auxiliary States</a> above.</p>
+        <pre class="code code-section"><code class="language-javascript">promise.handle("status:200", function () {
+    console.log(200);
+}).handle("status:204", function () {
+    console.log('no content!');
+}).success(function () {
+    console.log('success');
+}).always(function () {
+    console.log('finally finished!');
+});
+promise.resolveAs('status:204'); // logs "no content!", "success", "finally finished!"</code></pre>
+    </div>
+</div>
+<h5 id="stash" class="title-headline">#stash</h5>
+<p>Sometimes you only want to stash a handler against a resolve state instead of emptying the resolve tree. If you do not want to trigger that same function if the promise has already resolved to that state, then you can just the stash method to stash the handler against that resolution state / branch.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <p>To invoke this behavior, simply call the stash method and pass in a key, with a handler, or list of handlers that you would like to stash against that key.</p>
+        <pre class="code code-section"><code class="language-javascript">promise.fulfill();
+promise.stash('success', function () {
+    console.log('successfully stashed');
+});
+promise.success(function () {
+    console.log('tree emptied');
+}); // logs "successfully stashed", "tree emptied"</code></pre>
+    </div>
+</div>
+<h5 id="when" class="title-headline">#when</h5>
+<p>When is a convenience function to wrap multiple Promises in an all or nothing manner. If you are waiting for 3 different promises to resolve, then you can use the when method, as well as the _.when method to wrap those 3 promises into a singular promise that will only be fulfilled if all of the promises added to it are also fulfilled. If any are rejected, then the parent promise is also rejected.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <p>Below is an example of three independently resolved promises that both sychronously and asychronously resolve, and use the a when wrapping.</p>
+        <pre class="code code-section"><code class="language-javascript">var promise1 = _.Promise();
+var promise2 = _.Promise();
+var promise3 = _.Promise();
+var parentPromise = _.Promise();
+promise2.fulfill();
+parentPromise.when(promise2, promise1, promise3).success(function () {
+    console.log('everyone is fulfilled');
+}).failure(function () {
+    console.log('someone was rejected');
+});
+setTimeout(function () {
+    promise1.fulfill(); // logs "everyone is fulfilled"
+});
+promise3.fulfill();</code></pre>
     </div>
 </div>

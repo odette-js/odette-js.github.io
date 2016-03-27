@@ -15,35 +15,35 @@ application.scope().run(function (app, _, factories) {
             // make sure promise is an object
             _.expect(_.isObject(promise)).toEqual(true);
             // make sure it has the right "state"
-            _.expect(promise.get('state')).toEqual(false);
-            // resolve the promise
-            promise.resolve();
+            _.expect(promise.state).toEqual(false);
+            // fulfill the promise
+            promise.fulfill();
             // make sure that it hit the function once and only once
             _.expect(madeit).toEqual(1);
             // make sure it has the correct state after resolution
-            _.expect(promise.get('state')).toEqual('success');
+            _.expect(promise.state).toEqual('success');
         });
-        _.it('can tell you if it has resolved or not', function () {
-            _.expect(promise.is('resolved')).toEqual(false);
-            promise.resolve();
-            _.expect(promise.is('resolved')).toEqual(true);
+        _.it('can tell you if it has fulfilled or not', function () {
+            _.expect(promise.is('fulfilled')).toEqual(false);
+            promise.fulfill();
+            _.expect(promise.is('fulfilled')).toEqual(true);
         });
         _.describe('can tell you what state it is in such as', function () {
             _.it('pending', function () {
-                _.expect(promise.get('state')).toEqual(false);
+                _.expect(promise.state).toEqual(false);
             });
             _.it('success', function () {
-                promise.resolve();
-                _.expect(promise.get('state')).toEqual('success');
+                promise.fulfill();
+                _.expect(promise.state).toEqual('success');
             });
             _.it('failure', function () {
                 promise.reject();
-                _.expect(promise.get('state')).toEqual('failure');
+                _.expect(promise.state).toEqual('failure');
             });
         });
         _.describe('or it can give you a boolean value for resolutions like', function () {
             _.it('success', function () {
-                promise.resolve();
+                promise.fulfill();
                 _.expect(promise.is('fulfilled')).toEqual(true);
             });
             _.it('failure', function () {
@@ -51,13 +51,13 @@ application.scope().run(function (app, _, factories) {
                 _.expect(promise.is('rejected')).toEqual(true);
             });
         });
-        _.describe('can resolve to different states such as', function () {
+        _.describe('can fulfill to different states such as', function () {
             _.it('success', function (done) {
                 // attach handler
                 promise.success(handler);
                 setTimeout(function () {
-                    // resolve promise for success
-                    promise.resolve();
+                    // fulfill promise for success
+                    promise.fulfill();
                     // expect madeit to increase
                     _.expect(madeit).toEqual(1);
                     // let jasmine know we're all good
@@ -68,7 +68,7 @@ application.scope().run(function (app, _, factories) {
                 // attach failure handler
                 promise.failure(handler);
                 setTimeout(function () {
-                    // resolve promise for failure
+                    // fulfill promise for failure
                     promise.reject();
                     // expect madeit to increase
                     _.expect(madeit).toEqual(1);
@@ -78,13 +78,13 @@ application.scope().run(function (app, _, factories) {
             });
         });
         _.describe('but it also can trigger functions on any resolution with the always method such as', function () {
-            _.it('resolve', function (done) {
+            _.it('fulfill', function (done) {
                 // attach always handler
                 promise.success(handler);
                 promise.always(handler);
                 setTimeout(function () {
-                    // resolve promise for failure
-                    promise.resolve();
+                    // fulfill promise for failure
+                    promise.fulfill();
                     // expect madeit to increase
                     _.expect(madeit).toEqual(2);
                     // let jasmine know we're all good

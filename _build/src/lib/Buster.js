@@ -152,7 +152,7 @@ app.scope(function (app) {
             buster.connectPromise = _.Promise();
         },
         connected = function (buster, message) {
-            buster.connectPromise.resolve(message);
+            buster.connectPromise.fulfill(message);
             buster.set(CONNECTED, BOOLEAN_TRUE);
         },
         connectReceived = function (e) {
@@ -320,7 +320,7 @@ app.scope(function (app) {
                 disconnected.call(buster);
                 factories.Model[CONSTRUCTOR].call(buster, settings);
                 buster.once('change:connected', function (e) {
-                    buster.connectPromise.resolve(buster.directive(CHILDREN).first());
+                    buster.connectPromise.fulfill(buster.directive(CHILDREN).first());
                 });
                 buster.on({
                     'change:connected change:documentReady': 'flush',

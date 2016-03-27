@@ -1644,7 +1644,7 @@ application.scope().run(function (app, _, factories) {
             // make sure it has the right "state"
             _.expect(promise.state()).toEqual('pending');
             // resolve the promise
-            promise.resolve();
+            promise.fulfill();
             // make sure that it hit the function once and only once
             _.expect(madeit).toEqual(1);
             // make sure it has the correct state after resolution
@@ -1652,7 +1652,7 @@ application.scope().run(function (app, _, factories) {
         });
         _.it('can tell you if it has resolved or not', function () {
             _.expect(promise.resolved()).toEqual(false);
-            promise.resolve();
+            promise.fulfill();
             _.expect(promise.resolved()).toEqual(true);
         });
         _.describe('can tell you what state it is in such as', function () {
@@ -1660,7 +1660,7 @@ application.scope().run(function (app, _, factories) {
                 _.expect(promise.state()).toEqual('pending');
             });
             _.it('success', function () {
-                promise.resolve();
+                promise.fulfill();
                 _.expect(promise.state()).toEqual('success');
             });
             _.it('failure', function () {
@@ -1673,7 +1673,7 @@ application.scope().run(function (app, _, factories) {
                 _.expect(promise.isPending()).toEqual(true);
             });
             _.it('success', function () {
-                promise.resolve();
+                promise.fulfill();
                 _.expect(promise.isFulfilled()).toEqual(true);
             });
             _.it('failure', function () {
@@ -1687,7 +1687,7 @@ application.scope().run(function (app, _, factories) {
                 promise.success(handler);
                 setTimeout(function () {
                     // resolve promise for success
-                    promise.resolve();
+                    promise.fulfill();
                     // expect madeit to increase
                     _.expect(madeit).toEqual(1);
                     // let jasmine know we're all good
@@ -1714,7 +1714,7 @@ application.scope().run(function (app, _, factories) {
                 promise.always(handler);
                 setTimeout(function () {
                     // resolve promise for failure
-                    promise.resolve();
+                    promise.fulfill();
                     // expect madeit to increase
                     _.expect(madeit).toEqual(2);
                     // let jasmine know we're all good

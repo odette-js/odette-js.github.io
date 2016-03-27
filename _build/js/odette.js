@@ -9595,7 +9595,7 @@ application.definition('dev', window, function (app) {
                 buster.connectPromise = _.Promise();
             },
             connected = function (buster, message) {
-                buster.connectPromise.resolve(message);
+                buster.connectPromise.achieve(message);
                 buster.set(CONNECTED, BOOLEAN_TRUE);
             },
             connectReceived = function (e) {

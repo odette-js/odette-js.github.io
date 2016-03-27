@@ -26,6 +26,15 @@ app.scope(function (app) {
         /**
          * @func
          */
+        doToAll = function (handler) {
+            return function (list, items, lookAfter, lookBefore, fromRight) {
+                var count = 0;
+                duff(items, function (item) {
+                    count += remove(list, item, lookAfter, lookBefore, fromRight);
+                });
+                return count === list[LENGTH];
+            };
+        },
         remove = function (list, item, lookAfter, lookBefore, fromRight) {
             var index = posit(list, item, lookAfter, lookBefore, fromRight);
             if (index) {
@@ -33,17 +42,19 @@ app.scope(function (app) {
             }
             return !!index;
         },
+        removeAll = doToAll(remove),
         removeAt = function (list, index) {
             return list.splice(index, 1)[0];
         },
         add = function (list, item, lookAfter, lookBefore, fromRight) {
-            var val = 0,
+            var value = 0,
                 index = posit(list, item, lookAfter, lookBefore, fromRight);
             if (!index) {
-                val = list.push(item);
+                value = list.push(item);
             }
-            return !!val;
+            return !!value;
         },
+        addAll = doToAll(add),
         insertAt = function (list, item, index) {
             var len = list[LENGTH],
                 lastIdx = len || 0;
@@ -128,8 +139,6 @@ app.scope(function (app) {
          * @func
          */
         closestIndex = function (array, searchElement, minIndex_, maxIndex_) {
-            // var index;
-            // return (index = smartIndexOf(array, searchElement, minIndex_, maxIndex_)) === -1 ? UNDEFINED : array[index];
             var currentIndex, currentElement, found,
                 minIndex = minIndex_ || 0,
                 maxIndex = maxIndex_ || array[LENGTH] - 1;
@@ -214,9 +223,9 @@ app.scope(function (app) {
             };
         },
         uncycle = internalMambo(cycle),
-        externalMambo = internalMambo(function (list, fn) {
-            return fn.apply(this, arguments);
-        }),
+        // externalMambo = internalMambo(function (list, fn) {
+        //     return fn.apply(this, arguments);
+        // }),
         pluck = function (arr, key) {
             return map(arr, function (item) {
                 return result(item, key);
@@ -415,14 +424,14 @@ app.scope(function (app) {
             matches: matches,
             mapCall: mapCall,
             add: add,
+            removeAll: removeAll,
+            addAll: addAll,
             insertAt: insertAt,
             concatUnique: concatUnique,
             removeAt: removeAt,
             remove: remove,
             cycle: cycle,
             uncycle: uncycle,
-            mamboWrap: internalMambo,
-            mambo: externalMambo,
             concat: concat,
             pluck: pluck,
             where: where,

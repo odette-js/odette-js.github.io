@@ -48,7 +48,7 @@ app.scope(function (app) {
                 childsEventDirective[_DELEGATED_CHILD_EVENTS] = UNDEFINED;
             }
         },
-        Children = factories.Children = factories.Collection.extend(CHILDREN, {
+        Children = factories[CHILDREN] = factories.Collection.extend(CHILDREN, {
             constructor: function (instance) {
                 this[TARGET] = instance;
                 return this;
@@ -148,8 +148,9 @@ app.scope(function (app) {
             }
         }),
         Parent = factories.Parent = factories.Events.extend('Parent', {
+            Child: BOOLEAN_TRUE,
             isChildType: function (child) {
-                return isInstance(child, this.Child);
+                return isInstance(child, this.Child === BOOLEAN_TRUE ? this.__constructor__[CONSTRUCTOR] : this.Child);
             },
             // public facing version filters
             add: function (objs_, secondary_) {
@@ -165,7 +166,8 @@ app.scope(function (app) {
                     var isChildType = parent.isChildType(obj),
                         // create a new model
                         // call it with new in case they use a constructor
-                        newModel = isChildType ? obj : new parent.Child(obj, secondary),
+                        Constructor = parent.Child === BOOLEAN_TRUE ? parent.__constructor__[CONSTRUCTOR] : parent.Child,
+                        newModel = isChildType ? obj : new Constructor(obj, secondary),
                         // unfortunately we can only find by the newly created's id
                         // which we only know for sure after the child has been created ^
                         foundModel = children.get(ID, newModel.id);
@@ -270,11 +272,14 @@ app.scope(function (app) {
          * @augments Events
          */
         uniqueCounter = 0,
+        setId = function (model, id) {
+            model.id = (id === UNDEFINED ? ++uniqueCounter : id);
+            return uniqueCounter;
+        },
         Model = factories.Model = factories.Parent.extend('Model', {
             // this id prefix is nonsense
             // define the actual key
             idAttribute: ID,
-            Child: modelMaker,
             /**
              * @description remove attributes from the Model object. Does not completely remove from object with delete, but instead simply sets it to UNDEFINED / undefined
              * @param {String} attr - property string that is on the attributes object
@@ -305,14 +310,8 @@ app.scope(function (app) {
                 Events[CONSTRUCTOR].call(this, secondary);
                 return model;
             },
-            setId: function (id) {
-                var model = this;
-                ++uniqueCounter;
-                model.id = id === UNDEFINED ? uniqueCounter : id;
-                return uniqueCounter;
-            },
             reset: function (data_) {
-                var childModel, children, model = this,
+                var childModel, firstReset, children, model = this,
                     // automatically checks to see if the data is a string
                     passed = parse(data_) || {},
                     // build new data
@@ -320,13 +319,12 @@ app.scope(function (app) {
                     newAttributes = extend(defaultsResult, passed),
                     // try to get the id from the attributes
                     idAttributeResult = result(model, 'idAttribute', newAttributes),
-                    idResult = model.setId(newAttributes[idAttributeResult]),
+                    idResult = setId(model, newAttributes[idAttributeResult]),
                     keysResult = keys(newAttributes),
-                    firstReset = model.is(RESET),
                     dataDirective = model.directive(DATA);
                 // set id and let parent know what your new id is
                 // setup previous data
-                if (firstReset) {
+                if ((firstReset = model.is(RESET))) {
                     model[DISPATCH_EVENT](BEFORE_COLON + RESET);
                 }
                 dataDirective[RESET](newAttributes);
@@ -402,175 +400,6 @@ app.scope(function (app) {
             toString: function () {
                 return stringify(this);
             }
-            // ,
-            // /**
-            //  * @description resets the model's attributes to the object that is passed in
-            //  * @name Model#reset
-            //  * @func
-            //  * @param {Object} attributes - non circular hash that is extended onto what the defaults object produces
-            //  * @returns {Model} instance the method was called on
-            //  */
-            // resetChildren: function (newChildren) {
-            //     var length, child, model = this,
-            //         children = model.directive(CHILDREN),
-            //         arr = children[UNWRAP]();
-            //     // this can be made far more efficient
-            //     while (arr[LENGTH]) {
-            //         child = arr[0];
-            //         length = arr[LENGTH];
-            //         if (child) {
-            //             result(child, DESTROY);
-            //         }
-            //         // if it didn't remove itself,
-            //         // then you should remove it here
-            //         // this gets run if the child is a basic data type
-            //         if (arr[0] === child && arr[LENGTH] === length) {
-            //             remove(arr, child);
-            //         }
-            //     }
-            //     model.add(newChildren);
-            //     return model;
-            // },
-            // isChildType: function (child) {
-            //     return isInstance(child, this.Child);
-            // },
-            // // this one forcefully adds
-            // _add: function (model) {
-            //     var parent = this,
-            //         children = parent.directive(CHILDREN),
-            //         evt = model[DISPATCH_EVENT] && model[DISPATCH_EVENT](BEFORE_COLON + ADDED);
-            //     // let the child know it's about to be added
-            //     // (tied to it's parent via events)
-            //     // unties models
-            //     parent._remove(model);
-            //     // explicitly tie to parent
-            //     model[PARENT] = parent;
-            //     // attach events from parent
-            //     _addToHash(parent, model);
-            //     // ties models together
-            //     _delegateParentEvents(parent, model);
-            //     _delegateChildEvents(parent, model);
-            //     evt = model[DISPATCH_EVENT] && model[DISPATCH_EVENT](ADDED);
-            //     // notify that you were added
-            //     return model;
-            // },
-            // // public facing version filters
-            // add: function (objs_, secondary_) {
-            //     var childAdded, parent = this,
-            //         children = parent.directive(CHILDREN),
-            //         secondary = extend(result(parent, CHILD + 'Options'), secondary_ || {}),
-            //         list = Collection(objs_);
-            //     // unwrap it if you were passed a collection
-            //     if (!parent.Child || !list[LENGTH]()) {
-            //         return list[UNWRAP]();
-            //     }
-            //     list = list.foldl(function (memo, obj) {
-            //         var isChildType = parent.isChildType(obj),
-            //             // create a new model
-            //             // call it with new in case they use a constructor
-            //             newModel = isChildType ? obj : new parent.Child(obj, secondary),
-            //             // unfortunately we can only find by the newly created's id
-            //             // which we only know for sure after the child has been created ^
-            //             foundModel = children.get(ID, newModel.id);
-            //         if (foundModel) {
-            //             // update the old
-            //             foundModel.set(isChildType ? obj[TO_JSON]() : obj);
-            //             newModel = foundModel;
-            //         } else {
-            //             // add the new
-            //             childAdded = BOOLEAN_TRUE;
-            //             parent._add(newModel);
-            //         }
-            //         memo.push(newModel);
-            //         return memo;
-            //     }, []);
-            //     if (childAdded) {
-            //         parent[DISPATCH_EVENT](CHILD + COLON + ADDED);
-            //     }
-            //     return list;
-            // },
-            // // lots of private events
-            // _remove: function (model) {
-            //     // cache the parent
-            //     var parent = this;
-            //     // let everyone know that this object is about to be removed
-            //     model[DISPATCH_EVENT](BEFORE_COLON + REMOVED);
-            //     // notify the child that the remove pipeline is starting
-            //     // remove the parent events
-            //     _unDelegateParentEvents(parent, model);
-            //     // have parent remove it's child events
-            //     _unDelegateChildEvents(parent, model);
-            //     // attach events from parent
-            //     _removeFromHash(parent, model);
-            //     // void out the parent member tied directly to the model
-            //     delete model[PARENT];
-            //     // let everyone know that you've offically separated
-            //     model[DISPATCH_EVENT](REMOVED);
-            //     // notify the child that the remove pipeline is done
-            //     return model;
-            // },
-            // remove: function (idModel_) {
-            //     var models, parent = this,
-            //         retList = Collection(),
-            //         idModel = idModel_;
-            //     if (idModel_ == NULL) {
-            //         parent = this.parent;
-            //         retList = parent.remove(this);
-            //         return this;
-            //     }
-            //     if (!isObject(idModel)) {
-            //         // it's an id
-            //         idModel = parent.directive(CHILDREN).get(ID, idModel + EMPTY_STRING);
-            //     }
-            //     if (!idModel || !isObject(idModel)) {
-            //         return retList;
-            //     }
-            //     models = idModel && idModel.unwrap ? idModel.unwrap() : idModel;
-            //     Collection(models).duff(function (model) {
-            //         var parent = model[PARENT];
-            //         var removeResult = parent && parent._remove(model);
-            //         retList.push(model);
-            //     });
-            //     if (retList[LENGTH]()) {
-            //         parent[DISPATCH_EVENT](CHILD + COLON + REMOVED);
-            //     }
-            //     return retList;
-            // },
-            // /**
-            //  * @description basic sort function
-            //  * @param {Function|String} comparator - argument to sort children against
-            //  * @returns {Model} instance
-            //  * @func
-            //  * @name Model#sort
-            //  */
-            // sort: function (comparator_) {
-            //     var comparingAttribute, isReversed, model = this,
-            //         children = model[CHILDREN],
-            //         comparator = comparator_ || result(model, 'comparator');
-            //     if (!children) {
-            //         return model;
-            //     }
-            //     if (isString(comparator)) {
-            //         isReversed = comparator[0] === '!';
-            //         comparingAttribute = comparator;
-            //         if (isReversed) {
-            //             comparingAttribute = comparator.slice(1);
-            //         }
-            //         comparator = function (a, b) {
-            //             var val_, val_A = a.get(comparingAttribute),
-            //                 val_B = b.get(comparingAttribute);
-            //             if (isReversed) {
-            //                 val_ = val_B - val_A;
-            //             } else {
-            //                 val_ = val_A - val_B;
-            //             }
-            //             return val_;
-            //         };
-            //     }
-            //     children[SORT](comparator);
-            //     model[DISPATCH_EVENT](SORT);
-            //     return model;
-            // }
         });
     // children should actually extend from collection.
     // it should require certain things of the children it is tracking

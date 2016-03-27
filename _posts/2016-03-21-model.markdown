@@ -3,30 +3,112 @@ layout: post
 title:  "Model"
 date:   2016-03-20 12:35:34 -0500
 categories: API
+author: Michael McLaughlin
 permalink: /api/v0/model
 ---
 
 
 
 
-You’ll find this post in your `_posts` directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run `jekyll serve`, which launches a web server and auto-regenerates your site when a file is updated.
-
-To add new posts, simply add a file in the `_posts` directory that follows the convention `YYYY-MM-DD-name-of-post.ext` and includes the necessary front matter. Take a look at the source for this post to get an idea about how it works.
-
-Jekyll also offers powerful support for code snippets:
-
-{% highlight ruby %}
-def print_hi(name)
-  puts "Hi, #{name}"
-end
-print_hi('Tom')
-#=> prints 'Hi, Tom' to STDOUT.
-{% endhighlight %}
-
-
-
-Check out the [Jekyll docs][jekyll-docs] for more info on how to get the most out of Jekyll. File all bugs/feature requests at [Jekyll’s GitHub repo][jekyll-gh]. If you have questions, you can ask them on [Jekyll Talk][jekyll-talk].
-
-[jekyll-docs]: http://jekyllrb.com/docs/home
-[jekyll-gh]:   https://github.com/jekyll/jekyll
-[jekyll-talk]: https://talk.jekyllrb.com/
+<p>Models resemble Backbone models very closely, with a few key differences. Data exists, in Odette as more of a tree structure than a dichotomy between Models and Collections. This allows us to do interesting things like putting models in multiple collections at the same time.</p>
+<p>Creation of a model is as simple as any other constructor in Odette. Simply call the constructor on the factories object.</p>
+<pre class="code code-section"><code class="language-javascript">var model = factories.Model();</code></pre>
+<ul class="list navigation-links">
+    <li class="left clear-left">
+        <a href="#members">Members:</a>
+        <ul class="list nested-list">
+            <li class="left clear-left"><a href="#members_idAttribute">idAttribute</a></li>
+        </ul>
+    </li>
+    <li class="left clear-left">
+        <a href="#methods">Methods:</a>
+        <ul class="list nested-list">
+            <li class="left clear-left"><a href="#methods_clone">clone</a></li>
+            <li class="left clear-left"><a href="#methods_destroy">destroy</a></li>
+            <li class="left clear-left"><a href="#methods_get">get</a></li>
+            <li class="left clear-left"><a href="#methods_has">has</a></li>
+            <li class="left clear-left"><a href="#methods_reset">reset</a></li>
+            <li class="left clear-left"><a href="#methods_set">set</a></li>
+            <li class="left clear-left"><a href="#methods_toJSON">toJSON</a></li>
+            <li class="left clear-left"><a href="#methods_toString">toString</a></li>
+            <li class="left clear-left"><a href="#methods_unset">unset</a></li>
+            <li class="left clear-left"><a href="#methods_valueOf">valueOf</a></li>
+        </ul>
+    </li>
+    <li class="left clear-left">
+        <a href="javascript:void 0;">Augments:</a>
+        <ul class="list nested-list">
+            <li class="left clear-left"><a href="/api/v0/parent">Parent</a></li>
+            <li class="left clear-left"><a href="/api/v0/events">Events</a></li>
+            <li class="left clear-left"><a href="/api/v0/directive">Directive</a></li>
+            <li class="left clear-left"><a href="/api/v0/extendable">Extendable</a></li>
+        </ul>
+    </li>
+</ul>
+<h4 id="members" class="title-headline">Members</h4>
+<h5 id="members_idAttribute" class="title-headline">#idAttribute</h5>
+<p>The idAttribute property holds a value that corresponds to a key in the data that is passed into the model upon initialization. This value will be used to register the model against it's parent.</p>
+<h4 id="methods" class="title-headline">Methods</h4>
+<h5 id="methods_clone" class="title-headline">#clone</h5>
+<p>This method returns javascript literal copy of the DataDirective associated with this Model. It does not return the current property directly but instead copies all of the properties to a new object.</p>
+<div class="card">
+    <div class="card-content code-step">
+        <pre class="code code-section"><code class="language-javascript">var model = factories.Model();
+model.clone(); // {}
+model.set({
+    numerous: 'properties'
+});
+model.clone();
+// {
+//     numerous: "properties"
+// }</code></pre>
+    </div>
+</div>
+<h5 id="methods_destroy" class="title-headline">#destroy</h5>
+<p>This method marks the end of a model's lifecycle. It calls the remove, and stopListening method with no arguments internally, which removes all listener events from the model. Both the destroy event as well as the before:destroy event will be dispatched on the Model. If a "destroying" status has already been marked on the Model instance then this method will expect the before:destroy event to be triggered by a wrapping function.</p>
+<pre class="code code-section"><code class="language-javascript">model.destroy(); // triggers before:destroy, and destroy events</code></pre>
+<h5 id="methods_get" class="title-headline">#get</h5>
+<p>The get method is a parody to the DataDirective's get method, which, simply put, retrieves the value that is associated with that key on the DataDirective's "current" object.</p>
+<p>In order to retrieve data that was set on the model, simply call get and pass in a key.</p>
+<pre class="code code-section"><code class="language-javascript">model.get('answer_to_life'); // 42</code></pre>
+<h5 id="methods_has" class="title-headline">#has</h5>
+<p>The has method is a parody to the DataDirective's has method, which, simply put, checks whether or not the DataDirective has a particular property. The data directive defines having a particular property as being not being undefined. The key may still exist on the "current" object but it may be set to undefined.</p>
+<p>To check whether or not there is data associated at that particular key, simply pass the key to the has method.</p>
+<pre class="code code-section"><code class="language-javascript">model.has('answer_to_life'); // true</code></pre>
+<h5 id="methods_reset" class="title-headline">#reset</h5>
+<p>Models can be reset to their default state by simply calling reset without any arguments.</p>
+<pre class="code code-section"><code class="language-javascript">model.reset();</code></pre>
+<p>To reset a model to it's default state with some modifications, simply pass those modifications in with reset.</p>
+<pre class="code code-section"><code class="language-javascript">model.reset({
+    also: 'this'
+});</code></pre>
+<h5 id="methods_set" class="title-headline">#set</h5>
+<p>Models have data associated with them and that data can be updated with the set method. If if the data changes, as it gets extended, then it will trigger events with the "change:" prefix after all of the changes in that method call have been made.</p>
+<pre class="code code-section"><code class="language-javascript">model.set({
+    theyre: "everywhere"
+}); // triggers "change:theyre"
+model.set({
+    theyre: "everywhere",
+    here: "we",
+    go: "again"
+}); // triggers "change:here" and "change:go"</code></pre>
+<h5 id="methods_toJSON" class="title-headline">#toJSON</h5>
+<p>Models should generally be able to be turned into strings, and recreated from those same objects, so that they can be serialized and sent across networks. The method toJSON is called automatically by browsers whenever a model is passed into a JSON.stringify call so that the stringify function can turn that javascript literal into a string.</p>
+<pre class="code code-section"><code class="language-javascript">model.set({
+    imma: "string"
+});
+model.toJSON(); // {"imma":"string"}</code></pre>
+<h5 id="methods_toString" class="title-headline">#toString</h5>
+<p>At the same time, that toJSON call sometimes needs to be turned into a string by the Model itself. This is where toString generally comes into play. It wraps the output of a toJSON call and stringifies the result.</p>
+<pre class="code code-section"><code class="language-javascript">model.set({
+    imma: "string"
+});
+model.toString(); // '{"imma":"string"}'</code></pre>
+<h5 id="methods_unset" class="title-headline">#unset</h5>
+<p>While it is important to be able to hold data against a model, it is equally important to be able to remove that data from said model. Unset allows you to do just that. Simply pass a string into the method to remove any data associated at that key.</p>
+<pre class="code code-section"><code class="language-javascript">model.set({
+    imma: "string"
+});
+model.get('imma'); // "string"
+model.unset('imma'); // true
+model.get('imma'); // undefined</code></pre>

@@ -1,7 +1,7 @@
 this.Odette = function (global, WHERE, version, fn) {
     'use strict';
     var UNDEFINED, topmostDoc, LENGTH = 'length',
-        PARENT = 'parent',
+        PARENT = 'global',
         PROTOTYPE = 'prototype',
         TOUCH_TOP = 'touchTop',
         TOP_ACCESS = 'topAccess',
@@ -39,7 +39,6 @@ this.Odette = function (global, WHERE, version, fn) {
     function Application(name, parent) {
         this.version = name;
         this.scoped = BOOLEAN_TRUE;
-        this.global = BOOLEAN_FALSE;
         this.missedDefinitions = [];
         return this;
     }
@@ -62,7 +61,7 @@ this.Odette = function (global, WHERE, version, fn) {
         var app = this,
             i = 0,
             extendor = {},
-            parent = app.parent;
+            parent = app[PARENT];
         for (; i < list[LENGTH]; i++) {
             extendor[list[i]] = makeParody(parent, parent[list[i]]);
         }

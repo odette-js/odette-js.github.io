@@ -128,9 +128,9 @@ pre.code-section {
     }
 }
 .card .card-content.code-step {
-    padding: 1.333rem 1.333rem 0.333rem;
+    padding: 0.333rem 1.333rem;
     p {
-        margin-bottom: 1rem;
+        margin: 1rem 0;
     }
 }
 
@@ -152,6 +152,9 @@ pre.code-section {
     @extend %clearfix;
 }
 .list {
+    &.nested-list {
+        padding-left: 2rem;
+    }
     @extend %clearfix;
     // overflow: hidden;
     .list-item {
@@ -231,8 +234,8 @@ pre.code-section {
         }
     }
     .list-item {
-        height: 3rem;
-        line-height: 3rem;
+        height: 2.5rem;
+        line-height: 2.5rem;
         padding: 0;
         transition: background-color 250ms;
         a {
@@ -332,13 +335,14 @@ footer.page-footer {
         height: 8rem;
         line-height: 8rem;
         text-align: center;
+        color: rgba(255, 255, 255, 1);
         .col {
             height: 4rem;
             line-height: 4rem;
         }
         svg {
             height: 0.8rem;
-            fill: rgba(255, 255, 255, 0.8);
+            fill: rgba(255, 255, 255, 1);
             width: auto;
         }
         @media #{$medium-and-up} {

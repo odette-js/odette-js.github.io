@@ -2,6 +2,7 @@ app.scope(function (app) {
     var _ = app._,
         factories = _.factories,
         posit = _.posit,
+        PROMISE = 'Promise',
         ERROR = 'error',
         STATUS = 'status',
         FAILURE = 'failure',
@@ -26,9 +27,11 @@ app.scope(function (app) {
                 if (evnt === 'progress') {
                     req['on' + evnt] = function (e) {
                         prog++;
-                        ajax.executeHandlers(evnt, {
+                        ajax.dispatchEvent('progress', {
                             percent: (e.loaded / e.total) || (prog / (prog + 1)),
                             counter: prog
+                        }, {
+                            originalEvent: e
                         });
                     };
                 } else {
@@ -74,8 +77,7 @@ app.scope(function (app) {
          * @augments Model
          * @classdesc XHR object wrapper Triggers events based on xhr state changes and abstracts many anomalies that have to do with IE
          */
-        Promise = factories.Promise,
-        Ajax = factories.Ajax = Promise.extend('Ajax', {
+        Ajax = factories.Ajax = factories.Promise.extend('Ajax', {
             /**
              * @func
              * @name Ajax#constructor
@@ -110,16 +112,16 @@ app.scope(function (app) {
                 str.async = BOOLEAN_TRUE;
                 str.type = (str.type || GET).toUpperCase();
                 str.method = method;
-                Promise[CONSTRUCTOR].call(ajax);
+                factories.Promise[CONSTRUCTOR].call(ajax);
                 ajax.on('change:url', alterurlHandler);
                 extend(ajax, secondary);
                 ajax.requestObject = xhrReq;
                 ajax.set(str);
                 return ajax;
             },
-            // status: function (code, handler) {
-            //     return this.handle(STATUS + COLON + code, handler);
-            // },
+            status: function (code, handler) {
+                return this.handle(STATUS + COLON + code, handler);
+            },
             setHeaders: function (headers) {
                 var ajax = this,
                     xhrReq = ajax.requestObject;
@@ -148,6 +150,7 @@ app.scope(function (app) {
              */
             auxiliaryStates: function () {
                 return {
+                    'status:0': FAILURE,
                     'status:200': SUCCESS,
                     'status:202': SUCCESS,
                     'status:205': SUCCESS,
@@ -167,9 +170,7 @@ app.scope(function (app) {
                     abort: FAILURE
                 };
             },
-            parse: function (rawData) {
-                return parse(rawData);
-            },
+            parse: parse,
             attachResponseHandler: function () {
                 var ajax = this,
                     xhrReqObj = ajax.requestObject,
@@ -184,7 +185,7 @@ app.scope(function (app) {
                         readystate = xhrReqObj[READY_STATE];
                         rawData = xhrReqObj.responseText;
                         ajax.currentEvent = evnt;
-                        ajax.set('readystate', readystate);
+                        ajax[READY_STATE] = readystate;
                         if (method === 'onload' || (method === 'onreadystatechange' && readystate === 4)) {
                             ajax.set(STATUS, status);
                             allStates = result(ajax, 'allStates');

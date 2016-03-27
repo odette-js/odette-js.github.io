@@ -3,6 +3,7 @@ layout: post
 title:  "Collection"
 date:   2016-03-20 12:35:34 -0500
 categories: API
+author: Michael McLaughlin
 permalink: /api/v0/collection
 ---
 

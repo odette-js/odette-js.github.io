@@ -61,7 +61,7 @@ app.scope(function (app) {
                 }) && (isString(lastkey) ? UNDEFINED : current[lastkey]);
             },
             has: function (key) {
-                return this[CURRENT][key] != NULL;
+                return this[CURRENT][key] !== UNDEFINED;
             },
             each: function (fn) {
                 return each(this[CURRENT], fn, this);

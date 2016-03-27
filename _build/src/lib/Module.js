@@ -3,28 +3,28 @@ app.scope(function (app) {
         factories = _.factories,
         Model = factories.Model,
         Collection = factories.Collection,
-        _EXTRA_MODULE_ARGS = 'extraModuleArguments',
         MODULES = 'Modules',
+        STARTED = START + 'ed',
         startableMethods = {
             start: function (evnt) {
                 var startable = this;
-                if (!startable.started) {
-                    startable.started = BOOLEAN_TRUE;
+                if (!startable.is(STARTED)) {
+                    startable.mark(STARTED);
                     startable[DISPATCH_EVENT](START, evnt);
                 }
                 return startable;
             },
             stop: function (evnt) {
                 var startable = this;
-                if (startable.started) {
-                    startable.started = BOOLEAN_FALSE;
+                if (startable.is(STARTED)) {
+                    startable.unmark(STARTED);
                     startable[DISPATCH_EVENT](STOP, evnt);
                 }
                 return startable;
             },
             toggle: function (evnt) {
                 var startable = this;
-                if (startable.started) {
+                if (startable.is(STARTED)) {
                     startable[STOP](evnt);
                 } else {
                     startable[START](evnt);
@@ -33,7 +33,7 @@ app.scope(function (app) {
             },
             restart: function (evnt) {
                 var startable = this;
-                if (startable.started) {
+                if (startable.is(STARTED)) {
                     startable[STOP](evnt);
                 }
                 startable[START](evnt);
@@ -42,23 +42,36 @@ app.scope(function (app) {
         },
         Startable = factories.Startable = factories.Model.extend('Startable', startableMethods),
         doStart = function (e) {
-            if (this.get('startWithParent')) {
+            if (this.startWithParent) {
                 this[START](e);
             }
         },
         doStop = function (e) {
-            if (this.get('stopWithParent')) {
+            if (this.stopWithParent) {
                 this[STOP](e);
             }
         },
-        moduleMethods = extend({}, factories.Events[CONSTRUCTOR][PROTOTYPE], startableMethods, {
+        createArguments = function (module, args) {
+            return [module].concat(module.application.createArguments(), args || []);
+        },
+        checks = function (app, list) {
+            var exports = [];
+            duff(list, function (path) {
+                var module = app.module(path);
+                if (module.is('initialized')) {
+                    exports.push(module.exports);
+                }
+            });
+            return exports[LENGTH] === list[LENGTH] ? exports : BOOLEAN_FALSE;
+        },
+        moduleMethods = {
             module: function (name_, windo, fn) {
-                var parentModulesDirective, modules, attrs, parentIsModule, nametree, parent = this,
+                var list, globalname, arg1, arg2, parentModulesDirective, modules, attrs, parentIsModule, nametree, parent = this,
                     originalParent = parent,
                     name = name_,
-                    globalname = name,
+                    // globalname = name,
                     namespace = name.split(PERIOD),
-                    module = parent.directive(MODULES).get(name_);
+                    module = parent.directive(CHILDREN).get(name_);
                 if (module) {
                     // hey, i found it. we're done here
                     parent = module.parent;
@@ -67,143 +80,122 @@ app.scope(function (app) {
                     }
                     namespace = [module.id];
                 } else {
-                    // crap, now i have to make the chain
+                    // now i have to make the chain
                     while (namespace.length > 1) {
                         parent = parent.module(namespace[0]);
                         namespace.shift();
                     }
                 }
-                parentModulesDirective = parent.directive(MODULES);
+                parentModulesDirective = parent.directive(CHILDREN);
                 name = namespace.join(PERIOD);
                 module = parentModulesDirective.get(ID, name);
                 if (!module) {
-                    parentIsModule = _.isInstance(parent, Module);
-                    if (parentIsModule) {
-                        namespace.unshift(globalname);
-                    }
-                    namespace = namespace.join(PERIOD);
-                    module = Module({
-                        id: name,
-                        globalname: namespace
-                    }, {
+                    list = parent.globalname ? parent.globalname.split('.') : [];
+                    list.push(name);
+                    globalname = list.join('.');
+                    arg2 = extend(result(parent, 'childOptions') || {}, {
                         application: app,
-                        parent: parent
+                        parent: parent,
+                        id: name,
+                        globalname: globalname
                     });
-                    if (module.topLevel()) {
+                    if (parent === app) {
+                        module = Module({}, arg2);
                         parentModulesDirective.add(module);
                     } else {
-                        parent.add(module);
+                        module = parent.add({}, arg2)[0];
                     }
                     parentModulesDirective.register(ID, name, module);
-                    app[MODULES].register(ID, globalname, module);
+                    app[CHILDREN].register(ID, globalname, module);
                 }
                 if (isWindow(windo) || isFunction(windo) || isFunction(fn)) {
-                    module.mark('initialized');
+                    if (module.mark('initialized')) {
+                        module.exports = {};
+                    }
                     module.run(windo, fn);
+                    module.bubble('initialized:submodule');
                 }
                 return module;
             },
             run: function (windo, fn_) {
-                var module = this;
-                var fn = isFunction(windo) ? windo : fn_;
-                var args = isWindow(windo) ? [windo.DOMA] : [];
+                var module = this,
+                    fn = isFunction(windo) ? windo : fn_,
+                    args = isWindow(windo) ? [windo.DOMA] : [];
                 if (isFunction(fn)) {
-                    fn.apply(module, module.createArguments(args));
+                    if (module.application) {
+                        fn.apply(module, createArguments(module, args));
+                    } else {
+                        fn.apply(module, module.createArguments(args));
+                    }
                 }
                 return module;
             },
-            parentEvents: function () {
-                return {
-                    start: doStart,
-                    stop: doStop
-                };
-            },
-            exports: function (obj) {
-                extend(BOOLEAN_TRUE, this.get('exports'), obj);
-                return this;
-            },
-            createArguments: function (args) {
-                return [this].concat(this.application.createArguments(), args || []);
+            export: function (one, two) {
+                var module = this;
+                intendedObject(one, two, function (key, value) {
+                    module.exports[key] = value;
+                });
+                return module;
             },
             constructor: function (attrs, opts) {
                 var module = this;
-                module.application = opts.application;
-                module.handlers = Collection();
-                Model[CONSTRUCTOR].apply(this, arguments);
+                module.startWithParent = BOOLEAN_TRUE;
+                module.stopWithParent = BOOLEAN_TRUE;
+                module.exports = {};
+                Model[CONSTRUCTOR].apply(module, arguments);
+                module.listenTo(module.parent, {
+                    start: doStart,
+                    stop: doStop
+                });
                 return module;
             },
-            defaults: function () {
-                return {
-                    startWithParent: BOOLEAN_TRUE,
-                    stopWithParent: BOOLEAN_TRUE,
-                    exports: {}
-                };
-            },
             topLevel: function () {
-                return this.application === this[PARENT];
+                return !this.application || this.application === this[PARENT];
             },
-            childOptions: function () {
-                return {
-                    application: this.application,
-                    parent: this
-                };
+            require: function (modulename, handler) {
+                var module, list, mapppedArguments, app;
+                if (!isFunction(handler)) {
+                    module = this.module(modulename);
+                    return module.is('initialized') ? module.exports : exception({
+                        message: 'that module has not been initialized yet'
+                    });
+                } else {
+                    list = gapSplit(modulename);
+                    if (!isArray(list)) {
+                        return app;
+                    }
+                    list = list.slice(0);
+                    if ((mappedArguments = checks(app, list))) {
+                        handler.apply(app, mappedArguments);
+                    } else {
+                        app.on('initialized:submodule', function () {
+                            if ((mappedArguments = checks(app, list))) {
+                                handler.apply(app, mappedArguments);
+                                app.off();
+                            }
+                        });
+                    }
+                    return app;
+                }
             }
-        }),
+        },
+        extraModuleArguments = [],
         Module = factories.Module = factories.Model.extend('Module', moduleMethods),
-        appextendresult = app.extend(extend({}, moduleMethods, {
-            extraModuleArguments: [],
-            /**
-             * @func
-             * @name Specless#baseModuleArguments
-             * @returns {Array} list of base arguments to apply to submodules
-             */
-            baseModuleArguments: function () {
-                var app = this,
-                    _ = app._;
-                return [app, _, _ && _.factories];
-            },
-            /**
-             * @func
-             * @name Specless#addModuleArguments
-             * @param {Array} arr - list of arguments that will be added to the extraModule args list
-             * @returns {Specless} instance
-             */
+        baseModuleArguments = function (app) {
+            var _ = app._;
+            return [app, _, _ && _.factories];
+        },
+        appextendresult = app.extend(extend({}, factories.Events[CONSTRUCTOR][PROTOTYPE], startableMethods, moduleMethods, {
             addModuleArguments: function (arr) {
-                var app = this;
-                duff(arr, function (item) {
-                    _.add(app[_EXTRA_MODULE_ARGS], item);
-                });
-                return app;
+                _.addAll(extraModuleArguments, arr);
+                return this;
             },
-            /**
-             * @func
-             * @name Specless#removeModuleArguments
-             * @param {Array} arr - list of objects or functions that will be removed from the extraModuleArgs
-             * @returns {Specless} instance
-             */
             removeModuleArguments: function (arr) {
-                var app = this;
-                duff(arr, function (item) {
-                    _.remove(app[_EXTRA_MODULE_ARGS], item);
-                });
-                return app;
+                _.removeAll(extraModuleArguments, arr);
+                return this;
             },
-            /**
-             * @func
-             * @name Specless#createArguments
-             * @returns {Object[]}
-             */
             createArguments: function (args) {
-                return this.baseModuleArguments().concat(this[_EXTRA_MODULE_ARGS], args || []);
-            },
-            require: function (modulename) {
-                var module = this.module(modulename);
-                return module.is('initialized') ? module.get('exports') : exception({
-                    message: 'that module has not been initialized yet'
-                });
+                return baseModuleArguments(this).concat(extraModuleArguments, args || []);
             }
         }));
-    app.defineDirective(MODULES, function () {
-        return Collection();
-    });
 });

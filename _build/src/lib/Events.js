@@ -185,10 +185,6 @@ app.scope(function (app) {
                 model.initialize(opts);
                 return model;
             },
-            // destroy: function () {
-            //     this[STOP_LISTENING]();
-            //     return this;
-            // },
             /**
              * @description attaches an event handler to the events object, and takes it off as soon as it runs once
              * @func

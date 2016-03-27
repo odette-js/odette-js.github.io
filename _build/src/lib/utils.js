@@ -1161,7 +1161,7 @@ var factories = {},
             err = e;
             returnValue = errthat ? errthat(e) : returnValue;
         } finally {
-            returnValue = finalfunction ? finalfunction(returnValue) : returnValue;
+            returnValue = finalfunction ? finalfunction(err, returnValue) : returnValue;
         }
         return returnValue;
     },

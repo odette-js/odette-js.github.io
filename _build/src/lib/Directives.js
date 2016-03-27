@@ -88,13 +88,19 @@ app.scope(function (app) {
                 return this[STATUSES][status] !== UNDEFINED;
             },
             mark: function (status) {
+                var previous = this[STATUSES][status];
                 this[STATUSES][status] = BOOLEAN_TRUE;
+                return previous !== BOOLEAN_TRUE;
             },
             unmark: function (status) {
+                var previous = this[STATUSES][status];
                 this[STATUSES][status] = BOOLEAN_FALSE;
+                return previous !== BOOLEAN_FALSE;
             },
             remark: function (status, direction) {
-                this[STATUSES][status] = direction === UNDEFINED ? !this[STATUSES][status] : !!direction;
+                var previous = this[STATUSES][status];
+                var result = this[STATUSES][status] = direction === UNDEFINED ? !this[STATUSES][status] : !!direction;
+                return previous !== result;
             },
             is: function (status) {
                 return !!this[STATUSES][status];
