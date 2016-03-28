@@ -7,7 +7,7 @@ application.scope().run(function (app, _, factories) {
                 count += (expects === this);
             };
         },
-        pagePromise = _.get('/test/framed.html');
+        pagePromise = factories.Ajax.get('/test/framed.html');
     _.describe('Buster', function () {
         _.beforeEach(function () {
             count = 0;

@@ -4,6 +4,7 @@ app.scope(function (app) {
         FAILURE = 'failure',
         SUCCESS = 'success',
         STATE = 'state',
+        ERROR = 'error',
         ALWAYS = 'always',
         FULFILLED = 'fulfilled',
         RESOLVED = 'resolved',
@@ -113,7 +114,7 @@ app.scope(function (app) {
                 return promise;
             },
             isChildType: function (promise) {
-                return promise[SUCCESS] && promise[FAILURE] && promise[ALWAYS];
+                return promise[SUCCESS] && promise[FAILURE] && promise[ALWAYS] && promise[ERROR];
             },
             auxiliaryStates: function () {
                 return BOOLEAN_FALSE;

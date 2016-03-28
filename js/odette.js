@@ -3633,6 +3633,20 @@ app.scope(function (app) {
                 childsEventDirective[_DELEGATED_CHILD_EVENTS] = UNDEFINED;
             }
         },
+        SYNCER = 'Syncer',
+        Syncer = factories[SYNCER] = factories.Events.extend(SYNCER, {
+            // base method for xhr things
+            sync: function () {},
+            // delete request. request that this model be deleted by the server
+            destroy: function () {},
+            // get request. this model needs an update
+            fetch: function () {},
+            // put - second+ time
+            update: function () {},
+            // post - first time
+            create: function () {}
+        }),
+        SyncerDirective = app.defineDirective(SYNCER, Syncer[CONSTRUCTOR]),
         Children = factories[CHILDREN] = factories.Collection.extend(CHILDREN, {
             constructor: function (instance) {
                 this[TARGET] = instance;
@@ -3730,7 +3744,10 @@ app.scope(function (app) {
                 }
                 model.add(newChildren);
                 return model;
-            }
+            },
+            // set attrs, sync with update or create
+            save: function () {},
+            fetch: function () {}
         }),
         Parent = factories.Parent = factories.Events.extend('Parent', {
             Child: BOOLEAN_TRUE,
@@ -4548,6 +4565,7 @@ app.scope(function (app) {
         FAILURE = 'failure',
         SUCCESS = 'success',
         STATE = 'state',
+        ERROR = 'error',
         ALWAYS = 'always',
         FULFILLED = 'fulfilled',
         RESOLVED = 'resolved',
@@ -4657,7 +4675,7 @@ app.scope(function (app) {
                 return promise;
             },
             isChildType: function (promise) {
-                return promise[SUCCESS] && promise[FAILURE] && promise[ALWAYS];
+                return promise[SUCCESS] && promise[FAILURE] && promise[ALWAYS] && promise[ERROR];
             },
             auxiliaryStates: function () {
                 return BOOLEAN_FALSE;
@@ -5046,7 +5064,7 @@ app.scope(function (app) {
                 return ajax;
             }
         });
-    _.exports(_.foldl(validTypes, function (memo, key_) {
+    _.extend(Ajax, _.foldl(validTypes, function (memo, key_) {
         var key = key_;
         key = key.toLowerCase();
         memo[key] = function (url, options) {
@@ -5065,6 +5083,7 @@ app.scope(function (app) {
         Collection = factories.Collection,
         MODULES = 'Modules',
         STARTED = START + 'ed',
+        INITIALIZED = 'initialized',
         startableMethods = {
             start: function (evnt) {
                 var startable = this;
@@ -5118,20 +5137,25 @@ app.scope(function (app) {
             var exports = [];
             duff(list, function (path) {
                 var module = app.module(path);
-                if (module.is('initialized')) {
+                if (module.is(INITIALIZED)) {
                     exports.push(module.exports);
                 }
             });
             return exports[LENGTH] === list[LENGTH] ? exports : BOOLEAN_FALSE;
         },
+        Promise = _.Promise,
         moduleMethods = {
             module: function (name_, windo, fn) {
-                var list, globalname, arg1, arg2, parentModulesDirective, modules, attrs, parentIsModule, nametree, parent = this,
+                var initResult, list, globalname, arg1, arg2, parentModulesDirective, modules, attrs, parentIsModule, nametree, parent = this,
                     originalParent = parent,
                     name = name_,
                     // globalname = name,
                     namespace = name.split(PERIOD),
-                    module = parent.directive(CHILDREN).get(name_);
+                    module = parent.directive(CHILDREN).get(name_),
+                    triggerBubble = function () {
+                        module.mark(INITIALIZED);
+                        module.bubble(INITIALIZED + ':submodule');
+                    };
                 if (module) {
                     // hey, i found it. we're done here
                     parent = module.parent;
@@ -5169,26 +5193,29 @@ app.scope(function (app) {
                     app[CHILDREN].register(ID, globalname, module);
                 }
                 if (isWindow(windo) || isFunction(windo) || isFunction(fn)) {
-                    if (module.mark('initialized')) {
-                        module.exports = {};
+                    module.exports = module.exports || {};
+                    initResult = module.run(windo, fn);
+                    // allows us to create dependency graphs
+                    if (initResult && isInstance(initResult, Promise)) {
+                        initResult.success(triggerBubble);
+                    } else {
+                        triggerBubble();
                     }
-                    module.run(windo, fn);
-                    module.bubble('initialized:submodule');
                 }
                 return module;
             },
             run: function (windo, fn_) {
-                var module = this,
+                var result, module = this,
                     fn = isFunction(windo) ? windo : fn_,
                     args = isWindow(windo) ? [windo.DOMA] : [];
                 if (isFunction(fn)) {
                     if (module.application) {
-                        fn.apply(module, createArguments(module, args));
+                        result = fn.apply(module, createArguments(module, args));
                     } else {
-                        fn.apply(module, module.createArguments(args));
+                        result = fn.apply(module, module.createArguments(args));
                     }
                 }
-                return module;
+                return result === UNDEFINED ? module : result;
             },
             export: function (one, two) {
                 var module = this;
@@ -5213,29 +5240,31 @@ app.scope(function (app) {
                 return !this.application || this.application === this[PARENT];
             },
             require: function (modulename, handler) {
-                var module, list, mapppedArguments, app;
+                var promise, module, list, mapppedArguments, app = this;
                 if (!isFunction(handler)) {
-                    module = this.module(modulename);
-                    return module.is('initialized') ? module.exports : exception({
-                        message: 'that module has not been initialized yet'
+                    module = app.module(modulename);
+                    return module.is(INITIALIZED) ? module.exports : exception({
+                        message: 'that module has not been ' + INITIALIZED + ' yet'
                     });
                 } else {
+                    promise = _.Promise();
                     list = gapSplit(modulename);
-                    if (!isArray(list)) {
-                        return app;
+                    if (!isArray(list) || !list[LENGTH]) {
+                        return promise;
                     }
                     list = list.slice(0);
+                    promise.success(bind(handler, app));
                     if ((mappedArguments = checks(app, list))) {
-                        handler.apply(app, mappedArguments);
+                        promise.fulfill(mapppedArguments);
                     } else {
-                        app.on('initialized:submodule', function () {
+                        app.on(INITIALIZED + ':submodule', function () {
                             if ((mappedArguments = checks(app, list))) {
-                                handler.apply(app, mappedArguments);
                                 app.off();
+                                promise.fulfill(mapppedArguments);
                             }
                         });
                     }
-                    return app;
+                    return promise;
                 }
             }
         },
@@ -5371,9 +5400,7 @@ app.scope(function (app) {
             source = "var __t,__HTML__='',__j=Array.prototype.join," + "print=function(){__HTML__+=__j.call(arguments,'');};\n" + source + 'return __HTML__;\n';
             var render = _.wraptry(function () {
                 return new Function.constructor(settings.variable || '_', source);
-            }, function (e) {
-                console.error(e);
-            });
+            }, console.error);
             var template = function (data) {
                 return render.call(data || {}, _);
             };
@@ -5605,18 +5632,18 @@ app.scope(function (app) {
         // returns the flow of the element passed on relative to the element's bounding window
         flow = function (el, ctx) {
             var clientRect = el.getBoundingClientRect(),
-                computedStyle = getComputed(el, ctx),
+                computedStyle = getComputed(el, ctx.element()),
                 marginTop = unitRemoval(computedStyle.marginTop),
                 marginLeft = unitRemoval(computedStyle.marginLeft),
                 marginRight = unitRemoval(computedStyle.marginRight),
                 marginBottom = unitRemoval(computedStyle.marginBottom);
             return {
-                height: clientRect[HEIGHT],
-                width: clientRect[WIDTH],
+                height: clientRect[HEIGHT] + marginTop + marginBottom,
+                width: clientRect[WIDTH] + marginLeft + marginRight,
                 top: clientRect[TOP] - marginTop,
                 left: clientRect[LEFT] - marginLeft,
-                right: clientRect[LEFT] - marginLeft + clientRect[WIDTH] - marginRight,
-                bottom: clientRect[TOP] - marginTop + clientRect[HEIGHT] - marginBottom
+                right: clientRect[LEFT] + clientRect[WIDTH] + marginRight,
+                bottom: clientRect[TOP] + clientRect[HEIGHT] + marginBottom
             };
         },
         numberBasedCss = {
@@ -5685,6 +5712,8 @@ app.scope(function (app) {
                 } else {
                     styleName = unCamelCase(n);
                 }
+                unCamelCase(styleName);
+                camelCase(styleName);
                 deprefixed = styleName;
                 for (j = 0; j < len && styleName[j] && !found; j++) {
                     currentCheck += styleName[j];
@@ -6475,9 +6504,11 @@ app.scope(function (app) {
                 return BOOLEAN_FALSE;
             }
             cached = attributeApi.read(element, STYLE);
-            value = convertStyleValue(key, value);
+            value = value !== '' ? convertStyleValue(key, value) : value;
             if (!important) {
-                element[STYLE][key] = value;
+                duff(prefixedStyles[camelCase(key)], function (prefix) {
+                    element[STYLE][prefix + unCamelCase(key)] = value;
+                });
             } else {
                 // write with importance
                 attributeApi.write(element, STYLE, (newStyles = _.foldl(cached.split(';'), function (memo, item_, index, items) {
@@ -6637,12 +6668,12 @@ app.scope(function (app) {
         domContextFind = function (fn, context) {
             return !context.find(fn);
         },
-        makeValueTarget = function (target, passed_, api, domHappy) {
+        makeValueTarget = function (target, passed_, api, domaHappy) {
             var passed = passed_ || target;
             return _.foldl(gapSplit('add remove toggle change has set'), function (memo, method_) {
                 var method = method_ + 'Value';
                 memo[method_ + upCase(target)] = function (one, two) {
-                    return this[method](passed, one, two, api, domHappy, target);
+                    return this[method](passed, one, two, api, domaHappy, target);
                 };
                 return memo;
             }, {});
@@ -6848,16 +6879,18 @@ app.scope(function (app) {
             return $;
         },
         styleManipulator = function (one, two) {
-            var manager, styles;
+            var unCameled, styles, manager = this;
+            if (!manager.length()) {
+                return manager;
+            }
             if (isString(one) && two === UNDEFINED) {
-                return (manager = this.index(0)) && (styles = manager.getStyle()) && (prefix = _.find(prefixes[camelCase(one)], function (prefix) {
+                unCameled = unCamelCase(one);
+                return (manager = manager.index(0)) && (styles = manager.getStyle()) && ((prefix = _.find(prefixedStyles[camelCase(one)], function (prefix) {
                     return styles[prefix + unCameled] !== UNDEFINED;
-                })) && styles[prefix + unCameled];
+                })) ? styles[prefix + unCameled] : styles[prefix + unCameled]);
             } else {
-                if (this.length()) {
-                    this.each(unmarkChange(intendedIteration(one, two, applyStyle)));
-                }
-                return this;
+                manager.each(unmarkChange(intendedIteration(one, two, applyStyle)));
+                return manager;
             }
         },
         getValueCurried = getValue(returnsFirst),
@@ -6873,25 +6906,39 @@ app.scope(function (app) {
         iframeChangeHandler = function () {
             testIframe(this);
         },
-        managerHorizontalTraverser = function (property, _idxChange_) {
-            return function (_idxChange) {
-                var parent, children, currentIndex, startIndex, target, idxChange = _idxChange || _idxChange_,
-                    manager = this,
-                    element = manager.element();
-                if (property && element[property]) {
-                    return element[property];
+        childByTraversal = function (manager, parent, element, idxChange_, ask, isString) {
+            var target, found,
+                idxChange = idxChange_,
+                children = collectChildren(parent),
+                startIndex = indexOf(children, element);
+            if (isString) {
+                idxChange = idxChange || 1;
+                target = element;
+                while (target && !found) {
+                    target = children[(startIndex = (startIndex += idxChange))];
+                    found = matches(target, ask);
                 }
-                if (!element[PARENT_NODE]) {
+            } else {
+                target = element;
+                target = children[startIndex];
+                target = children[startIndex + idxChange];
+            }
+            return target && manager.owner.returnsManager(target);
+        },
+        managerHorizontalTraverser = function (method, property, _idxChange_) {
+            return function (_idxChange) {
+                var stringResult, direction = _idxChange_,
+                    parent, children, currentIndex, startIndex, target, idxChange = _idxChange || _idxChange_,
+                    manager = this,
+                    element = manager.element(),
+                    traversed = element[property];
+                if (!(stringResult = isString(idxChange)) && property && !traversed) {
+                    return manager.owner.returnsManager(traversed);
+                }
+                if (!(parent = element[PARENT_NODE]) && !traversed) {
                     return;
                 }
-                parent = element[PARENT_NODE];
-                startIndex = indexOf(parent[CHILDREN], element);
-                children = collectChildren(parent[CHILDREN]);
-                target = children[(currentIndex = startIndex + idxChange)];
-                while (target && target[NODE_TYPE] === 3) {
-                    target = children[currentIndex += idxChange];
-                }
-                return target && manager.owner.returnsManager(target);
+                return childByTraversal(manager, parent, element, direction, idxChange, stringResult);
             };
         },
         collectCustom = function (manager, markedListener) {
@@ -7279,6 +7326,23 @@ app.scope(function (app) {
                 found = attrs[where] = attrs[where] || StringManager();
             return found;
         },
+        dimensionFinder = function (element, doc, win) {
+            return function (num) {
+                var ret, manager = this[INDEX](num);
+                if (manager.isElement) {
+                    ret = clientRect(manager.element())[element];
+                } else {
+                    if (manager.isDocument && manager.element()[BODY]) {
+                        ret = manager.element()[BODY][doc];
+                    } else {
+                        if (manager.isWindow) {
+                            ret = manager.element()[win];
+                        }
+                    }
+                }
+                return ret || 0;
+            };
+        },
         DomManager = factories.DomManager = factories.Events.extend(DOM_MANAGER_STRING, extend(classApi, {
             'directive:creation:EventManager': DomEventsDirective,
             isValidDomManager: BOOLEAN_TRUE,
@@ -7286,8 +7350,7 @@ app.scope(function (app) {
             registeredElementName: function () {
                 return this.owner.registeredElementName(this.registeredAs);
             },
-            getValue: getValueCurried,
-            setValue: setValueCurried,
+            // getValue: getValueCurried,
             hasValue: hasValue(domContextFind),
             addValue: addValue(domIterates),
             removeValue: removeValue(domIterates),
@@ -7305,26 +7368,21 @@ app.scope(function (app) {
             data: dataApi(domIterates),
             prop: propApi(domIterates),
             html: innardManipulator(INNER_HTML),
-            outerHTML: innardManipulator(OUTER_HTML),
+            // outerHTML: innardManipulator(OUTER_HTML),
             text: innardManipulator(INNER_TEXT),
             style: styleManipulator,
             css: styleManipulator,
-            next: managerHorizontalTraverser('nextElementSibling', 1),
-            prev: managerHorizontalTraverser('previousElementSibling', -1),
-            skip: managerHorizontalTraverser(NULL, 0),
+            next: managerHorizontalTraverser('next', 'nextElementSibling', 1),
+            prev: managerHorizontalTraverser('prev', 'previousElementSibling', -1),
+            skip: managerHorizontalTraverser('skip', NULL, 0),
+            height: dimensionFinder(HEIGHT, 'scrollHeight', INNER_HEIGHT),
+            width: dimensionFinder(WIDTH, 'scrollWidth', INNER_WIDTH),
             siblings: function (filtr) {
                 var original = this,
                     filter = createDomFilter(filtr);
                 return original.parent().children(function (manager, index, list) {
                     return manager !== original && filter(manager, index, list);
                 });
-            },
-            render: function (string) {
-                var manager = this;
-                var formerChildren = manager.children(UNDEFINED, manager.owner.returnsManager(manager.owner.createDocumentFragment()));
-                console.log(formerChildren);
-                // var fragment = manager.owner.createDocumentFragment();
-                // var formerChildren =
             },
             constructor: function (el, hash, owner_) {
                 var owner = owner_,
@@ -7357,9 +7415,9 @@ app.scope(function (app) {
                 return manager;
             },
             clone: function () {
-                var clone, manager = this;
+                var manager = this;
                 if (!manager.isElement) {
-                    return;
+                    return {};
                 }
                 return makeBranch(manager.element()[OUTER_HTML], manager.owner);
             },
@@ -7481,7 +7539,7 @@ app.scope(function (app) {
                     return !!query(element, manager.element())[LENGTH];
                 }
                 if (element.isValidDOMA) {
-                    element = element.index(0);
+                    return !!element.find(manager.contains, manager);
                 }
                 target = manager.owner.returnsManager(element);
                 if (target.isDocument) {
@@ -7502,11 +7560,12 @@ app.scope(function (app) {
                     child = children && children.index(index) || NULL,
                     element = child && child.element() || NULL,
                     managerElement = manager && manager.element(),
+                    returns = fragmentManager.children(),
                     fragmentChildren = collectCustom(fragmentManager, BOOLEAN_TRUE),
                     detachNotify = dispatchDetached(fragmentChildren, owner),
                     returnValue = managerElement && managerElement.insertBefore(fragment, element),
                     notify = isAttached(managerElement, owner) && dispatchAttached(fragmentChildren, owner);
-                return returnValue;
+                return returns;
             },
             window: function () {
                 var manager = this;
@@ -7531,28 +7590,30 @@ app.scope(function (app) {
                 return address;
             },
             emit: function (message_, referrer_, handler) {
-                var message, windo = this.window(),
+                var message, post, windo = this.window(),
                     element = windo.element();
                 if (windo.is(ACCESSABLE)) {
                     message = parse(message_);
-                    handler({
-                        // this can be expanded a bit when you get some time
-                        srcElement: element,
-                        timeStamp: _.now(),
-                        data: function () {
-                            return message;
-                        }
-                    });
-                } else {
-                    wraptry(function () {
-                        // do not parse message so it can be sent as is
-                        if (!referrer_) {
-                            console.error('missing referrer: ' + windo.address);
-                        } else {
-                            element.postMessage(message_, referrer_);
-                        }
-                    }, console.error);
+                    if (handler) {
+                        handler({
+                            // this can be expanded a bit when you get some time
+                            srcElement: element,
+                            timeStamp: _.now(),
+                            data: function () {
+                                return message;
+                            }
+                        });
+                        return this;
+                    }
                 }
+                wraptry(function () {
+                    // do not parse message so it can be sent as is
+                    if (!referrer_) {
+                        console.error('missing referrer: ' + windo.address);
+                    } else {
+                        element.postMessage(message_, referrer_);
+                    }
+                }, console.error);
                 return this;
             },
             sameOrigin: function () {
@@ -7645,7 +7706,7 @@ app.scope(function (app) {
                     manager = this,
                     first = manager.element();
                 if (first && manager.isElement) {
-                    returnValue = getComputed(first, manager.owner);
+                    returnValue = getComputed(first, manager.owner.element());
                 }
                 return returnValue;
             },
@@ -7769,13 +7830,7 @@ app.scope(function (app) {
                 });
                 return obj;
             }
-        }, wrap({
-            id: BOOLEAN_FALSE,
-            src: BOOLEAN_FALSE,
-            checked: BOOLEAN_FALSE,
-            disabled: BOOLEAN_FALSE,
-            classes: 'className'
-        }, function (attr, api) {
+        }, wrap(directAttributes, function (attr, api) {
             if (!attr) {
                 attr = api;
             }
@@ -7834,23 +7889,6 @@ app.scope(function (app) {
         domFilter = function (items, filtr) {
             var filter = createDomFilter(filtr);
             return dataReconstructor(items, unwrapsOnLoop(filter));
-        },
-        dimensionFinder = function (element, doc, win) {
-            return function (num) {
-                var ret, manager = this[INDEX](num);
-                if (manager.isElement) {
-                    ret = clientRect(manager)[element];
-                } else {
-                    if (manager.isDocument && manager.element()[BODY]) {
-                        ret = manager.element()[BODY][doc];
-                    } else {
-                        if (manager.isWindow) {
-                            ret = manager.element()[win];
-                        }
-                    }
-                }
-                return ret || 0;
-            };
         },
         canBeProcessed = function (item) {
             return isWindow(item) || isElement(item) || isDocument(item) || isFragment(item);
@@ -8148,6 +8186,8 @@ app.scope(function (app) {
                 }
                 return that;
             },
+            getAttribute: getValueCurried,
+            setAttribute: setValueCurried,
             /**
              * @func
              * @name DOMA#append
@@ -8899,7 +8939,6 @@ app.scope(function (app) {
         },
         addRegion = function (key, selector) {
             var regionManagerDirective = this;
-            // var regionManagerDirective = this.directive(REGION_MANAGER);
             intendedObject(key, selector, function (key, selector) {
                 var region = regionManagerDirective.list.get(key);
                 if (!region) {
@@ -9219,7 +9258,6 @@ app.scope(function (app) {
         bufferedReset = function () {
             var cached = this.views;
             this.resetEls();
-            // this.resetViews();
             return cached;
         },
         bufferedElsReset = function () {
@@ -9248,11 +9286,10 @@ app.scope(function (app) {
     app.extend(foldl(gapSplit('add remove get'), function (memo, key) {
         memo[key + 'Region'] = directives.parody(REGION_MANAGER, key);
         return memo;
-    }, {}));
-    app.extend({
+    }, {
         addChildView: addChildView,
         removeChildView: removeChildView
-    });
+    }));
     app.directive(REGION_MANAGER);
 });
 app.scope(function (app) {

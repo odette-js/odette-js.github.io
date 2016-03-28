@@ -48,6 +48,20 @@ app.scope(function (app) {
                 childsEventDirective[_DELEGATED_CHILD_EVENTS] = UNDEFINED;
             }
         },
+        SYNCER = 'Syncer',
+        Syncer = factories[SYNCER] = factories.Events.extend(SYNCER, {
+            // base method for xhr things
+            sync: function () {},
+            // delete request. request that this model be deleted by the server
+            destroy: function () {},
+            // get request. this model needs an update
+            fetch: function () {},
+            // put - second+ time
+            update: function () {},
+            // post - first time
+            create: function () {}
+        }),
+        SyncerDirective = app.defineDirective(SYNCER, Syncer[CONSTRUCTOR]),
         Children = factories[CHILDREN] = factories.Collection.extend(CHILDREN, {
             constructor: function (instance) {
                 this[TARGET] = instance;
@@ -145,7 +159,10 @@ app.scope(function (app) {
                 }
                 model.add(newChildren);
                 return model;
-            }
+            },
+            // set attrs, sync with update or create
+            save: function () {},
+            fetch: function () {}
         }),
         Parent = factories.Parent = factories.Events.extend('Parent', {
             Child: BOOLEAN_TRUE,

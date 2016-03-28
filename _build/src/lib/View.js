@@ -24,7 +24,6 @@ app.scope(function (app) {
         },
         addRegion = function (key, selector) {
             var regionManagerDirective = this;
-            // var regionManagerDirective = this.directive(REGION_MANAGER);
             intendedObject(key, selector, function (key, selector) {
                 var region = regionManagerDirective.list.get(key);
                 if (!region) {
@@ -344,7 +343,6 @@ app.scope(function (app) {
         bufferedReset = function () {
             var cached = this.views;
             this.resetEls();
-            // this.resetViews();
             return cached;
         },
         bufferedElsReset = function () {
@@ -373,10 +371,9 @@ app.scope(function (app) {
     app.extend(foldl(gapSplit('add remove get'), function (memo, key) {
         memo[key + 'Region'] = directives.parody(REGION_MANAGER, key);
         return memo;
-    }, {}));
-    app.extend({
+    }, {
         addChildView: addChildView,
         removeChildView: removeChildView
-    });
+    }));
     app.directive(REGION_MANAGER);
 });

@@ -27,8 +27,6 @@ application.scope().run(function (app, _, factories) {
                     this.push(div);
                 }, 0, 5);
                 $con.append(divs);
-                // done();
-                // return divs;
             },
             $con = $.createElement('div').style({
                 height: '100%',

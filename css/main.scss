@@ -38,6 +38,65 @@ html, body {
 .bold {
     font-weight: bold;
 }
+.position-relative {
+    position: relative;
+}
+
+.odette-icon {
+    display: block;
+    font: normal normal normal 14px/1 FontAwesome;
+    font-size: inherit;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: inherit;
+    height: 2rem;
+    width: 2rem;
+    line-height: 2rem;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    transition: all 100ms;
+    &:hover {
+        transform: rotate(45deg);
+    }
+    &:before {
+        content: " ";
+        box-sizing: inherit;
+        display: block;
+        height: 100%;
+        width: 100%;
+        background-color: white;
+        position: absolute;
+        border-radius: 50%;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin: auto;
+    }
+    &:after {
+        content: " ";
+        box-sizing: inherit;
+        display: block;
+        border-radius: 50%;
+        height: 46%;
+        width: 46%;
+        border-radius: 10%;
+        background-color: inherit;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin: auto;
+    }
+}
+
 .notselectable {
     -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none;   /* Chrome/Safari/Opera */
@@ -150,6 +209,13 @@ pre.code-section {
 
 .clearfix {
     @extend %clearfix;
+}
+.nested-list-collapser {
+    overflow: hidden;
+    display: none;
+    &.collapser-ready {
+        display: block;
+    }
 }
 .list {
     &.nested-list {
@@ -359,6 +425,10 @@ footer.page-footer {
 }
 .hero {
     padding: 80px 0;
+}
+h1,h2,h3,h4,h5,h6 {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .hero [data-custom="text-reveal"] {
     font-size: 1.64rem;

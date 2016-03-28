@@ -8,118 +8,102 @@ permalink: /api/v0/view
 ---
 
 
-<ul class="list navigation-links">
-    <li class="left clear-left"><a href="#addChildView">addChildView</a></li>
-    <li class="left clear-left"><a href="#destroy">destroy</a></li>
-    <li class="left clear-left"><a href="#filter">filter</a></li>
-    <li class="left clear-left"><a href="#getRegion">getRegion</a></li>
-    <li class="left clear-left"><a href="#parentView">parentView</a></li>
-    <li class="left clear-left"><a href="#establishRegions">removeRegion</a></li>
-    <li class="left clear-left"><a href="#render">render</a></li>
-    <li class="left clear-left"><a href="#tagName">tagName</a></li>
-    <li class="left clear-left"><a href="#template">template</a></li>
-    <li class="left clear-left"><a href="#templateIsElement">templateIsElement</a></li>
+<ul class="list">
+    <li class="left clear-left">
+        <a href="#methods">Methods</a>
+        <ul class="list nested-list">
+            <li class="left clear-left"><a href="#methods_addChildView">addChildView</a></li>
+            <li class="left clear-left"><a href="#methods_destroy">destroy</a></li>
+            <li class="left clear-left"><a href="#methods_filter">filter</a></li>
+            <li class="left clear-left"><a href="#methods_getRegion">getRegion</a></li>
+            <li class="left clear-left"><a href="#methods_parentView">parentView</a></li>
+            <li class="left clear-left"><a href="#methods_establishRegions">removeRegion</a></li>
+            <li class="left clear-left"><a href="#methods_render">render</a></li>
+            <li class="left clear-left"><a href="#methods_tagName">tagName</a></li>
+            <li class="left clear-left"><a href="#methods_template">template</a></li>
+            <li class="left clear-left"><a href="#methods_templateIsElement">templateIsElement</a></li>
+        </ul>
+    </li>
+    <li class="left clear-left">
+        <a href="javascript:void 0;">Augments</a>
+        <ul class="list nested-list">
+            <li class="left clear-left"><a href="/api/v0/region">Region</a></li>
+            <li class="left clear-left"><a href="/api/v0/parent">Parent</a></li>
+            <li class="left clear-left"><a href="/api/v0/events">Events</a></li>
+            <li class="left clear-left"><a href="/api/v0/directive">Directive</a></li>
+            <li class="left clear-left"><a href="/api/v0/extendable">Extendable</a></li>
+        </ul>
+    </li>
 </ul>
+<h4 id="methods" class="title-headline">Methods</h4>
 <h5 id="addChildView" class="title-headline">#addChildView</h5>
-<div class="card">
-    <div class="card-content code-step">
-        <p>Consider the following template</p>
-        <pre class="code code-section"><code class="language-html">&lt;script type=&quot;x-odette/template&quot; id=&quot;head-body&quot;&gt;
+<p>Consider the following template</p>
+<pre class="code code-section"><code class="language-html">&lt;script type=&quot;x-odette/template&quot; id=&quot;head-body&quot;&gt;
     &lt;div class=&quot;head&quot;&gt;&lt;/div&gt;
     &lt;div class=&quot;body&quot;&gt;&lt;/div&gt;
 &lt;/script&gt;</code></pre>
-        <pre class="code code-section"><code class="language-javascript">var MyView = factories.View.extend({
+<pre class="code code-section"><code class="language-javascript">var MyView = factories.View.extend({
     regions: {
         head: '.head',
         body: '.body'
     }
 });</code></pre>
-        <p>After you have established where in the template the child views should be put, you can start adding child views.</p>
-        <pre class="code code-section"><code class="language-javascript">var myView = MyView();
+<p>After you have established where in the template the child views should be put, you can start adding child views.</p>
+<pre class="code code-section"><code class="language-javascript">var myView = MyView();
 var headView = factories.View();
 var bodyView = factories.View();
 myView.addChildView('head', headView);
 myView.addChildView('body', bodyView);</code></pre>
-        <p>The basic hierarchy is as follows: View > RegionManager > Region > View.</p>
-        <p>Adding and removing will call render on those regions, so it is generally good practice to use a structure like a List or Collection, or to simply use an array in order to add multiple at a time when possible.</p>
-    </div>
-</div>
+<p>The basic hierarchy is as follows: View > RegionManager > Region > View.</p>
+<p>Adding and removing will call render on those regions, so it is generally good practice to use a structure like a List or Collection, or to simply use an array in order to add multiple at a time when possible.</p>
 <h5 id="destroy" class="title-headline">#destroy</h5>
-<p>The destroy method marks first marks the view as being destroyed, then begins to destroy all of its child views, then it destroys the DOMA elements that it is housing, the element directive, the children directive, and the finally stops listening to other evented objects.</p>
-<div class="card">
-    <div class="card-content code-step">
-        <p>This is how you can invoke a destroy method on a view.</p>
-        <pre class="code code-section"><code class="language-javascript">myView.destroy(function () {
+<p>The destroy method marks first marks the view as being destroyed, then begins to destroy all of its child views, then it destroys the <a href="/api/v0/doma">DOMA</a> elements that it is housing, the element directive, the children directive, and the finally stops listening to other evented objects.</p>
+<p>This is how you can invoke a destroy method on a view.</p>
+<pre class="code code-section"><code class="language-javascript">myView.destroy(function () {
     // something async to run after the element has been destroyed (if iframe).
 });</code></pre>
-    </div>
-</div>
 <h5 id="filter" class="title-headline">#filter</h5>
 <p>Filters can be utilized to prevent a view from showing and attaching itself to its parent's element at when it (the view being filtered) is rendered.</p>
-<div class="card">
-    <div class="card-content code-step">
-        <p>Filters are always functions. A default filter looks like the following code.</p>
-        <pre class="code code-section"><code class="language-javascript">filter: function () {
+<p>Filters are always functions. A default filter looks like the following code.</p>
+<pre class="code code-section"><code class="language-javascript">filter: function () {
     return true;
 },</code></pre>
-        <p>Filters eventually boil down to: should I be rendered, or should I be skipped?</p>
-    </div>
-</div>
+<p>Filters eventually boil down to: should I be rendered, or should I be skipped?</p>
 <h5 id="getRegion" class="title-headline">#getRegion</h5>
 <p>In order to get an already added region object you can simply call getRegion on any view, or the application (scoped) itself, and pass it a key.</p>
-<div class="card">
-    <div class="card-content code-step">
-        <p>Regions must first be added to their view or scoped application in order to return something.</p>
-        <pre class="code code-section"><code class="language-javascript">app.addRegion('main', '.main-region');
+<p>Regions must first be added to their view or scoped application in order to return something.</p>
+<pre class="code code-section"><code class="language-javascript">app.addRegion('main', '.main-region');
 var mainRegion = app.getRegion('main');</code></pre>
-    </div>
-</div>
 <h5 id="parentView" class="title-headline">#parentView</h5>
 <p>The parent view can also be retrieved by any <a href="/api/v0/view">View</a> that has been added to a region, and has not yet been subsequently removed.</p>
-<div class="card">
-    <div class="card-content code-step">
-        <p>To get the parent view, you can just call the method: <a href="#parentView">parentView</a>.</p>
-        <pre class="code code-section"><code class="language-javascript">var secondView = factories.View();
+<p>To get the parent view, you can just call the method: <a href="#parentView">parentView</a>.</p>
+<pre class="code code-section"><code class="language-javascript">var secondView = factories.View();
 myView.showChildView('content', secondView);
 secondView.parentView(); // returns myView;</code></pre>
-        <p>The region is also available as a property on the view, at parent.</p>
-        <pre class="code code-section"><code class="language-javascript">secondView.parent === myView.getRegion('content'); // returns true;</code></pre>
-    </div>
-</div>
-
+<p>The region is also available as a property on the view, at parent.</p>
+<pre class="code code-section"><code class="language-javascript">secondView.parent === myView.getRegion('content'); // returns true;</code></pre>
 <h5 id="render" class="title-headline">#render</h5>
 <p>The render pipeline is subly different than most other render pipelines in most other frameworks. Yes, it creates a template, puts it in an element. The only difference is that while it swaps out the guts of the element, a new element is not created during the render process. This is to save time and ensure an accurate lifecycle of dom elements being used. If it looks like the element you previously had, you will probably assume it is the previous element, odette plays off of this assumption that you implicitly make as a user to your advantage.</p>
-<div class="card">
-    <div class="card-content code-step">
-        <p>Render should almost never need to be called. It is called implicitly when views are added or removed from a parent region, but besides that most of your logic for updating an attribute or content should come from hyperlocalized reactions to events on the view, element, and, most importantly, the model.</p>
-        <pre class="code code-section"><code class="language-javascript">var secondView = factories.View();
+<p>Render should almost never need to be called. It is called implicitly when views are added or removed from a parent region, but besides that most of your logic for updating an attribute or content should come from hyperlocalized reactions to events on the view, element, and, most importantly, the model.</p>
+<pre class="code code-section"><code class="language-javascript">var secondView = factories.View();
 myView.showChildView('content', secondView);
 secondView.parentView(); // returns myView;</code></pre>
-        <p>The region is also available as a property on the view, at parent.</p>
-        <pre class="code code-section"><code class="language-javascript">secondView.parent === myView.getRegion('content'); // returns true;</code></pre>
-    </div>
-</div>
-
+<p>The region is also available as a property on the view, at parent.</p>
+<pre class="code code-section"><code class="language-javascript">secondView.parent === myView.getRegion('content'); // returns true;</code></pre>
 <h5 id="tagName" class="title-headline">#tagName</h5>
 <p>The tagName of the <a href="/api/v0/view">View</a>'s element can also be set on the prototype or as an instance variable. It is always a method.</p>
-<div class="card">
-    <div class="card-content code-step">
-        <p>Pro tip: use the returns utility to always return what you passed into it if you don't need any special logic surrounding which tagName to use. Odette always tries to solve in singularities. Therefore when given the choice between a string and a function, the function always wins out because it can produce a string. Also, if your resulting tagName is not an html5 standard tagName, then the element will be pumped through the <a href="/api/v0/doma#registerAs">registerAs</a> method on the <a href="/api/v0/doma">DOMA</a> and automatically be setup as a custom element.</p>
-        <pre class="code code-section"><code class="language-javascript">var MyView = factories.View.extend({
+<p>Pro tip: use the returns utility to always return what you passed into it if you don't need any special logic surrounding which tagName to use. Odette always tries to solve in singularities. Therefore when given the choice between a string and a function, the function always wins out because it can produce a string. Also, if your resulting tagName is not an html5 standard tagName, then the element will be pumped through the <a href="/api/v0/doma#registerAs">registerAs</a> method on the <a href="/api/v0/doma">DOMA</a> and automatically be setup as a custom element.</p>
+<pre class="code code-section"><code class="language-javascript">var MyView = factories.View.extend({
     tagName: _.returns('div')
 });</code></pre>
-    </div>
-</div>
 <h5 id="template" class="title-headline">#template</h5>
 <p>A <a href="#fixed-nav-container">View</a>'s template is the html that goes inside of the view's element. Odette has a nifty little tendancy to collect all of your templates before you ever need them, provided they are loaded before Odette. If they are, then your dom query can be reduced to a single query for all script tags with ids, or you can custom query for all of your tags and stitch them together any way you like. Data from the <a href="/api/v0/model">Model</a> will be transferred directly to the template so it can be displayed during the <a href="#render">render</a> pipeline.</p>
-<div class="card">
-    <div class="card-content code-step">
-        <p>Templates have a few key pieces. First, the type. This piece is mostly for the browser, so that it will not try to execute the js (which in this case is actually html). Next comes the script id, in this case: head-body, identifies how it will be accessed by any view that decides to use it.</p>
-        <pre class="code code-section"><code class="language-html">&lt;script type=&quot;x-odette/template&quot; id=&quot;head-body&quot;&gt;
+<p>Templates have a few key pieces. First, the type. This piece is mostly for the browser, so that it will not try to execute the js (which in this case is actually html). Next comes the script id, in this case: head-body, identifies how it will be accessed by any view that decides to use it.</p>
+<pre class="code code-section"><code class="language-html">&lt;script type=&quot;x-odette/template&quot; id=&quot;head-body&quot;&gt;
     &lt;div class=&quot;head&quot;&gt;&lt;%=head%&gt;&lt;/div&gt;
     &lt;div class=&quot;body&quot;&gt;&lt;%=body%&gt;&lt;/div&gt;
 &lt;/script&gt;</code></pre>
-        <pre class="code code-section"><code class="language-javascript">var MyView = factories.View({
+<pre class="code code-section"><code class="language-javascript">var MyView = factories.View({
     template: $.compile('head-body')
 });
 var myModel = factories.Model({
@@ -129,17 +113,11 @@ var myModel = factories.Model({
 var myView = MyView({
     model: myModel
 });</code></pre>
-    </div>
-</div>
 <h5 id="templateIsElement" class="title-headline">#templateIsElement</h5>
 <p>Sometimes, your template will actually contain the element that you would like to be controlling in your view. If this is the case, simply return a truthy value in your templateIsElement function.</p>
-<div class="card">
-    <div class="card-content code-step">
-        <p>Warning, this will cause a different dom abstraction to be invoked, with different methods, from a different constructor, outlined in the <a href="/api/v0/doma">DOMA</a> section. Doing this is also less efficient than the default way, because the element has to be recreated each time and because odette has to apply all of its changes to multiple elements, instead of only applying it to one.</p>
-        <pre class="code code-section"><code class="language-javascript">var MyView = factories.View({
+<p>Warning, this will cause a different dom abstraction to be invoked, with different methods, from a different constructor, outlined in the <a href="/api/v0/doma">DOMA</a> section. Doing this is also less efficient than the default way, because the element has to be recreated each time and because odette has to apply all of its changes to multiple elements, instead of only applying it to one.</p>
+<pre class="code code-section"><code class="language-javascript">var MyView = factories.View({
     templateIsElement: function () {
         return true;
     }
 });</code></pre>
-    </div>
-</div>

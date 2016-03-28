@@ -74,5 +74,77 @@ application.scope().run(function (app, _, factories) {
                 });
             }
         });
+        var removeHeight = function (manager, target) {
+            return function () {
+                manager.cancelHeightRemoval();
+                target.css('height', '');
+                target.css('height');
+            };
+        };
+        $.registerElement('expands-next', {
+            onCreate: function (manager) {
+                var js;
+                if (manager.data('starts-open')) {
+                    method = 'expand';
+                } else {
+                    method = 'collapse';
+                }
+                if (manager.tagName === 'a') {
+                    js = 'javascript';
+                    manager.attr('href', js + ':void 0;');
+                }
+                manager.owner.window().once('load', _.bind(manager[method], manager));
+            },
+            prototype: {
+                getTarget: function () {
+                    return this.next(this.data('target'));
+                },
+                collapse: function () {
+                    var childHeight, manager = this,
+                        target = this.getTarget();
+                    if (!target) {
+                        return manager;
+                    }
+                    childHeight = target.children(0).height();
+                    manager.unmark('expanded');
+                    target.changeClass('expanded', 'collapser-ready');
+                    return manager.setHeight(target, childHeight, 0);
+                },
+                expand: function () {
+                    var childHeight, manager = this,
+                        target = this.getTarget();
+                    if (!target) {
+                        return manager;
+                    }
+                    childHeight = target.children(0).height();
+                    manager.mark('expanded');
+                    target.addClass('expanded collapser-ready');
+                    return manager.setHeight(target, 0, childHeight);
+                },
+                setHeight: function (target, fromhere, tohere) {
+                    var manager = this;
+                    var duration = target.data('duration') || 0;
+                    var diff = tohere - fromhere;
+                    manager.cancelHeightRemoval();
+                    manager.__heightRemovalId = _.AF.tween(duration, function (ms, perc, done) {
+                        target.css('height', fromhere + (diff * perc));
+                    });
+                },
+                cancelHeightRemoval: function () {
+                    _.AF.remove(this.__heightRemovalId);
+                    return this;
+                }
+            },
+            events: {
+                click: function (e) {
+                    var manager = this;
+                    if (manager.is('expanded')) {
+                        manager.collapse();
+                    } else {
+                        manager.expand();
+                    }
+                }
+            }
+        });
     });
 });

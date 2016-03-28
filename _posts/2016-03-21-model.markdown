@@ -10,7 +10,8 @@ permalink: /api/v0/model
 
 
 
-<p>Models resemble Backbone models very closely, with a few key differences. Data exists, in Odette as more of a tree structure than a dichotomy between Models and Collections. This allows us to do interesting things like putting models in multiple collections at the same time.</p>
+<p>Models resemble Backbone models very closely, with a few key differences. Data exists, in Odette as more of a tree structure than a dichotomy between Models and Collections. This allows us to do interesting things like putting models in multiple collections at the same time. </p>
+<p>Models assume no circular dependencies in it's data. If you do have circular dependencies, please replace the clone function, which does not account for this use case.</p>
 <p>Creation of a model is as simple as any other constructor in Odette. Simply call the constructor on the factories object.</p>
 <pre class="code code-section"><code class="language-javascript">var model = factories.Model();</code></pre>
 <ul class="list navigation-links">
@@ -51,9 +52,7 @@ permalink: /api/v0/model
 <h4 id="methods" class="title-headline">Methods</h4>
 <h5 id="methods_clone" class="title-headline">#clone</h5>
 <p>This method returns javascript literal copy of the DataDirective associated with this Model. It does not return the current property directly but instead copies all of the properties to a new object.</p>
-<div class="card">
-    <div class="card-content code-step">
-        <pre class="code code-section"><code class="language-javascript">var model = factories.Model();
+<pre class="code code-section"><code class="language-javascript">var model = factories.Model();
 model.clone(); // {}
 model.set({
     numerous: 'properties'
@@ -62,8 +61,6 @@ model.clone();
 // {
 //     numerous: "properties"
 // }</code></pre>
-    </div>
-</div>
 <h5 id="methods_destroy" class="title-headline">#destroy</h5>
 <p>This method marks the end of a model's lifecycle. It calls the remove, and stopListening method with no arguments internally, which removes all listener events from the model. Both the destroy event as well as the before:destroy event will be dispatched on the Model. If a "destroying" status has already been marked on the Model instance then this method will expect the before:destroy event to be triggered by a wrapping function.</p>
 <pre class="code code-section"><code class="language-javascript">model.destroy(); // triggers before:destroy, and destroy events</code></pre>
@@ -112,3 +109,8 @@ model.toString(); // '{"imma":"string"}'</code></pre>
 model.get('imma'); // "string"
 model.unset('imma'); // true
 model.get('imma'); // undefined</code></pre>
+<h5 id="methods_valueOf" class="title-headline">#valueOf</h5>
+<p>Equally important to stringifying models is the ability to quickly sort them. By default the valueOf simply returns the id of the model, but it can easily be overwritten to return a specific value that the model holds.</p>
+<pre class="code code-section"><code class="language-javascript">var model = factories.Model();
+model.id // 5
+model.valueOf(); // 5</code></pre>

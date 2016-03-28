@@ -5,6 +5,7 @@ app.scope(function (app) {
         Collection = factories.Collection,
         MODULES = 'Modules',
         STARTED = START + 'ed',
+        INITIALIZED = 'initialized',
         startableMethods = {
             start: function (evnt) {
                 var startable = this;
@@ -58,20 +59,25 @@ app.scope(function (app) {
             var exports = [];
             duff(list, function (path) {
                 var module = app.module(path);
-                if (module.is('initialized')) {
+                if (module.is(INITIALIZED)) {
                     exports.push(module.exports);
                 }
             });
             return exports[LENGTH] === list[LENGTH] ? exports : BOOLEAN_FALSE;
         },
+        Promise = _.Promise,
         moduleMethods = {
             module: function (name_, windo, fn) {
-                var list, globalname, arg1, arg2, parentModulesDirective, modules, attrs, parentIsModule, nametree, parent = this,
+                var initResult, list, globalname, arg1, arg2, parentModulesDirective, modules, attrs, parentIsModule, nametree, parent = this,
                     originalParent = parent,
                     name = name_,
                     // globalname = name,
                     namespace = name.split(PERIOD),
-                    module = parent.directive(CHILDREN).get(name_);
+                    module = parent.directive(CHILDREN).get(name_),
+                    triggerBubble = function () {
+                        module.mark(INITIALIZED);
+                        module.bubble(INITIALIZED + ':submodule');
+                    };
                 if (module) {
                     // hey, i found it. we're done here
                     parent = module.parent;
@@ -109,26 +115,29 @@ app.scope(function (app) {
                     app[CHILDREN].register(ID, globalname, module);
                 }
                 if (isWindow(windo) || isFunction(windo) || isFunction(fn)) {
-                    if (module.mark('initialized')) {
-                        module.exports = {};
+                    module.exports = module.exports || {};
+                    initResult = module.run(windo, fn);
+                    // allows us to create dependency graphs
+                    if (initResult && isInstance(initResult, Promise)) {
+                        initResult.success(triggerBubble);
+                    } else {
+                        triggerBubble();
                     }
-                    module.run(windo, fn);
-                    module.bubble('initialized:submodule');
                 }
                 return module;
             },
             run: function (windo, fn_) {
-                var module = this,
+                var result, module = this,
                     fn = isFunction(windo) ? windo : fn_,
                     args = isWindow(windo) ? [windo.DOMA] : [];
                 if (isFunction(fn)) {
                     if (module.application) {
-                        fn.apply(module, createArguments(module, args));
+                        result = fn.apply(module, createArguments(module, args));
                     } else {
-                        fn.apply(module, module.createArguments(args));
+                        result = fn.apply(module, module.createArguments(args));
                     }
                 }
-                return module;
+                return result === UNDEFINED ? module : result;
             },
             export: function (one, two) {
                 var module = this;
@@ -153,29 +162,31 @@ app.scope(function (app) {
                 return !this.application || this.application === this[PARENT];
             },
             require: function (modulename, handler) {
-                var module, list, mapppedArguments, app;
+                var promise, module, list, mapppedArguments, app = this;
                 if (!isFunction(handler)) {
-                    module = this.module(modulename);
-                    return module.is('initialized') ? module.exports : exception({
-                        message: 'that module has not been initialized yet'
+                    module = app.module(modulename);
+                    return module.is(INITIALIZED) ? module.exports : exception({
+                        message: 'that module has not been ' + INITIALIZED + ' yet'
                     });
                 } else {
+                    promise = _.Promise();
                     list = gapSplit(modulename);
-                    if (!isArray(list)) {
-                        return app;
+                    if (!isArray(list) || !list[LENGTH]) {
+                        return promise;
                     }
                     list = list.slice(0);
+                    promise.success(bind(handler, app));
                     if ((mappedArguments = checks(app, list))) {
-                        handler.apply(app, mappedArguments);
+                        promise.fulfill(mapppedArguments);
                     } else {
-                        app.on('initialized:submodule', function () {
+                        app.on(INITIALIZED + ':submodule', function () {
                             if ((mappedArguments = checks(app, list))) {
-                                handler.apply(app, mappedArguments);
                                 app.off();
+                                promise.fulfill(mapppedArguments);
                             }
                         });
                     }
-                    return app;
+                    return promise;
                 }
             }
         },

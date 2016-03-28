@@ -203,7 +203,7 @@ app.scope(function (app) {
                 return ajax;
             }
         });
-    _.exports(_.foldl(validTypes, function (memo, key_) {
+    _.extend(Ajax, _.foldl(validTypes, function (memo, key_) {
         var key = key_;
         key = key.toLowerCase();
         memo[key] = function (url, options) {

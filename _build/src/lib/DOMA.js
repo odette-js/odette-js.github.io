@@ -110,9 +110,7 @@ app.scope(function (app) {
             source = "var __t,__HTML__='',__j=Array.prototype.join," + "print=function(){__HTML__+=__j.call(arguments,'');};\n" + source + 'return __HTML__;\n';
             var render = _.wraptry(function () {
                 return new Function.constructor(settings.variable || '_', source);
-            }, function (e) {
-                console.error(e);
-            });
+            }, console.error);
             var template = function (data) {
                 return render.call(data || {}, _);
             };
@@ -344,18 +342,18 @@ app.scope(function (app) {
         // returns the flow of the element passed on relative to the element's bounding window
         flow = function (el, ctx) {
             var clientRect = el.getBoundingClientRect(),
-                computedStyle = getComputed(el, ctx),
+                computedStyle = getComputed(el, ctx.element()),
                 marginTop = unitRemoval(computedStyle.marginTop),
                 marginLeft = unitRemoval(computedStyle.marginLeft),
                 marginRight = unitRemoval(computedStyle.marginRight),
                 marginBottom = unitRemoval(computedStyle.marginBottom);
             return {
-                height: clientRect[HEIGHT],
-                width: clientRect[WIDTH],
+                height: clientRect[HEIGHT] + marginTop + marginBottom,
+                width: clientRect[WIDTH] + marginLeft + marginRight,
                 top: clientRect[TOP] - marginTop,
                 left: clientRect[LEFT] - marginLeft,
-                right: clientRect[LEFT] - marginLeft + clientRect[WIDTH] - marginRight,
-                bottom: clientRect[TOP] - marginTop + clientRect[HEIGHT] - marginBottom
+                right: clientRect[LEFT] + clientRect[WIDTH] + marginRight,
+                bottom: clientRect[TOP] + clientRect[HEIGHT] + marginBottom
             };
         },
         numberBasedCss = {
@@ -424,6 +422,8 @@ app.scope(function (app) {
                 } else {
                     styleName = unCamelCase(n);
                 }
+                unCamelCase(styleName);
+                camelCase(styleName);
                 deprefixed = styleName;
                 for (j = 0; j < len && styleName[j] && !found; j++) {
                     currentCheck += styleName[j];
@@ -1214,9 +1214,11 @@ app.scope(function (app) {
                 return BOOLEAN_FALSE;
             }
             cached = attributeApi.read(element, STYLE);
-            value = convertStyleValue(key, value);
+            value = value !== '' ? convertStyleValue(key, value) : value;
             if (!important) {
-                element[STYLE][key] = value;
+                duff(prefixedStyles[camelCase(key)], function (prefix) {
+                    element[STYLE][prefix + unCamelCase(key)] = value;
+                });
             } else {
                 // write with importance
                 attributeApi.write(element, STYLE, (newStyles = _.foldl(cached.split(';'), function (memo, item_, index, items) {
@@ -1376,12 +1378,12 @@ app.scope(function (app) {
         domContextFind = function (fn, context) {
             return !context.find(fn);
         },
-        makeValueTarget = function (target, passed_, api, domHappy) {
+        makeValueTarget = function (target, passed_, api, domaHappy) {
             var passed = passed_ || target;
             return _.foldl(gapSplit('add remove toggle change has set'), function (memo, method_) {
                 var method = method_ + 'Value';
                 memo[method_ + upCase(target)] = function (one, two) {
-                    return this[method](passed, one, two, api, domHappy, target);
+                    return this[method](passed, one, two, api, domaHappy, target);
                 };
                 return memo;
             }, {});
@@ -1587,16 +1589,18 @@ app.scope(function (app) {
             return $;
         },
         styleManipulator = function (one, two) {
-            var manager, styles;
+            var unCameled, styles, manager = this;
+            if (!manager.length()) {
+                return manager;
+            }
             if (isString(one) && two === UNDEFINED) {
-                return (manager = this.index(0)) && (styles = manager.getStyle()) && (prefix = _.find(prefixes[camelCase(one)], function (prefix) {
+                unCameled = unCamelCase(one);
+                return (manager = manager.index(0)) && (styles = manager.getStyle()) && ((prefix = _.find(prefixedStyles[camelCase(one)], function (prefix) {
                     return styles[prefix + unCameled] !== UNDEFINED;
-                })) && styles[prefix + unCameled];
+                })) ? styles[prefix + unCameled] : styles[prefix + unCameled]);
             } else {
-                if (this.length()) {
-                    this.each(unmarkChange(intendedIteration(one, two, applyStyle)));
-                }
-                return this;
+                manager.each(unmarkChange(intendedIteration(one, two, applyStyle)));
+                return manager;
             }
         },
         getValueCurried = getValue(returnsFirst),
@@ -1612,25 +1616,39 @@ app.scope(function (app) {
         iframeChangeHandler = function () {
             testIframe(this);
         },
-        managerHorizontalTraverser = function (property, _idxChange_) {
-            return function (_idxChange) {
-                var parent, children, currentIndex, startIndex, target, idxChange = _idxChange || _idxChange_,
-                    manager = this,
-                    element = manager.element();
-                if (property && element[property]) {
-                    return element[property];
+        childByTraversal = function (manager, parent, element, idxChange_, ask, isString) {
+            var target, found,
+                idxChange = idxChange_,
+                children = collectChildren(parent),
+                startIndex = indexOf(children, element);
+            if (isString) {
+                idxChange = idxChange || 1;
+                target = element;
+                while (target && !found) {
+                    target = children[(startIndex = (startIndex += idxChange))];
+                    found = matches(target, ask);
                 }
-                if (!element[PARENT_NODE]) {
+            } else {
+                target = element;
+                target = children[startIndex];
+                target = children[startIndex + idxChange];
+            }
+            return target && manager.owner.returnsManager(target);
+        },
+        managerHorizontalTraverser = function (method, property, _idxChange_) {
+            return function (_idxChange) {
+                var stringResult, direction = _idxChange_,
+                    parent, children, currentIndex, startIndex, target, idxChange = _idxChange || _idxChange_,
+                    manager = this,
+                    element = manager.element(),
+                    traversed = element[property];
+                if (!(stringResult = isString(idxChange)) && property && !traversed) {
+                    return manager.owner.returnsManager(traversed);
+                }
+                if (!(parent = element[PARENT_NODE]) && !traversed) {
                     return;
                 }
-                parent = element[PARENT_NODE];
-                startIndex = indexOf(parent[CHILDREN], element);
-                children = collectChildren(parent[CHILDREN]);
-                target = children[(currentIndex = startIndex + idxChange)];
-                while (target && target[NODE_TYPE] === 3) {
-                    target = children[currentIndex += idxChange];
-                }
-                return target && manager.owner.returnsManager(target);
+                return childByTraversal(manager, parent, element, direction, idxChange, stringResult);
             };
         },
         collectCustom = function (manager, markedListener) {
@@ -2018,6 +2036,23 @@ app.scope(function (app) {
                 found = attrs[where] = attrs[where] || StringManager();
             return found;
         },
+        dimensionFinder = function (element, doc, win) {
+            return function (num) {
+                var ret, manager = this[INDEX](num);
+                if (manager.isElement) {
+                    ret = clientRect(manager.element())[element];
+                } else {
+                    if (manager.isDocument && manager.element()[BODY]) {
+                        ret = manager.element()[BODY][doc];
+                    } else {
+                        if (manager.isWindow) {
+                            ret = manager.element()[win];
+                        }
+                    }
+                }
+                return ret || 0;
+            };
+        },
         DomManager = factories.DomManager = factories.Events.extend(DOM_MANAGER_STRING, extend(classApi, {
             'directive:creation:EventManager': DomEventsDirective,
             isValidDomManager: BOOLEAN_TRUE,
@@ -2025,8 +2060,7 @@ app.scope(function (app) {
             registeredElementName: function () {
                 return this.owner.registeredElementName(this.registeredAs);
             },
-            getValue: getValueCurried,
-            setValue: setValueCurried,
+            // getValue: getValueCurried,
             hasValue: hasValue(domContextFind),
             addValue: addValue(domIterates),
             removeValue: removeValue(domIterates),
@@ -2044,26 +2078,21 @@ app.scope(function (app) {
             data: dataApi(domIterates),
             prop: propApi(domIterates),
             html: innardManipulator(INNER_HTML),
-            outerHTML: innardManipulator(OUTER_HTML),
+            // outerHTML: innardManipulator(OUTER_HTML),
             text: innardManipulator(INNER_TEXT),
             style: styleManipulator,
             css: styleManipulator,
-            next: managerHorizontalTraverser('nextElementSibling', 1),
-            prev: managerHorizontalTraverser('previousElementSibling', -1),
-            skip: managerHorizontalTraverser(NULL, 0),
+            next: managerHorizontalTraverser('next', 'nextElementSibling', 1),
+            prev: managerHorizontalTraverser('prev', 'previousElementSibling', -1),
+            skip: managerHorizontalTraverser('skip', NULL, 0),
+            height: dimensionFinder(HEIGHT, 'scrollHeight', INNER_HEIGHT),
+            width: dimensionFinder(WIDTH, 'scrollWidth', INNER_WIDTH),
             siblings: function (filtr) {
                 var original = this,
                     filter = createDomFilter(filtr);
                 return original.parent().children(function (manager, index, list) {
                     return manager !== original && filter(manager, index, list);
                 });
-            },
-            render: function (string) {
-                var manager = this;
-                var formerChildren = manager.children(UNDEFINED, manager.owner.returnsManager(manager.owner.createDocumentFragment()));
-                console.log(formerChildren);
-                // var fragment = manager.owner.createDocumentFragment();
-                // var formerChildren =
             },
             constructor: function (el, hash, owner_) {
                 var owner = owner_,
@@ -2096,9 +2125,9 @@ app.scope(function (app) {
                 return manager;
             },
             clone: function () {
-                var clone, manager = this;
+                var manager = this;
                 if (!manager.isElement) {
-                    return;
+                    return {};
                 }
                 return makeBranch(manager.element()[OUTER_HTML], manager.owner);
             },
@@ -2220,7 +2249,7 @@ app.scope(function (app) {
                     return !!query(element, manager.element())[LENGTH];
                 }
                 if (element.isValidDOMA) {
-                    element = element.index(0);
+                    return !!element.find(manager.contains, manager);
                 }
                 target = manager.owner.returnsManager(element);
                 if (target.isDocument) {
@@ -2241,11 +2270,12 @@ app.scope(function (app) {
                     child = children && children.index(index) || NULL,
                     element = child && child.element() || NULL,
                     managerElement = manager && manager.element(),
+                    returns = fragmentManager.children(),
                     fragmentChildren = collectCustom(fragmentManager, BOOLEAN_TRUE),
                     detachNotify = dispatchDetached(fragmentChildren, owner),
                     returnValue = managerElement && managerElement.insertBefore(fragment, element),
                     notify = isAttached(managerElement, owner) && dispatchAttached(fragmentChildren, owner);
-                return returnValue;
+                return returns;
             },
             window: function () {
                 var manager = this;
@@ -2270,28 +2300,30 @@ app.scope(function (app) {
                 return address;
             },
             emit: function (message_, referrer_, handler) {
-                var message, windo = this.window(),
+                var message, post, windo = this.window(),
                     element = windo.element();
                 if (windo.is(ACCESSABLE)) {
                     message = parse(message_);
-                    handler({
-                        // this can be expanded a bit when you get some time
-                        srcElement: element,
-                        timeStamp: _.now(),
-                        data: function () {
-                            return message;
-                        }
-                    });
-                } else {
-                    wraptry(function () {
-                        // do not parse message so it can be sent as is
-                        if (!referrer_) {
-                            console.error('missing referrer: ' + windo.address);
-                        } else {
-                            element.postMessage(message_, referrer_);
-                        }
-                    }, console.error);
+                    if (handler) {
+                        handler({
+                            // this can be expanded a bit when you get some time
+                            srcElement: element,
+                            timeStamp: _.now(),
+                            data: function () {
+                                return message;
+                            }
+                        });
+                        return this;
+                    }
                 }
+                wraptry(function () {
+                    // do not parse message so it can be sent as is
+                    if (!referrer_) {
+                        console.error('missing referrer: ' + windo.address);
+                    } else {
+                        element.postMessage(message_, referrer_);
+                    }
+                }, console.error);
                 return this;
             },
             sameOrigin: function () {
@@ -2384,7 +2416,7 @@ app.scope(function (app) {
                     manager = this,
                     first = manager.element();
                 if (first && manager.isElement) {
-                    returnValue = getComputed(first, manager.owner);
+                    returnValue = getComputed(first, manager.owner.element());
                 }
                 return returnValue;
             },
@@ -2508,13 +2540,7 @@ app.scope(function (app) {
                 });
                 return obj;
             }
-        }, wrap({
-            id: BOOLEAN_FALSE,
-            src: BOOLEAN_FALSE,
-            checked: BOOLEAN_FALSE,
-            disabled: BOOLEAN_FALSE,
-            classes: 'className'
-        }, function (attr, api) {
+        }, wrap(directAttributes, function (attr, api) {
             if (!attr) {
                 attr = api;
             }
@@ -2573,23 +2599,6 @@ app.scope(function (app) {
         domFilter = function (items, filtr) {
             var filter = createDomFilter(filtr);
             return dataReconstructor(items, unwrapsOnLoop(filter));
-        },
-        dimensionFinder = function (element, doc, win) {
-            return function (num) {
-                var ret, manager = this[INDEX](num);
-                if (manager.isElement) {
-                    ret = clientRect(manager)[element];
-                } else {
-                    if (manager.isDocument && manager.element()[BODY]) {
-                        ret = manager.element()[BODY][doc];
-                    } else {
-                        if (manager.isWindow) {
-                            ret = manager.element()[win];
-                        }
-                    }
-                }
-                return ret || 0;
-            };
         },
         canBeProcessed = function (item) {
             return isWindow(item) || isElement(item) || isDocument(item) || isFragment(item);
@@ -2887,6 +2896,8 @@ app.scope(function (app) {
                 }
                 return that;
             },
+            getAttribute: getValueCurried,
+            setAttribute: setValueCurried,
             /**
              * @func
              * @name DOMA#append
