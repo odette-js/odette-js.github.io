@@ -286,6 +286,8 @@ var UNDEFINED, win = window,
     CURRENT = 'current',
     CHILD = 'child',
     COLON = ':',
+    NONE = 'none',
+    HIDDEN = 'hidden',
     BEFORE = 'before',
     CHANGE = 'change',
     TARGET = 'target',
@@ -2369,11 +2371,11 @@ app.scope(function (app) {
                 message: 'directives must exist before they can be extended'
             });
             return app.defineDirective(newName, function (instance, name, third) {
-                var directive = directives.creation[oldName](instance, name, third);
+                var directive = new directives.creation[oldName](instance, name, third);
                 return new Handler(instance, name, directive);
             }, function (instance, name, third) {
                 var directive = directives.destruction[oldName](instance, name, third);
-                return new Destruction(instance, name, directive);
+                return Destruction(instance, name, directive);
             });
         },
         Directive = factories.Directive = factories.Extendable.extend('Directive', {
@@ -6861,7 +6863,7 @@ app.scope(function (app) {
                     if ((group = unregisteredElements.group(newName))) {
                         each(group, function (manager, id) {
                             delete manager[newName];
-                            delete manager._lastCustom;
+                            manager.History.drop('category', 'custom');
                             manager.registerAs();
                             unregisteredElements.drop(newName, id);
                         });
@@ -7343,6 +7345,7 @@ app.scope(function (app) {
                 return ret || 0;
             };
         },
+        historyResult = app.extendDirective('registry', 'History'),
         DomManager = factories.DomManager = factories.Events.extend(DOM_MANAGER_STRING, extend(classApi, {
             'directive:creation:EventManager': DomEventsDirective,
             isValidDomManager: BOOLEAN_TRUE,
@@ -7370,7 +7373,7 @@ app.scope(function (app) {
             html: innardManipulator(INNER_HTML),
             // outerHTML: innardManipulator(OUTER_HTML),
             text: innardManipulator(INNER_TEXT),
-            style: styleManipulator,
+            // style: styleManipulator,
             css: styleManipulator,
             next: managerHorizontalTraverser('next', 'nextElementSibling', 1),
             prev: managerHorizontalTraverser('prev', 'previousElementSibling', -1),
@@ -7634,14 +7637,14 @@ app.scope(function (app) {
                 return BOOLEAN_FALSE;
             },
             registerAs: function (registeredAs_) {
-                var newName, oldName, manager = this,
+                var historyDirective, newName, oldName, manager = this,
                     registeredAs = registeredAs_ || manager.registeredAs;
-                if (!manager.is(CUSTOM) || registeredAs === manager._lastCustom) {
+                if (!manager.is(CUSTOM) || ((historyDirective = manager.directive('History')) && registeredAs === historyDirective.get('category', 'custom'))) {
                     return manager;
                 }
-                oldName = manager.owner.registeredElementName(manager._lastCustom);
+                oldName = manager.owner.registeredElementName(historyDirective.get('category', 'custom'));
                 manager.directiveDestruction(oldName);
-                manager._lastCustom = registeredAs;
+                historyDirective.keep('category', 'custom', registeredAs);
                 newName = manager.owner.registeredElementName(registeredAs);
                 manager.directive(newName);
                 if (!manager[newName].validCustomElement) {
@@ -7671,7 +7674,7 @@ app.scope(function (app) {
                     return BOOLEAN_FALSE;
                 }
                 styles = manager.getStyle();
-                if (+styles.opacity === 0 || styles.display === 'none' || styles.height === '0px' || styles.width === '0px' || styles.visibility === 'hidden') {
+                if (+styles.opacity === 0 || styles.display === NONE || styles.height === '0px' || styles.width === '0px' || styles.visibility === HIDDEN) {
                     return BOOLEAN_FALSE;
                 }
                 element = manager.element();
@@ -7783,9 +7786,9 @@ app.scope(function (app) {
                 var manager = this;
                 return fn(manager, 0, [manager]) ? manager : UNDEFINED;
             },
-            tag: function (str) {
-                return tag(this.element(), str);
-            },
+            // tag: function (str) {
+            //     return tag(this.element(), str);
+            // },
             client: function () {
                 return clientRect(this.element());
             },
@@ -7843,6 +7846,10 @@ app.scope(function (app) {
             };
         }), wrap(videoDirectEvents, triggerEventWrapperManager), wrap(directEvents, function (attr) {
             return triggerEventWrapperManager(attr);
+        }), wrap(gapSplit('add addBack elements push fragment'), function (key) {
+            return function (one, two, three) {
+                return this.wrap()[key](one, two, three);
+            };
         }))),
         _removeEventListener = function (manager, name, group, selector, handler, capture_) {
             var capture = !!capture_,
@@ -8030,6 +8037,9 @@ app.scope(function (app) {
                 }
                 return context.unwrap().concat(previous.unwrap());
             }),
+            wrap: function () {
+                return this;
+            },
             push: function () {
                 var owner = this.context.owner;
                 this.directive('list').push(foldl(arguments, function (memo, el) {
@@ -8122,7 +8132,7 @@ app.scope(function (app) {
              * @returns {DOMA} instance
              */
             css: styleManipulator,
-            style: styleManipulator,
+            // style: styleManipulator,
             /**
              * @func
              * @name DOMA#allDom
@@ -9873,6 +9883,7 @@ application.scope().run(function (app, _, factories) {
             return {
                 toEqual: toEqual,
                 toThrow: toThrow,
+                toBe: toBe,
                 not: {
                     toEqual: notToEqual,
                     toThrow: notToThrow,

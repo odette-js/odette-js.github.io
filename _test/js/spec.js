@@ -2026,7 +2026,7 @@ application.scope().run(function (app, _, factories) {
                 }, 0, 5);
                 $con.append(divs);
             },
-            $con = $.createElement('div').style({
+            $con = $.createElement('div').css({
                 height: '100%',
                 width: '100%'
             });
@@ -2034,7 +2034,6 @@ application.scope().run(function (app, _, factories) {
         _.beforeEach(create);
         _.afterEach(function () {
             divs.destroy();
-            // done();
         });
         _.it('is essentially a collection', function () {
             _.expect(_.isInstance($empty, factories.DOMA)).toEqual(true);

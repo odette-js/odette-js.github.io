@@ -72,6 +72,7 @@ application.scope().run(function (app, _, factories) {
             return {
                 toEqual: toEqual,
                 toThrow: toThrow,
+                toBe: toBe,
                 not: {
                     toEqual: notToEqual,
                     toThrow: notToThrow,

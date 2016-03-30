@@ -111,9 +111,7 @@ var bodyManager = $body.index(0); // dom manager</code></pre>
                 <li class="left clear-left"><a href="#methods_siblings">siblings</a></li>
                 <li class="left clear-left"><a href="#methods_skip">skip</a></li>
                 <li class="left clear-left"><a href="#methods_src">src</a></li>
-                <li class="left clear-left"><a href="#methods_style">style</a></li>
                 <li class="left clear-left"><a href="#methods_submit">submit</a></li>
-                <li class="left clear-left"><a href="#methods_tag">tag</a></li>
                 <li class="left clear-left"><a href="#methods_text">text</a></li>
                 <li class="left clear-left"><a href="#methods_toggleValue">toggleValue</a></li>
                 <li class="left clear-left"><a href="#methods_toJSON">toJSON</a></li>
@@ -650,53 +648,62 @@ targetManager.skip(-2); // returns manager of element 2 siblings behind</code></
 </div>
 <div id="methods_src">
     <h5 class="title-headline">#src</h5>
-    <p></p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
-</div>
-<div id="methods_style">
-    <h5 class="title-headline">#style</h5>
-    <p></p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
-</div>
-<div id="methods_tag">
-    <h5 class="title-headline">#tag</h5>
-    <p></p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The src method sets and gets the src property from the target DomManager.</p>
+    <pre class="code code-section"><code class="language-html">&lt;img src=&quot;my_img.jpg&quot;&gt;&lt;/img&gt;</code></pre>
+    <pre class="code code-section"><code class="language-javascript">imgManager.src(); // "my_img.jpg"
+imgManager.src('your_img.jpg');
+imgManager.src(); // your_img.jpg</code></pre>
 </div>
 <div id="methods_text">
     <h5 class="title-headline">#text</h5>
-    <p></p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>Gets and sets the text of a target manager. Uses the textContent property.</p>
+    <pre class="code code-section"><code class="language-html">&lt;div&gt;text goes here&lt;/div&gt;</code></pre>
+    <pre class="code code-section"><code class="language-javascript">divManager.text(); // "text goes here"
+divManager.text('text went there');
+divManager.text(); // "text went there"</code></pre>
 </div>
 <div id="methods_toggleValue">
     <h5 class="title-headline">#toggleValue</h5>
-    <p></p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>Toggles a singular value of an attribute in a list.</p>
+    <pre class="code code-section"><code class="language-html">&lt;div data-directions=&quot;s w&quot;&gt;&lt;/div&gt;</code></pre>
+    <pre class="code code-section"><code class="language-javascript">divManager.toggleValue('dataDirections', 'n e');</code></pre>
+    <pre class="code code-section"><code class="language-html">&lt;div data-directions=&quot;s w n e&quot;&gt;&lt;/div&gt;</code></pre>
 </div>
 <div id="methods_toJSON">
     <h5 class="title-headline">#toJSON</h5>
-    <p></p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>Turns the dom into a serializable object that can be reparsed and recreated at a later time.</p>
+    <pre class="code code-section"><code class="language-javascript">divManager.toJSON();
+// {
+//     children: [],
+//     attributes: {},
+//     tagName: "div"
+// }</code></pre>
 </div>
 <div id="methods_unwrap">
     <h5 class="title-headline">#unwrap</h5>
-    <p></p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>Parody method that simply wraps the dom manager in an array so that it produces the same result as the <a href="doma">DOMA</a>.</p>
+    <pre class="code code-section"><code class="language-javascript">divManager.wrap(); // [divManager]</code></pre>
 </div>
 <div id="methods_visible">
     <h5 class="title-headline">#visible</h5>
-    <p></p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>Runs a series of checks to determine if the element in question is visible. It will first check the attachment status, then various css properties, as well as the client rect of the element. Finally, if the element is inside of an iframe, it will do it's best to discern the element's visibility.</p>
+    <pre class="code code-section"><code class="language-javascript">divManager.remove();
+divManager.visible(); // false
+bodyManager.append(divManager);
+divManager.visible(); // true</code></pre>
 </div>
 <div id="methods_window">
     <h5 class="title-headline">#window</h5>
-    <p></p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>Returns the manager of the window associated with the element. If this method is called on the document, then it will reach up to it's parent window. If it is called on a window, then it will return said window. If it is called on any element that is not an iframe, then it will get the window of the owner document. If it is called on an iframe then it will grab the content window of said iframe. This method is used internally for the emit and other methods.</p>
+    <pre class="code code-section"><code class="language-javascript">bodyManager.window();   // bodyManager.element().parentNode.parentNode.defaultView;
+iframeManager.window(); // iframeManager.element().contentWindow;
+divManager.window();    // divManager.owner.element().defaultView;
+windowManager.window(); // windowManager.element();</code></pre>
 </div>
 <div id="methods_wrap">
     <h5 class="title-headline">#wrap</h5>
-    <p></p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>Wraps the Dom Manager in a <a href="doma">DOMA</a> So that other elements might be added to it. DomManager is wrapped with owner's DOMA, which is relative to the owning document.</p>
+    <pre class="code code-section"><code class="language-javascript">domManager.wrap();</code></pre>
 </div>
 <h4 class="title-headline">Convenience Methods</h4>
 <h5 class="title-headline"><span id="methods_blur">#blur</span> <span id="methods_change">#change</span> <span id="methods_click">#click</span> <span id="methods_contextmenu">#contextmenu</span> <span id="methods_dblclick">#dblclick</span> <span id="methods_error">#error</span> <span id="methods_focus">#focus</span> <span id="methods_focusin">#focusin</span> <span id="methods_focusout">#focusout</span> <span id="methods_keydown">#keydown</span> <span id="methods_keypress">#keypress</span> <span id="methods_keyup">#keyup</span> <span id="methods_load">#load</span> <span id="methods_mousedown">#mousedown</span> <span id="methods_mouseenter">#mouseenter</span> <span id="methods_mouseleave">#mouseleave</span> <span id="methods_mousemove">#mousemove</span> <span id="methods_mouseout">#mouseout</span> <span id="methods_mouseover">#mouseover</span> <span id="methods_mouseup">#mouseup</span> <span id="methods_resize">#resize</span> <span id="methods_scroll">#scroll</span> <span id="methods_select">#select</span> <span id="methods_submit">#submit</span> <span id="methods_unload">#unload</span> </h5>

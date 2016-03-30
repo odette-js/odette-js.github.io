@@ -52,11 +52,11 @@ app.scope(function (app) {
                 message: 'directives must exist before they can be extended'
             });
             return app.defineDirective(newName, function (instance, name, third) {
-                var directive = directives.creation[oldName](instance, name, third);
+                var directive = new directives.creation[oldName](instance, name, third);
                 return new Handler(instance, name, directive);
             }, function (instance, name, third) {
                 var directive = directives.destruction[oldName](instance, name, third);
-                return new Destruction(instance, name, directive);
+                return Destruction(instance, name, directive);
             });
         },
         Directive = factories.Directive = factories.Extendable.extend('Directive', {
