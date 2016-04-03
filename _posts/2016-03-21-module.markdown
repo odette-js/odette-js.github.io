@@ -128,6 +128,21 @@ app.module('level.up', function () {});
 setTimeout(function () {
     app.module('level', function () {}); // logs "required modules loaded"
 });</code></pre>
+<p>Modules themselves can even have dependencies. All you have to do is return a promise and we'll take care of the rest.</p>
+<pre class="code code-section"><code class="language-javascript">app.module('hark', function (module, app, _, factories) {
+    return app.require(['voice', 'lessons'], function (requirements) {
+        console.log(requirements[0].what + ' a lovely ' + requirements[1]; + '.');
+    });
+});
+// ... later on
+app.module('lessons', function (module) {
+    module.exports = 'voice';
+});
+app.module('voice', function (module) {
+    module.extend({
+        what: 'what'
+    });
+}); // logs "what a lovely voice."</code></pre>
 <h5 id="run" class="title-headline">#run</h5>
 <p>Handles the execution of various definitions, having to do with the module that executes the method. When this method is called, a list of arguments is created and passed into the function that run is given, with the module object as the first argument.</p>
 <p>Arguments passed into the module definition, include the module, the app, the utilities object, and the factories object.</p>

@@ -65,6 +65,7 @@ app.scope(function (app) {
         Children = factories[CHILDREN] = factories.Collection.extend(CHILDREN, {
             constructor: function (instance) {
                 this[TARGET] = instance;
+                factories.List[CONSTRUCTOR].call(this);
                 return this;
             },
             // this one forcefully adds
@@ -139,27 +140,27 @@ app.scope(function (app) {
              * @param {Object} attributes - non circular hash that is extended onto what the defaults object produces
              * @returns {Model} instance the method was called on
              */
-            reset: function (newChildren) {
-                var length, child, directive = this,
-                    model = directive[TARGET],
-                    arr = directive[UNWRAP]();
-                // this can be made far more efficient
-                while (arr[LENGTH]) {
-                    child = arr[0];
-                    length = arr[LENGTH];
-                    // if (child) {
-                    result(child, DESTROY);
-                    // }
-                    // if it didn't remove itself,
-                    // then you should remove it here
-                    // this gets run if the child is a basic data type
-                    if (arr[0] === child && arr[LENGTH] === length) {
-                        remove(arr, child);
-                    }
-                }
-                model.add(newChildren);
-                return model;
-            },
+            // reset: function (newChildren) {
+            //     var length, child, directive = this,
+            //         model = directive[TARGET],
+            //         arr = directive[UNWRAP]();
+            //     // this can be made far more efficient
+            //     while (arr[LENGTH]) {
+            //         child = arr[0];
+            //         length = arr[LENGTH];
+            //         // if (child) {
+            //         result(child, DESTROY);
+            //         // }
+            //         // if it didn't remove itself,
+            //         // then you should remove it here
+            //         // this gets run if the child is a basic data type
+            //         if (arr[0] === child && arr[LENGTH] === length) {
+            //             remove(arr, child);
+            //         }
+            //     }
+            //     model.add(newChildren);
+            //     return model;
+            // },
             // set attrs, sync with update or create
             save: function () {},
             fetch: function () {}

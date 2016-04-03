@@ -12,8 +12,11 @@
         <li class="list-item hover-effect bold">
             <a class="waves-effect" href="{{ site.baseurl }}/api/">API</a>
         </li>
-        <ul class="inner-list">{% for post in site.categories.API %}
-            <li class="list-item hover-effect waves-effect"><a href="{{ post.url }}">{{ post.title }}</a></li>{% endfor %}
+        {% capture posts %}{% for post in site.categories.API %}|{{ post.title }}#{{ post.url }}{% endfor %}{% endcapture %}
+        {% assign sortedposts = posts | split: '|' | shift | sort %}
+        <ul class="inner-list">
+        {% for post in sortedposts %}{% assign postitems = post | split: '#' %}
+        <li class="list-item hover-effect waves-effect"><a href="{{ postitems[1] }}">{{ postitems[0] }}</a></li>{% endfor %}
         </ul>
     </ul>
 </div>

@@ -129,13 +129,15 @@ application.scope().run(function (app, _, factories) {
         setup = function (expectation) {
             testisrunning = BOOLEAN_TRUE;
             expectation.runId = setTimeout(function () {
-                var errThat, doThis, errThis, finallyThis;
+                var errThat, doThis, errThis, err, finallyThis;
                 currentTest = expectation;
                 runningEach(expectation.beforeStack);
                 errThis = errHandler(expectation);
                 if (makesOwnCallback(expectation.handler)) {
+                    err = new Error();
                     expectation.timeoutId = setTimeout(function () {
-                        timeoutErr(expectation.current);
+                        console.error('timeout:\n' + expectation.current.join('\n'));
+                        errThat(err);
                         executedone(expectation);
                     }, 5000);
                     doThis = function () {

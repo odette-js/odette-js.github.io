@@ -1,15 +1,18 @@
 this.Odette = function (global, WHERE, version, fn) {
     'use strict';
-    var UNDEFINED, topmostDoc, LENGTH = 'length',
+    var UNDEFINED, odette_version = '0.0.0',
+        LENGTH = 'length',
         PARENT = 'global',
         PROTOTYPE = 'prototype',
         TOUCH_TOP = 'touchTop',
         TOP_ACCESS = 'topAccess',
-        global_ = this || global || window,
+        PERIOD = '.',
+        global_ = this || window || global,
         doc = global_.document,
         BOOLEAN_TRUE = !0,
         BOOLEAN_FALSE = !1,
         NULL = null,
+        noop = function () {},
         typeConstructor = function (str) {
             return function (thing) {
                 return typeof thing === str;
@@ -18,7 +21,18 @@ this.Odette = function (global, WHERE, version, fn) {
         now = function () {
             return +(new Date());
         },
+        map = function (arra, fn) {
+            var i = 0,
+                len = arra[LENGTH],
+                arr = [];
+            while (len > i) {
+                arr[i] = fn(arra[i], i, arra);
+                i++;
+            }
+            return arr;
+        },
         isString = typeConstructor('string'),
+        isNumber = typeConstructor('number'),
         isFunction = typeConstructor('function'),
         executionTime = now(),
         makeParody = function (parent, fn) {
@@ -26,13 +40,62 @@ this.Odette = function (global, WHERE, version, fn) {
                 return fn.apply(parent, arguments);
             };
         },
-        wraptry = function (fn, try_, finally_) {
+        wraptry = function (trythis, errthat, finalfunction) {
+            var returnValue, err = NULL;
             try {
-                return fn();
+                returnValue = trythis();
             } catch (e) {
-                return try_ && try_(e);
+                err = e;
+                returnValue = errthat ? errthat(e) : returnValue;
             } finally {
-                return finally_ && finally_();
+                returnValue = finalfunction ? finalfunction(err, returnValue) : returnValue;
+            }
+            return returnValue;
+        },
+        isVersionString = function (string) {
+            return isNumber(string) || (isString(string) && (string.split(PERIOD)[LENGTH] > 1 || +string === +string)) ? BOOLEAN_TRUE : BOOLEAN_FALSE;
+        },
+        maxVersion = function (string1, string2) {
+            // string 2 is always the underdog
+            var split1, split2, provenLarger, cvs1Result = convertVersionString(string1);
+            var cvs2Result = convertVersionString(string2);
+            // keyword checks
+            if (cvs1Result === BOOLEAN_TRUE) {
+                return cvs1Result;
+            }
+            if (cvs2Result === BOOLEAN_TRUE) {
+                return cvs2Result;
+            }
+            if (cvs1Result === BOOLEAN_FALSE && cvs2Result === BOOLEAN_FALSE) {
+                // compare them as version strings
+                split1 = string1.split(PERIOD);
+                split2 = string2.split(PERIOD);
+                map(split1, function (value, index) {
+                    if (+value < +(split2[index] || 0)) {
+                        provenLarger = BOOLEAN_TRUE;
+                    }
+                });
+                if (provenLarger === UNDEFINED && split2[LENGTH] > split1[LENGTH]) {
+                    provenLarger = BOOLEAN_TRUE;
+                }
+                return !!provenLarger ? string2 : string1;
+            } else {
+                return string1 > string2 ? string1 : string2;
+            }
+        },
+        convertVersionString = function (string_) {
+            var converted, string = string_;
+            if (isNumber(string)) {
+                return string;
+            } else {
+                string += '';
+                converted = +string;
+                // could be a number hiding as a string
+                if (converted === converted) {
+                    return converted;
+                } else {
+                    return string.split(PERIOD)[LENGTH] === 1;
+                }
             }
         };
 
@@ -40,8 +103,10 @@ this.Odette = function (global, WHERE, version, fn) {
         this.version = name;
         this.scoped = BOOLEAN_TRUE;
         this.missedDefinitions = [];
+        this.createdAt = now();
         return this;
     }
+    Application[PROTOTYPE].destroy = noop;
     Application[PROTOTYPE].wraptry = wraptry;
     Application[PROTOTYPE].now = now;
     Application[PROTOTYPE].extend = function (obj) {
@@ -73,8 +138,6 @@ this.Odette = function (global, WHERE, version, fn) {
         var fn = name_ && (isFunction(name_) ? name_ : (isFunction(fn_) ? fn_ : NULL));
         return this[PARENT].scope(name, fn);
     };
-    // Application[PROTOTYPE].loadedAgainst = function (win) {};
-    // Application[PROTOTYPE].lastLoaded = function () {};
     Application[PROTOTYPE][TOUCH_TOP] = function () {
         // allows the top part of this script to be swapped out against different globals_
         return this[PARENT][TOUCH_TOP](global_);
@@ -87,16 +150,18 @@ this.Odette = function (global, WHERE, version, fn) {
         versions: {},
         executionTime: executionTime,
         versionOrder: [],
-        global: BOOLEAN_TRUE,
+        VERSION: odette_version,
+        shared: BOOLEAN_TRUE,
         scoped: BOOLEAN_FALSE,
         wraptry: wraptry,
-        registerVersion: function (name) {
-            var application = this,
+        maxVersion: maxVersion,
+        registerVersion: function (name, app) {
+            var defaultVersion, application = this,
                 cachedOrCreated = application.versions[name],
-                newApp = application.versions[name] = cachedOrCreated || new Application(name, application);
+                newApp = application.versions[name] = cachedOrCreated || app || new Application(name, application);
             newApp[PARENT] = application;
             application.currentVersion = name;
-            application.upsetDefaultVersion(name);
+            application.defaultVersion = (defaultVersion = application.defaultVersion) === UNDEFINED ? version : maxVersion(defaultVersion, version);
             if (!cachedOrCreated) {
                 application.versionOrder.push(name);
             }
@@ -115,27 +180,15 @@ this.Odette = function (global, WHERE, version, fn) {
             }
             return app;
         },
-        upsetDefaultVersion: function (version) {
-            var application = this;
-            if (application.defaultVersion) {
-                // keyword version only works the first time then it's set for the lifespan
-                if (+application.defaultVersion === +application.defaultVersion) {
-                    // keyword version overwrites default (dev / hotfix)
-                    if (+version !== +version) {
-                        application.defaultVersion = version;
-                    }
-                }
-            } else {
-                application.defaultVersion = version;
-            }
-        },
         unRegisterVersion: function (name) {
             var application = this,
                 saved = application.versions[name],
                 orderIdx = application.versionOrder.indexOf(name);
-            if (orderIdx !== -1) {
-                application.versionOrder.splice(orderIdx, 1);
+            if (orderIdx === -1) {
+                return application;
             }
+            saved.destroy();
+            application.versionOrder.splice(orderIdx, 1);
             saved[PARENT] = UNDEFINED;
             application.versions[name] = UNDEFINED;
             return saved;
@@ -143,7 +196,7 @@ this.Odette = function (global, WHERE, version, fn) {
         scope: function (name_, fn_) {
             var name, fn, scoped, app = this,
                 hash = app.versions;
-            if (isString(name_)) {
+            if (isString(name_) || isNumber(name_)) {
                 name = name_;
                 fn = fn_;
             } else {
@@ -164,16 +217,7 @@ this.Odette = function (global, WHERE, version, fn) {
             });
             return scoped;
         },
-        map: function (arra, fn, ctx) {
-            var i = 0,
-                len = arra[LENGTH],
-                arr = [];
-            while (len > i) {
-                arr[i] = fn.call(ctx, arra[i], i, arra);
-                i++;
-            }
-            return arr;
-        },
+        map: map,
         registerScopedMethod: function (name, expects_) {
             var application = this,
                 expects = expects_ || 3,
@@ -211,29 +255,35 @@ this.Odette = function (global, WHERE, version, fn) {
                 lastScript = allScripts[allScripts[LENGTH] - 1];
             return currentScript || lastScript;
         },
-        touchTop: function (global_) {
+        touchTop: function (global_, preventMap) {
             // assume you have top access
-            var href, topAccess = 1,
-                application = this;
+            var topAccess, origin = this,
+                application = origin;
             if (application[TOP_ACCESS] === UNDEFINED) {
-                application.wraptry(function () {
-                    href = global_.top.location.href;
-                    // safari bug WHERE unfriendly frame returns undefined
-                    if (href) {
-                        topAccess = BOOLEAN_TRUE;
-                        application = global_.top[WHERE] || application;
-                    }
-                }, function () {
-                    topAccess = BOOLEAN_FALSE;
-                });
-                if (global_ === global_.top) {
+                // we dont get a top variable on the global object in node
+                // probably because there are no scoped globals
+                if (global_ === global_.top || !global_.top) {
                     topAccess = BOOLEAN_TRUE;
+                } else {
+                    // test for browsers
+                    topAccess = wraptry(function () {
+                        var doc = global_.top.document;
+                        // overwrite the scoped application variable
+                        application = global_.top[WHERE] || application;
+                        return BOOLEAN_TRUE;
+                    }, function () {
+                        return BOOLEAN_FALSE;
+                    });
                 }
                 if (topAccess) {
-                    topmostDoc = global_.top.document;
                     global_.top[WHERE] = application;
                 }
                 application[TOP_ACCESS] = topAccess;
+            }
+            if (!preventMap && global_[WHERE] !== application) {
+                map(origin.versionOrder, function (version) {
+                    application.registerVersion(version, origin.versions[version]);
+                });
             }
             global_[WHERE] = application;
             return application;
@@ -241,23 +291,22 @@ this.Odette = function (global, WHERE, version, fn) {
     };
     app = application.get(version);
     if (app) {
-        // there is already an app with this same version that originated from this window
+        // there is already an app with this same version that originated from this global object
         return app;
     }
-    app = application.registerVersion(version, global_);
+    app = application.registerVersion(version);
+    // call is used because apply is finicky and bind is not universal
     fn.call(global_, application, app);
     return app;
 };
-// arguments: context, where, version, handler
-Odette(this, 'application', 'dev', function (innerGlobalApp, scopedApp) {
+Odette(this, 'application', '0.0.0', function (innerSharedApp, scopedApp) {
     // custom setup code for this version
     var global = this;
+    // scopedApp.version === 'dev'
     // global app is the object that will be shared with all other iframes
-    var globalApplication = innerGlobalApp.touchTop(global);
-    // puts the scoped app on the global object
-    // global.app = scopedApp;
+    var globalSharedApp = innerSharedApp.touchTop(global);
 });
-application.definition('dev', window, function (app) {
+application.definition('0.0.0', this, function (app) {
         'use strict';
 var UNDEFINED, win = window,
     doc = win.document,
@@ -933,10 +982,7 @@ var factories = {},
     },
     constructorWrapper = function (Constructor) {
         var __ = function (one, two, three, four, five, six) {
-            if (isInstance(one, Constructor)) {
-                return one;
-            }
-            return new Constructor(one, two, three, four, five, six);
+            return one instanceof Constructor ? one : new Constructor(one, two, three, four, five, six);
         };
         __.isInstance = Constructor.isInstance = function (instance) {
             return isInstance(instance, Constructor);
@@ -1310,13 +1356,12 @@ var factories = {},
         var val, n, base = obj.url,
             query = [];
         if (isObject(obj)) {
-            for (n in obj.query) {
-                val = obj.query[n];
+            each(obj.query, function (val, n) {
                 if (val !== UNDEFINED) {
                     val = encodeURIComponent(stringify(val));
                     query.push(n + '=' + val);
                 }
-            }
+            });
             if (query[LENGTH]) {
                 base += '?';
             }
@@ -1946,7 +1991,7 @@ var cacheable = function (fn) {
         return function (string) {
             var found = cache[string];
             if (!found) {
-                cache[string] = found = new Function.constructor('return ' + string);
+                cache[string] = found = new Function[CONSTRUCTOR]('return ' + string);
             }
             return found();
         };
@@ -2440,7 +2485,8 @@ app.scope(function (app) {
     });
 });
 var directives = _.directives;
-var eachCall = function (array, method, arg) {
+var COLLECTION = 'Collection',
+    eachCall = function (array, method, arg) {
         return duff(array, function (item) {
             result(item, method, arg);
         });
@@ -2691,17 +2737,17 @@ app.scope(function (app) {
         whereNot = function (obj, attrs) {
             return filter(obj, negate(matches(attrs)));
         },
-        splat = function (fn, spliceat) {
-            spliceat = spliceat || 0;
-            return function () {
-                var ctx = this,
-                    arr = toArray(arguments),
-                    args = splice(arr, spliceat);
-                duff(args, function (idx, item, list) {
-                    fn.apply(ctx, arr.concat([idx, item, list]));
-                });
-            };
-        },
+        // splat = function (fn, spliceat) {
+        //     spliceat = spliceat || 0;
+        //     return function () {
+        //         var ctx = this,
+        //             arr = toArray(arguments),
+        //             args = splice(arr, spliceat);
+        //         duff(args, function (idx, item, list) {
+        //             fn.apply(ctx, arr.concat([idx, item, list]));
+        //         });
+        //     };
+        // },
         recreateSelf = function (fn, ctx) {
             return function () {
                 return new this.__constructor__(fn.apply(ctx || this, arguments));
@@ -2727,10 +2773,10 @@ app.scope(function (app) {
             }, isArrayResult ? [] : {});
         },
         unwrapInstance = function (instance_) {
-            return isInstance(instance, factories.Collection) ? instance_ : instance.unwrap();
+            return isInstance(instance, factories[COLLECTION]) ? instance_ : instance.unwrap();
         },
-        REGISTRY = 'registry',
-        Registry = factories.Registry = factories.Directive.extend(upCase(REGISTRY), {
+        REGISTRY = 'Registry',
+        Registry = factories.Registry = factories.Directive.extend(REGISTRY, {
             constructor: function () {
                 this.reset();
                 return this;
@@ -2772,7 +2818,7 @@ app.scope(function (app) {
                 return [cached, cachedCount];
             }
         }),
-        recreatingSelfList = gapSplit('eq map mapCall filter pluck where whereNot cycle uncycle flatten gather'),
+        recreatingSelfList = gapSplit('eq pluck where whereNot map mapCall filter cycle uncycle flatten gather'),
         eachHandlers = {
             each: duff,
             duff: duff,
@@ -2797,7 +2843,11 @@ app.scope(function (app) {
         foldFindIteration = foldIteration.concat(findIteration),
         marksIterating = function (fn) {
             return function (one, two, three, four, five, six) {
-                return this.iterate(fn.bind(NULL, this, one, two, three, four, five, six));
+                var result, list = this;
+                ++list.iterating;
+                result = fn(list, one, two, three, four, five, six);
+                --list.iterating;
+                return result;
             };
         },
         wrappedListMethods = extend({
@@ -2850,11 +2900,15 @@ app.scope(function (app) {
                 return list;
             });
         }), wrap(countingList, function (name) {
-            return function (runner, context, fromHere, toThere) {
-                _[name](this.items, runner, context, fromHere, toThere);
-                return this;
-            };
-        }), wrap(foldFindIteration.concat(recreatingSelfList), function (name) {
+            return marksIterating(function (list, runner, fromHere, toThere) {
+                _[name](list.items, runner, list, fromHere, toThere);
+                return list;
+            });
+        }), wrap(recreatingSelfList, function (name) {
+            return marksIterating(function (list, one, two, three) {
+                return new List[CONSTRUCTOR](_[name](list.items, one, two, three));
+            });
+        }), wrap(foldFindIteration, function (name) {
             return marksIterating(function (list, one, two, three) {
                 return _[name](list.items, one, two, three);
             });
@@ -2890,20 +2944,20 @@ app.scope(function (app) {
             flatten: flatten,
             eq: eq
         }),
-        LIST = 'list',
+        LIST = 'List',
         List = factories.List = factories.Directive.extend(upCase(LIST), extend({
             constructor: function (items) {
                 this.reset(items);
                 return this;
             },
-            iterate: function (fn) {
-                ++this.iterating;
-                var result = fn();
-                --this.iterating;
-                return result;
+            call: function (arg) {
+                this.each(function (fn) {
+                    fn(arg);
+                });
+                return this;
             },
             obliteration: function (handler, context) {
-                duffRight(this.items, handlers, context === UNDEFINED ? this : context);
+                duffRight(this.items, handler, context === UNDEFINED ? this : context);
                 return this;
             },
             empty: function () {
@@ -2948,84 +3002,76 @@ app.scope(function (app) {
                 return map(this.items, function (item) {
                     return result(item, TO_JSON);
                 });
-            }
-        }, wrappedListMethods)),
-        directiveResult = app.defineDirective(LIST, function () {
-            return new List[CONSTRUCTOR]();
-        }),
-        Collection = factories.Collection = factories.Directive.extend('Collection', extend({
-            empty: _.flow(directives.parody(LIST, 'reset'), directives.parody(REGISTRY, 'reset')),
-            get: directives.parody(REGISTRY, 'get'),
-            register: directives.parody(REGISTRY, 'keep'),
-            unRegister: directives.parody(REGISTRY, 'drop'),
-            swapRegister: directives.parody(REGISTRY, 'swap'),
-            constructor: function (arr) {
-                this.directive(LIST).reset(arr);
-                return this;
             },
             range: recreateSelf(range),
             concat: recreateSelf(function () {
                 // this allows us to mix collections with regular arguments
                 var base = this.unwrap();
                 return base.concat.apply(base, map(arguments, function (arg) {
-                    return Collection(arg).unwrap();
+                    return List(arg).unwrap();
                 }));
             }),
-            call: function (arg) {
-                this.each(function (fn) {
-                    fn(arg);
-                });
-                return this;
-            },
             results: function (key, arg) {
                 return this.map(function (obj) {
                     return result(obj, key, arg);
                 });
             }
-            /**
-             * @description adds models to the children array
-             * @param {Object|Object[]} objs - object or array of objects to be passed through the model factory and pushed onto the children array
-             * @param {Object} [secondary] - secondary hash that is common among all of the objects being created. The parent property is automatically overwritten as the object that the add method was called on
-             * @returns {Object|Model} the object that was just created, or the object that the method was called on
-             * @name Model#add
-             * @func
-             */
-        }, wrap(gapSplit('has unwrap reset length first last index toString toJSON sort').concat(abstractedCanModify, abstractedCannotModify, nativeCannotModify, indexers, joinHandlers), function (key) {
-            return directives.parody(LIST, key);
-        }), wrap(recreatingSelfList, function (key) {
-            return recreateSelf(function (one) {
-                return this.list[key](one);
-            });
-        }), wrap(splatHandlers, function (key) {
-            return function (items) {
-                this.list[key](items);
-                return this;
-            };
-        }), wrap(countingList, function (key) {
-            return function (runner, countFrom, countTo) {
-                var context = this;
-                context.list[key](runner, context, countFrom, countTo);
-                return context;
-            };
-        }), wrap(reverseList.concat(eachHandlerKeys), function (key) {
-            return function (one, two, three, four) {
-                var context = this;
-                context.list[key](one, two || context);
-                return context;
-            };
-        }), wrap(foldIteration, function (key) {
-            return function (handler, memo, context) {
-                return this.list[key](handler, memo, context || this);
-            };
-        }), wrap(findIteration, function (key) {
-            return function (handler, context) {
-                return this.list[key](handler, context || this);
-            };
-        }))),
-        SortedCollection = factories.SortedCollection = Collection.extend('SortedCollection', {
+        }, wrappedListMethods)),
+        directiveResult = app.defineDirective(LIST, function () {
+            return new List[CONSTRUCTOR]();
+        }),
+        Collection = factories[COLLECTION] = factories.List.extend(COLLECTION, extend({
+                empty: _.flow(directives.parody(LIST, 'reset'), directives.parody(REGISTRY, 'reset')),
+                get: directives.parody(REGISTRY, 'get'),
+                register: directives.parody(REGISTRY, 'keep'),
+                unRegister: directives.parody(REGISTRY, 'drop'),
+                swapRegister: directives.parody(REGISTRY, 'swap')
+                //     ,
+                //     constructor: function (arr) {
+                //         this.directive(LIST).reset(arr);
+                //         return this;
+                //     },
+                // }, wrap(gapSplit('call range concat results has unwrap reset length first last index toString toJSON sort').concat(abstractedCanModify, abstractedCannotModify, nativeCannotModify, indexers, joinHandlers), function (key) {
+                //     return directives.parody(LIST, key);
+                // }), wrap(recreatingSelfList, function (key) {
+                //     return recreateSelf(function (one) {
+                //         return this.List[key](one);
+                //     });
+                // }), wrap(splatHandlers, function (key) {
+                //     return function (items) {
+                //         this.List[key](items);
+                //         return this;
+                //     };
+                // }), wrap(countingList, function (key) {
+                //     return function (runner, countFrom, countTo) {
+                //         var context = this;
+                //         context.List[key](runner, context, countFrom, countTo);
+                //         return context;
+                //     };
+                // }), wrap(reverseList.concat(eachHandlerKeys), function (key) {
+                //     return function (one, two, three, four) {
+                //         var context = this;
+                //         context.List[key](one, two || context);
+                //         return context;
+                //     };
+                // }), wrap(foldIteration, function (key) {
+                //     return function (handler, memo, context) {
+                //         return this.List[key](handler, memo, context || this);
+                //     };
+                // }), wrap(findIteration, function (key) {
+                //     return function (handler, context) {
+                //         return this.List[key](handler, context || this);
+                //     };
+            })
+            // )
+        ),
+        appDirectiveResult = app.defineDirective(COLLECTION, function () {
+            return Collection();
+        }),
+        SortedCollection = factories.SortedCollection = Collection.extend('Sorted' + COLLECTION, {
             constructor: function (list_, skip) {
                 var sorted = this;
-                Collection[CONSTRUCTOR].call(sorted);
+                List[CONSTRUCTOR].call(sorted);
                 if (list_ && !skip) {
                     sorted.load(isArrayLike(list_) ? list_ : [list_]);
                 }
@@ -3152,7 +3198,7 @@ app.scope(function (app) {
             empty: function () {
                 var sm = this;
                 // wipes array and id hash
-                Collection[CONSTRUCTOR][PROTOTYPE].empty.call(sm);
+                List[CONSTRUCTOR][PROTOTYPE].empty.call(sm);
                 // resets change counter
                 sm.current(EMPTY_STRING);
                 return sm;
@@ -3193,17 +3239,17 @@ app.scope(function (app) {
                     validResult = parent.foldl(function (memo, stringInstance) {
                         if (stringInstance.isValid()) {
                             memo.items.push(stringInstance);
-                            memo.registry.id[stringInstance.value] = stringInstance;
+                            memo.Registry.id[stringInstance.value] = stringInstance;
                         }
                         return memo;
                     }, {
                         items: [],
-                        registry: {
+                        Registry: {
                             id: {}
                         }
                     });
                 parent.directive(LIST).reset(validResult.items);
-                parent.directive(REGISTRY).reset(validResult.registry);
+                parent.directive(REGISTRY).reset(validResult.Registry);
                 return parent;
             },
             generate: function (delimiter_) {
@@ -3290,36 +3336,37 @@ var DISPATCH_EVENT = 'dispatchEvent',
     STATE = 'state',
     HANDLERS = 'handlers';
 app.scope(function (app) {
-    var iterateOverObject = function (eventer, context, events, handler, iterator, firstArg) {
+    var iterateOverList = function (eventer, directive, names, handler, args, iterator) {
             // only accepts a string or a function
             var fn = isString(handler) ? eventer[handler] : handler,
                 valid = !isFunction(fn) && exception({
                     message: 'handler must be a function or a string with a method on the originating object'
-                }),
-                directive = eventer.directive(EVENTS);
-            return duff(gapSplit(events), function (eventName) {
-                iterator(eventer, eventName, directive.make(eventName, fn, eventer, context), firstArg);
+                });
+            return duff(gapSplit(names), function (eventName) {
+                iterator(eventer, directive, directive.make(eventName, fn, eventer), args);
             });
         },
-        // user friendly version
-        flattenMatrix = function (iterator, _nameOrObjectIndex) {
+        flattenMatrix = function (iterator, _nameOrObjectIndex, expects, fills) {
             return function (first) {
-                var context, args, nameOrObjectIndex, handlersIndex, list, nameOrObject, eventer = this;
-                // if no name or no listen target then fail
+                var args, eventsDirective, firstTimeRound = BOOLEAN_TRUE,
+                    eventer = this;
                 if (!first) {
                     return eventer;
                 }
                 args = toArray(arguments);
-                if (!args[_nameOrObjectIndex]) {
-                    return eventer;
-                }
-                nameOrObjectIndex = _nameOrObjectIndex;
-                handlersIndex = _nameOrObjectIndex;
-                list = args.splice(nameOrObjectIndex);
-                nameOrObject = list[0];
-                context = list[(isObject(nameOrObject) ? 1 : 2)] || eventer;
-                intendedObject(nameOrObject, list[1], function (events, handlers) {
-                    iterateOverObject(eventer, context, events, handlers, iterator, args[0]);
+                intendedObject(args[_nameOrObjectIndex], args[_nameOrObjectIndex + 1], function (key, value, isObj) {
+                    eventsDirective = eventsDirective || eventer.directive(EVENTS);
+                    if (firstTimeRound && isObj) {
+                        // make room for one more
+                        args.splice(_nameOrObjectIndex, _nameOrObjectIndex + 1, NULL);
+                    }
+                    args[_nameOrObjectIndex] = key;
+                    args[_nameOrObjectIndex + 1] = value;
+                    firstTimeRound = BOOLEAN_FALSE;
+                    if (args[LENGTH] < expects) {
+                        fills(eventer, args);
+                    }
+                    iterateOverList(eventer, eventsDirective, key, value, args, iterator);
                 });
                 return eventer;
             };
@@ -3341,53 +3388,55 @@ app.scope(function (app) {
         },
         setupWatcher = function (nameOrObjectIndex, triggersOnce) {
             return function () {
-                var context, list, args, firstArg, handlersIndex, nameOrObject, original_handler, directive, eventer = this,
+                var context, list, args, firstArg, handlersIndex, nameOrObject, eventerDirective, original_handler, targetDirective, eventer = this,
                     ret = {};
                 if (!arguments[0]) {
                     return ret;
                 }
                 args = toArray(arguments);
                 handlersIndex = nameOrObjectIndex;
-                list = args.splice(nameOrObjectIndex);
+                list = args.slice(nameOrObjectIndex);
                 nameOrObject = list[0];
                 context = list[(isObject(nameOrObject) ? 2 : 3)] || eventer;
                 if (nameOrObjectIndex && !args[0]) {
                     return ret;
                 }
+                eventerDirective = eventer.directive(EVENTS);
                 if (nameOrObjectIndex) {
-                    directive = args[0].directive(EVENTS);
+                    targetDirective = args[0].directive(EVENTS);
                 } else {
-                    directive = eventer.directive(EVENTS);
+                    targetDirective = eventerDirective;
                 }
                 intendedObject(nameOrObject, list[1], function (key_, value_, isObject_) {
                     // only allow one to be watched
                     var key = key_.split(SPACE)[0],
                         fun_things = original_handler || bind(list[isObject_ ? 1 : 2], context || eventer),
                         value = isFunction(value_) ? value_ : curriedEquality(key, value_),
-                        // handler = makeHandler(fun_things, value, triggersOnce, directive),
                         name = CHANGE + COLON + key,
                         origin = eventer,
-                        made = directive.make(name, fun_things, eventer, context);
+                        made = targetDirective.make(name, fun_things, eventer);
+                    if (nameOrObjectIndex + 2 < args[LENGTH]) {
+                        args.push(context);
+                    }
                     if (nameOrObjectIndex) {
-                        listenToModifier(eventer, name, made, args[0]);
-                        origin = args[0];
+                        listenToModifier(eventer, eventerDirective, made, args[0]);
                     }
                     made.comparator = value;
                     made.triggersOnce = !!triggersOnce;
                     made.runner = fun_things;
-                    attachEventObject(origin, name, made, makeHandler);
+                    attachEventObject(origin, targetDirective, made, [list[0], list[2], list[3]], makeHandler);
                     ret[key] = fun_things;
                 });
                 return ret;
             };
         },
-        listenToModifier = function (eventer, name, obj, target) {
-            var valid, targetDirective = target.directive(EVENTS),
-                listeningObject = retreiveListeningObject(eventer, target),
+        listenToModifier = function (eventer, targetDirective, obj, target) {
+            var valid, listeningObject = retreiveListeningObject(eventer, target),
                 eventsDirective = target.directive(EVENTS),
                 handlers = eventsDirective[HANDLERS] = eventsDirective[HANDLERS] || {};
             listeningObject.count++;
             obj.listening = listeningObject;
+            return eventsDirective;
         },
         onceModification = function (directive, obj) {
             var fn = obj.fn || obj.handler;
@@ -3398,12 +3447,22 @@ app.scope(function (app) {
                 return fn.apply(this, arguments);
             });
         },
-        attachEventObject = function (eventer, name, eventObject, modifier) {
-            eventer.directive(EVENTS).attach(name, eventObject, modifier);
+        attachEventObject = function (eventer, directive, event, args, modifier) {
+            event.context = event.context || args[2];
+            directive.attach(event.name, event, modifier);
         },
-        onceHandler = function (eventer, name, obj) {
-            attachEventObject(eventer, name, obj, onceModification);
+        onceHandler = function (eventer, directive, obj, args) {
+            attachEventObject(eventer, directive, obj, args, onceModification);
         },
+        onFillerMaker = function (count) {
+            return function (eventer, args) {
+                if (args[LENGTH] === count) {
+                    args.push(eventer);
+                }
+            };
+        },
+        onFiller = onFillerMaker(2),
+        listenToFiller = onFillerMaker(3),
         retreiveListeningObject = function (listener, talker) {
             var listenerDirective = listener.directive(EVENTS),
                 talkerDirective = talker.directive(EVENTS),
@@ -3425,13 +3484,13 @@ app.scope(function (app) {
             };
             return listening;
         },
-        listenToHandler = function (eventer, name, obj, target) {
-            listenToModifier(eventer, name, obj, target);
-            attachEventObject(target, name, obj);
+        listenToHandler = function (eventer, directive, obj, list, modifier) {
+            var target = list[0];
+            var targetDirective = listenToModifier(eventer, directive, obj, target);
+            attachEventObject(target, targetDirective, obj, list.slice(1), modifier);
         },
-        listenToOnceHandler = function (eventer, name, obj, extra) {
-            listenToModifier(eventer, name, obj, target);
-            attachEventObject(target, name, obj, onceModification);
+        listenToOnceHandler = function (eventer, directive, obj, list) {
+            listenToHandler(eventer, directive, obj, list, onceModification);
         },
         uniqueKey = 'c',
         Events = factories.Events = factories.Directive.extend('Events', {
@@ -3447,10 +3506,11 @@ app.scope(function (app) {
             // uniqueKey: 'c',
             initialize: noop,
             bubble: directives.parody(EVENTS, 'bubble'),
-            on: flattenMatrix(attachEventObject, 0),
-            once: flattenMatrix(onceHandler, 0),
-            listenTo: flattenMatrix(listenToHandler, 1),
-            listenToOnce: flattenMatrix(listenToOnceHandler, 1),
+            // onUntil: flattenMatrix(untilHandler),
+            on: flattenMatrix(attachEventObject, 0, 3, onFiller),
+            once: flattenMatrix(onceHandler, 0, 3, onFiller),
+            listenTo: flattenMatrix(listenToHandler, 1, 4, listenToFiller),
+            listenToOnce: flattenMatrix(listenToOnceHandler, 1, 4, listenToFiller),
             watch: setupWatcher(0),
             watchOnce: setupWatcher(0, 1),
             watchOther: setupWatcher(1),
@@ -3463,7 +3523,7 @@ app.scope(function (app) {
                 extend(model, opts);
                 model[uniqueKey + ID] = model[uniqueKey + ID] || uniqueId(uniqueKey);
                 // reacting to self
-                model.on(model.events);
+                model.on(result(model, 'events'));
                 model.initialize(opts);
                 return model;
             },
@@ -3495,12 +3555,13 @@ app.scope(function (app) {
                 if (arguments[LENGTH]) {
                     if (!name) {
                         each(events[HANDLERS], function (list, name) {
-                            events.seekAndDestroy(list, fn_, context_);
+                            events.seekAndDestroy(list, fn_, context);
                         });
                     } else {
                         intendedObject(name, fn_, function (name, fn_) {
-                            iterateOverObject(eventer, context, name, fn_, function (eventer, name, obj) {
-                                events.seekAndDestroy(!name || events[HANDLERS][name], obj.handler, obj.context);
+                            iterateOverList(eventer, events, name, fn_, [], function (eventer, directive, obj) {
+                                var handlers = events[HANDLERS][obj.name];
+                                return handlers && events.seekAndDestroy(handlers, obj.handler, context);
                             });
                         });
                     }
@@ -3652,6 +3713,7 @@ app.scope(function (app) {
         Children = factories[CHILDREN] = factories.Collection.extend(CHILDREN, {
             constructor: function (instance) {
                 this[TARGET] = instance;
+                factories.List[CONSTRUCTOR].call(this);
                 return this;
             },
             // this one forcefully adds
@@ -3726,27 +3788,27 @@ app.scope(function (app) {
              * @param {Object} attributes - non circular hash that is extended onto what the defaults object produces
              * @returns {Model} instance the method was called on
              */
-            reset: function (newChildren) {
-                var length, child, directive = this,
-                    model = directive[TARGET],
-                    arr = directive[UNWRAP]();
-                // this can be made far more efficient
-                while (arr[LENGTH]) {
-                    child = arr[0];
-                    length = arr[LENGTH];
-                    // if (child) {
-                    result(child, DESTROY);
-                    // }
-                    // if it didn't remove itself,
-                    // then you should remove it here
-                    // this gets run if the child is a basic data type
-                    if (arr[0] === child && arr[LENGTH] === length) {
-                        remove(arr, child);
-                    }
-                }
-                model.add(newChildren);
-                return model;
-            },
+            // reset: function (newChildren) {
+            //     var length, child, directive = this,
+            //         model = directive[TARGET],
+            //         arr = directive[UNWRAP]();
+            //     // this can be made far more efficient
+            //     while (arr[LENGTH]) {
+            //         child = arr[0];
+            //         length = arr[LENGTH];
+            //         // if (child) {
+            //         result(child, DESTROY);
+            //         // }
+            //         // if it didn't remove itself,
+            //         // then you should remove it here
+            //         // this gets run if the child is a basic data type
+            //         if (arr[0] === child && arr[LENGTH] === length) {
+            //             remove(arr, child);
+            //         }
+            //     }
+            //     model.add(newChildren);
+            //     return model;
+            // },
             // set attrs, sync with update or create
             save: function () {},
             fetch: function () {}
@@ -4034,7 +4096,7 @@ app.scope(function (app) {
         returnsId = function () {
             return this.id;
         },
-        SERIALIZED_DATA = '_sharedData',
+        PASSED_DATA = '_passedData',
         ObjectEvent = factories.ObjectEvent = factories.Directive.extend('ObjectEvent', {
             constructor: function (target, data, name, options, when) {
                 var evnt = this;
@@ -4043,7 +4105,7 @@ app.scope(function (app) {
                 evnt[NAME] = name;
                 evnt[TYPE] = name.split(COLON)[0];
                 evnt.timeStamp = when || now();
-                evnt[SERIALIZED_DATA] = {};
+                evnt[PASSED_DATA] = {};
                 evnt.data(data);
                 if (options) {
                     extend(evnt, options);
@@ -4054,14 +4116,14 @@ app.scope(function (app) {
                 return this[PROPAGATION_IS_STOPPED] || this[IMMEDIATE_PROP_IS_STOPPED];
             },
             data: function (datum) {
-                return arguments[LENGTH] ? this.set(datum) : this[SERIALIZED_DATA];
+                return arguments[LENGTH] ? this.set(datum) : this[PASSED_DATA];
             },
             get: function (key) {
-                return this[SERIALIZED_DATA][key];
+                return this[PASSED_DATA][key];
             },
             set: function (data) {
                 var evnt = this;
-                evnt[SERIALIZED_DATA] = isObject(data) ? data : {};
+                evnt[PASSED_DATA] = isObject(data) ? data : {};
                 return evnt;
             },
             stopImmediatePropagation: function () {
@@ -4128,32 +4190,25 @@ app.scope(function (app) {
             create: function (target, data, name, options) {
                 return ObjectEvent(target, data, name, options);
             },
-            make: function (name, handler, origin, context) {
+            make: function (name, handler, origin) {
                 return {
                     disabled: BOOLEAN_FALSE,
-                    namespace: name.split(COLON)[0],
+                    namespace: name && name.split(COLON)[0],
                     name: name,
                     handler: handler,
-                    context: context,
                     origin: origin
                 };
             },
             seekAndDestroy: function (list, handler, context) {
-                var events = this,
-                    stackLength = events[STACK][LENGTH](),
-                    todo = [];
-                return list.duff(function (obj, idx) {
-                    if (obj.disabled || (handler && obj.handler !== handler) || (context && obj.context !== context)) {
-                        return;
+                var obj, events = this,
+                    array = list.unwrap(),
+                    i = array[LENGTH] - 1;
+                for (; i >= 0; i--) {
+                    obj = array[i];
+                    if (!obj.disabled && (!handler || obj.handler === handler) && (!context || obj.context === context)) {
+                        events.detach(obj, i);
                     }
-                    if (stackLength) {
-                        events.detach(obj, idx);
-                    } else {
-                        todo.push([obj, idx]);
-                    }
-                }) && todo[LENGTH] && duff(todo, function (tuple) {
-                    events.detach(tuple[0], tuple[1]);
-                });
+                }
             },
             nextBubble: function (start) {
                 return start.parent;
@@ -4252,15 +4307,15 @@ app.scope(function (app) {
                     return;
                 }
                 running[name] = BOOLEAN_TRUE;
-                List(events.subset(list.unwrap(), evnt)).each(function (handler) {
+                if (List(events.subset(list.unwrap(), evnt)).find(function (handler) {
                     if (!handler.disabled && events.queue(stack, handler, evnt)) {
                         handler.fn(evnt);
                         stopped = !!evnt[IMMEDIATE_PROP_IS_STOPPED];
                         events.unQueue(stack, handler, evnt);
                     }
-                });
-                if (stopped) {
-                    events.cancelled(stack, evnt, i);
+                    return stopped;
+                })) {
+                    events.cancelled(stack, evnt);
                 }
                 evnt.finished();
                 running[name] = !!cached;
@@ -4269,34 +4324,7 @@ app.scope(function (app) {
             subset: function (list) {
                 return list.slice(0);
             },
-            bus: function (id, handler, context) {
-                var bus = this.proxyStack,
-                    object = {
-                        id: id,
-                        fn: bind(handler, context),
-                        context: context,
-                        disabled: BOOLEAN_FALSE,
-                        handler: handler
-                    };
-                bus.push(object);
-                bus.register(ID, id, object);
-                return this;
-            },
-            unBus: function (id, index) {
-                var handler, directive = this,
-                    bus = directive.proxyStack;
-                if (!(handler = bus.get(ID, id))) {
-                    return directive;
-                }
-                if (bus.list.iterating) {
-                    bus.mark('dirty');
-                    handler.disabled = BOOLEAN_TRUE;
-                } else {
-                    bus.remove(handler, index);
-                    bus.unRegister(ID, id);
-                }
-                return directive;
-            }
+            cancelled: function () {}
         });
     app.defineDirective(EVENTS, factories.EventsDirective[CONSTRUCTOR]);
 });
@@ -4426,6 +4454,9 @@ app.scope(function (app) {
                 fn: negative_bound
             };
         },
+        abstractedStopListening = function () {
+            this.stopListening();
+        },
         Linguistics = factories.Linguistics = factories.Events.extend(LINGUISTICS, {
             then: push(SUCCESS),
             always: push(EVERY),
@@ -4449,8 +4480,8 @@ app.scope(function (app) {
                 sequencer[EVERY] = new Collection[CONSTRUCTOR]();
                 sequencer.group();
                 sequencer.listenTo(sequencer.origin, {
-                    change: sequencer.apply,
-                    destroy: sequencer.stopListening
+                    change: 'apply',
+                    destroy: abstractedStopListening
                 });
                 return this;
             },
@@ -4566,11 +4597,12 @@ app.scope(function (app) {
         factories = _.factories,
         FAILURE = 'failure',
         SUCCESS = 'success',
+        PENDING = 'pending',
         STATE = 'state',
         ERROR = 'error',
         ALWAYS = 'always',
         FULFILLED = 'fulfilled',
-        RESOLVED = 'resolved',
+        SETTLED = 'settled',
         REJECTED = 'rejected',
         EMPTYING = 'emptying',
         ALL_STATES = 'allStates',
@@ -4639,17 +4671,36 @@ app.scope(function (app) {
             return this;
         },
         Model = factories.Model,
-        check = function () {
-            var notSuccessful, resolveAs, parent = this,
-                children = parent.directive(CHILDREN),
-                argumentAggregate = [];
-            if (!children.find(function (child) {
-                notSuccessful = notSuccessful || child[STATE] !== SUCCESS;
-                argumentAggregate.push(child[STASHED_ARGUMENT]);
-                return !child.is(RESOLVED);
-            })) {
-                parent.resolveAs(notSuccessful ? FAILURE : SUCCESS, argumentAggregate);
+        checkAll = function () {
+            var notSuccessful, allSettled = BOOLEAN_TRUE,
+                parent = this,
+                collection = parent.directive(COLLECTION),
+                argumentAggregate = [],
+                found = collection.find(function (child) {
+                    notSuccessful = notSuccessful || child.is(REJECTED);
+                    allSettled = allSettled && child.is(SETTLED);
+                    argumentAggregate.push(child[STASHED_ARGUMENT]);
+                    return notSuccessful;
+                });
+            if (notSuccessful) {
+                parent.resolveAs(FAILURE, found[STASHED_ARGUMENT]);
+            } else {
+                // none were found that were not resolved
+                if (allSettled) {
+                    parent.resolveAs(SUCCESS, argumentAggregate);
+                }
             }
+            return parent;
+        },
+        checkAny = function () {
+            var first, parent = this,
+                collection = parent.directive(COLLECTION);
+            if ((first = collection.find(function (child) {
+                return child.is(SETTLED);
+            }))) {
+                parent.resolveAs(first[STATE], first[STASHED_ARGUMENT]);
+            }
+            return parent;
         },
         baseStates = {
             success: ALWAYS,
@@ -4657,19 +4708,38 @@ app.scope(function (app) {
             error: ALWAYS,
             always: BOOLEAN_TRUE
         },
+        collect = function (promise, list) {
+            var collection = promise.directive(COLLECTION);
+            flatten(list, BOOLEAN_TRUE, function (pro) {
+                if (promise.isChildType(pro)) {
+                    collection.add(pro);
+                    collection.register('cid', pro.cid, pro);
+                }
+            });
+        },
+        listen = function (promise, unbound) {
+            var bound = bind(unbound, promise),
+                collection = promise.directive(COLLECTION);
+            collection.each(function (pro) {
+                if (collection.get('listening', pro.cid)) {
+                    return;
+                }
+                collection.register('listening', pro.cid, BOOLEAN_TRUE);
+                pro.always(function () {
+                    bound();
+                });
+            });
+        },
         Promise = factories.Promise = _.Promise = Model.extend('Promise', {
             addHandler: addHandler,
-            childEvents: {
-                always: check
-            },
+            'constructor:Model': Model[CONSTRUCTOR],
             constructor: function () {
                 var promise = this;
-                promise.on('child:added', check);
-                promise.state = BOOLEAN_FALSE;
+                promise.state = PENDING;
                 promise[STASHED_ARGUMENT] = NULL;
                 promise[STASHED_HANDLERS] = {};
                 promise.reason = BOOLEAN_FALSE;
-                Model[CONSTRUCTOR].call(promise);
+                promise[CONSTRUCTOR + ':Model']();
                 // cannot have been resolved in any way yet
                 intendedObject(extend({}, baseStates, result(promise, 'associativeStates')), NULL, addHandler, promise);
                 // add passed in success handlers
@@ -4689,10 +4759,10 @@ app.scope(function (app) {
                 var opts = opts_,
                     resolveAs = resolveAs_,
                     promise = this;
-                if (promise.is(RESOLVED)) {
+                if (promise.is(SETTLED)) {
                     return promise;
                 }
-                promise.mark(RESOLVED);
+                promise.mark(SETTLED);
                 promise.state = resolveAs || FAILURE;
                 promise[STASHED_ARGUMENT] = opts;
                 promise.reason = reason_ ? reason_ : BOOLEAN_FALSE;
@@ -4704,7 +4774,7 @@ app.scope(function (app) {
                     promise.unmark(FULFILLED);
                     e.options = opts;
                     promise[STASHED_ARGUMENT] = e;
-                    return dispatch(promise, 'error');
+                    return dispatch(promise, ERROR);
                 }, function (err, returnValue) {
                     return returnValue || [];
                 }));
@@ -4713,17 +4783,22 @@ app.scope(function (app) {
             fulfill: function (opts) {
                 return this.resolveAs(SUCCESS, opts);
             },
+            resolve: function (opts) {
+                return this.fulfill(opts);
+            },
             reject: function (opts, reason) {
                 return this.resolveAs(FAILURE, opts, reason);
             },
-            stash: function (name, fn) {
+            stash: function (name, list) {
                 var promise = this,
-                    stashedHandlers = promise[STASHED_HANDLERS],
-                    byName = stashedHandlers[name] = stashedHandlers[name] || [];
-                flatten(arguments, BOOLEAN_TRUE, function (fn) {
-                    if (isFunction(fn)) {
-                        byName.push(bind(fn, promise));
-                    } else {}
+                    stashedHandlers = promise[STASHED_HANDLERS];
+                intendedObject(name, list, function (name, list) {
+                    var byName = stashedHandlers[name] = stashedHandlers[name] || [];
+                    flatten(isFunction(list) ? [list] : list, BOOLEAN_TRUE, function (fn) {
+                        if (isFunction(fn)) {
+                            byName.push(bind(fn, promise));
+                        }
+                    });
                 });
                 return promise;
             },
@@ -4732,33 +4807,41 @@ app.scope(function (app) {
                     arg = promise[STASHED_ARGUMENT],
                     fn = fn_;
                 promise.stash(name, fn);
-                if (promise.is(RESOLVED)) {
+                if (promise.is(SETTLED)) {
                     dispatch(promise, promise[STATE]);
                 }
                 return promise;
             },
             when: function () {
-                var promise = this,
-                    collected = [];
-                flatten(arguments, BOOLEAN_TRUE, function (pro) {
-                    if (promise.isChildType(pro)) {
-                        collected.push(pro);
-                    }
-                });
-                promise.add(collected);
+                return this.all(arguments);
+            },
+            all: function () {
+                var promise = this;
+                if (promise[STATE] !== PENDING) {
+                    return promise;
+                }
+                collect(promise, arguments);
+                listen(promise, checkAll);
                 return promise;
+            },
+            race: function () {
+                var promise = this;
+                if (promise[STATE] !== PENDING) {
+                    return promise;
+                }
+                collect(promise, arguments);
+                listen(promise, checkAny);
+                return promise;
+            },
+            then: function (handlers) {
+                return this.handle(ALWAYS, handlers);
             }
         }),
         PromisePrototype = Promise[CONSTRUCTOR][PROTOTYPE],
-        resulting = PromisePrototype.addHandler('success').addHandler('failure').addHandler('always').addHandler('error'),
+        resulting = PromisePrototype.addHandler(SUCCESS).addHandler(FAILURE).addHandler(ALWAYS).addHandler(ERROR),
         appPromise = Promise();
     app.extend({
-        dependency: bind(appPromise.when, appPromise)
-    });
-    exports({
-        when: function () {
-            return Promise().when(toArray(arguments));
-        }
+        dependency: bind(appPromise.all, appPromise)
     });
 });
 app.scope(function (app) {
@@ -4874,13 +4957,13 @@ app.scope(function (app) {
         XDomainRequest = win.XDomainRequest,
         stringifyQuery = _.stringifyQuery,
         GET = 'GET',
-        validTypes = gapSplit(GET + ' POST PUT DELETE'),
+        validTypes = gapSplit(GET + ' POST PUT DELETE HEAD TRACE OPTIONS CONNECT'),
         baseEvents = gapSplit('progress timeout abort ' + ERROR),
         /**
-         * @description helper function to attach a bunch of event listeners to the request object as well as help them trigger the appropriate events on the Ajax object itself
+         * @description helper function to attach a bunch of event listeners to the request object as well as help them trigger the appropriate events on the http object itself
          * @private
-         * @arg {Ajax} instance to listen to
-         * @arg {Xhr} instance to place event handlers to trigger events on the Ajax instance
+         * @arg {http} instance to listen to
+         * @arg {Xhr} instance to place event handlers to trigger events on the http instance
          * @arg {string} event name
          */
         attachBaseListeners = function (ajax) {
@@ -4928,25 +5011,26 @@ app.scope(function (app) {
             if (data) {
                 args.push(stringify(data));
             }
-            ajax.setHeaders(ajax.get('headers'));
+            ajax.headers(ajax.get('headers'));
             attachBaseListeners(ajax);
             // have to wrap in set timeout for ie
             setTimeout(sendthething(xhrReq, args, ajax));
         },
         /**
-         * @class Ajax
-         * @alias factories.Ajax
+         * @class http
+         * @alias factories.http
          * @augments Model
          * @augments Model
          * @classdesc XHR object wrapper Triggers events based on xhr state changes and abstracts many anomalies that have to do with IE
          */
-        Ajax = factories.Ajax = factories.Promise.extend('Ajax', {
+        HTTP = factories.HTTP = factories.Promise.extend('HTTP', {
             /**
              * @func
-             * @name Ajax#constructor
+             * @name http#constructor
              * @param {string} str - url to get from
-             * @returns {Ajax} new ajax object
+             * @returns {http} new ajax object
              */
+            parse: parse,
             constructor: function (str, secondary) {
                 var promise, url, thingToDo, typeThing, type, xhrReq, ajax = this,
                     method = 'onreadystatechange';
@@ -4985,18 +5069,18 @@ app.scope(function (app) {
             status: function (code, handler) {
                 return this.handle(STATUS + COLON + code, handler);
             },
-            setHeaders: function (headers) {
+            headers: function (headers) {
                 var ajax = this,
                     xhrReq = ajax.requestObject;
                 each(headers, function (val, key) {
-                    xhrReq.setRequestHeader(unCamelCase(key), val);
+                    xhrReq.setRequestHeader(key, val);
                 });
                 return ajax;
             },
             /**
              * @description specialized function to stringify url if it is an object
              * @returns {string} returns the completed string that will be fetched / posted / put / or deleted against
-             * @name Ajax#getUrl
+             * @name http#getUrl
              */
             getUrl: function () {
                 var url = this.get('url');
@@ -5009,7 +5093,7 @@ app.scope(function (app) {
              * @description makes public the ability to attach a response handler if one has not already been attached. We recommend not passing a function in and instead just listening to the various events that the xhr object will trigger directly, or indirectly on the ajax object
              * @param {function} [fn=handler] - pass in a function to have a custom onload, onreadystatechange handler
              * @returns {ajax}
-             * @name Ajax#attachResponseHandler
+             * @name http#attachResponseHandler
              */
             auxiliaryStates: function () {
                 return {
@@ -5033,29 +5117,22 @@ app.scope(function (app) {
                     abort: FAILURE
                 };
             },
-            parse: parse,
             attachResponseHandler: function () {
                 var ajax = this,
                     xhrReqObj = ajax.requestObject,
                     hasFinished = BOOLEAN_FALSE,
                     method = ajax.get('method'),
                     handler = function (evnt) {
-                        var status, doIt, allStates, rawData, readystate, xhrReqObj = this;
+                        var status, doIt, allStates, rawData, xhrReqObj = this;
                         if (!xhrReqObj || hasFinished) {
                             return;
                         }
                         status = xhrReqObj[STATUS];
-                        readystate = xhrReqObj[READY_STATE];
                         rawData = xhrReqObj.responseText;
-                        ajax.currentEvent = evnt;
-                        ajax[READY_STATE] = readystate;
-                        if (method === 'onload' || (method === 'onreadystatechange' && readystate === 4)) {
+                        if (method === 'onload' || (method === 'onreadystatechange' && xhrReqObj[READY_STATE] === 4)) {
                             ajax.set(STATUS, status);
                             allStates = result(ajax, 'allStates');
-                            if (allStates[STATUS + COLON + xhrReqObj[STATUS]] === SUCCESS) {
-                                rawData = result(ajax, 'parse', rawData);
-                            }
-                            rawData = parse(rawData);
+                            rawData = result(ajax, 'parse', rawData);
                             hasFinished = BOOLEAN_TRUE;
                             ajax.resolveAs(STATUS + COLON + xhrReqObj[STATUS], rawData);
                         }
@@ -5066,17 +5143,17 @@ app.scope(function (app) {
                 return ajax;
             }
         });
-    _.extend(Ajax, _.foldl(validTypes, function (memo, key_) {
+    _.foldl(validTypes, function (memo, key_) {
         var key = key_;
         key = key.toLowerCase();
         memo[key] = function (url, options) {
-            return Ajax(_.extend({
+            return HTTP(_.extend({
                 type: key_,
                 url: url
             }, options));
         };
         return memo;
-    }, {}));
+    }, HTTP);
 });
 app.scope(function (app) {
     var _ = app._,
@@ -5086,6 +5163,7 @@ app.scope(function (app) {
         MODULES = 'Modules',
         STARTED = START + 'ed',
         INITIALIZED = 'initialized',
+        COMPLETED = 'completed',
         startableMethods = {
             start: function (evnt) {
                 var startable = this;
@@ -5136,14 +5214,14 @@ app.scope(function (app) {
             return [module].concat(module.application.createArguments(), args || []);
         },
         checks = function (app, list) {
-            var exports = [];
+            var exporting = [];
             duff(list, function (path) {
                 var module = app.module(path);
                 if (module.is(INITIALIZED)) {
-                    exports.push(module.exports);
+                    exporting.push(module.exports);
                 }
             });
-            return exports[LENGTH] === list[LENGTH] ? exports : BOOLEAN_FALSE;
+            return exporting[LENGTH] === list[LENGTH] ? exporting : BOOLEAN_FALSE;
         },
         Promise = _.Promise,
         moduleMethods = {
@@ -5155,8 +5233,8 @@ app.scope(function (app) {
                     namespace = name.split(PERIOD),
                     module = parent.directive(CHILDREN).get(name_),
                     triggerBubble = function () {
-                        module.mark(INITIALIZED);
-                        module.bubble(INITIALIZED + ':submodule');
+                        module.mark(COMPLETED);
+                        module.parent.bubble(INITIALIZED + ':submodule');
                     };
                 if (module) {
                     // hey, i found it. we're done here
@@ -5196,6 +5274,7 @@ app.scope(function (app) {
                 }
                 if (isWindow(windo) || isFunction(windo) || isFunction(fn)) {
                     module.exports = module.exports || {};
+                    module.mark(INITIALIZED);
                     initResult = module.run(windo, fn);
                     // allows us to create dependency graphs
                     if (initResult && isInstance(initResult, Promise)) {
@@ -5242,11 +5321,11 @@ app.scope(function (app) {
                 return !this.application || this.application === this[PARENT];
             },
             require: function (modulename, handler) {
-                var promise, module, list, mapppedArguments, app = this;
+                var promise, module, list, mappedArguments, app = this;
                 if (!isFunction(handler)) {
                     module = app.module(modulename);
-                    return module.is(INITIALIZED) ? module.exports : exception({
-                        message: 'that module has not been ' + INITIALIZED + ' yet'
+                    return module.is(COMPLETED) ? module.exports : exception({
+                        message: 'that module has not ' + COMPLETED + ' initialization yet'
                     });
                 } else {
                     promise = _.Promise();
@@ -5257,12 +5336,12 @@ app.scope(function (app) {
                     list = list.slice(0);
                     promise.success(bind(handler, app));
                     if ((mappedArguments = checks(app, list))) {
-                        promise.fulfill(mapppedArguments);
+                        promise.fulfill(mappedArguments);
                     } else {
-                        app.on(INITIALIZED + ':submodule', function () {
+                        app.application.on(INITIALIZED + ':submodule', function () {
                             if ((mappedArguments = checks(app, list))) {
                                 app.off();
-                                promise.fulfill(mapppedArguments);
+                                promise.fulfill(mappedArguments);
                             }
                         });
                     }
@@ -5291,6 +5370,7 @@ app.scope(function (app) {
         }));
 });
 var ATTACHED = 'attached',
+    IFRAME = 'iframe',
     isWindow = function (obj) {
         return obj && obj === obj[WINDOW];
     };
@@ -5326,7 +5406,6 @@ app.scope(function (app) {
         FONT_SIZE = 'fontSize',
         DEFAULT_VIEW = 'defaultView',
         DIV = 'div',
-        IFRAME = 'iframe',
         devicePixelRatio = (win.devicePixelRatio || 1),
         ensure = function (el, owner) {
             var data;
@@ -5401,7 +5480,7 @@ app.scope(function (app) {
             // if (!settings.variable) source = 'with(this||{}){\n' + source + '}\n';
             source = "var __t,__HTML__='',__j=Array.prototype.join," + "print=function(){__HTML__+=__j.call(arguments,'');};\n" + source + 'return __HTML__;\n';
             var render = _.wraptry(function () {
-                return new Function.constructor(settings.variable || '_', source);
+                return new Function[CONSTRUCTOR](settings.variable || '_', source);
             }, console.error);
             var template = function (data) {
                 return render.call(data || {}, _);
@@ -7345,7 +7424,7 @@ app.scope(function (app) {
                 return ret || 0;
             };
         },
-        historyResult = app.extendDirective('registry', 'History'),
+        historyResult = app.extendDirective('Registry', 'History'),
         DomManager = factories.DomManager = factories.Events.extend(DOM_MANAGER_STRING, extend(classApi, {
             'directive:creation:EventManager': DomEventsDirective,
             isValidDomManager: BOOLEAN_TRUE,
@@ -7855,8 +7934,7 @@ app.scope(function (app) {
             var capture = !!capture_,
                 directive = manager.directive(EVENTS),
                 removeFromList = function (list, name) {
-                    var newList = [];
-                    return list && list.seeker(function (obj) {
+                    return list.obliteration(function (obj) {
                         if ((!name || name === obj.passedName) && (!handler || obj.handler === handler) && (!group || obj.group === group) && (!selector || obj.selector === selector)) {
                             directive.detach(obj);
                         }
@@ -8042,7 +8120,7 @@ app.scope(function (app) {
             },
             push: function () {
                 var owner = this.context.owner;
-                this.directive('list').push(foldl(arguments, function (memo, el) {
+                this.items.push.apply(this.items, foldl(arguments, function (memo, el) {
                     if (!el) {
                         return memo;
                     }
@@ -9312,6 +9390,7 @@ app.scope(function (app) {
         DOCUMENT_READY = 'documentReady',
         IS_WINDOW = 'isWindow',
         DEFERRED = 'deferred',
+        RESOLVED = 'resolved',
         IS_DEFERRED = 'is' + upCase(DEFERRED),
         GROUP = 'group',
         POST_TO = 'postTo',
@@ -9320,6 +9399,7 @@ app.scope(function (app) {
         FLUSHING = 'flushing',
         CONNECT = 'connect',
         CONNECTED = CONNECT + 'ed',
+        DISCONNECTED = 'dis' + CONNECTED,
         COMPONENT = 'component',
         INITIALIZE = 'initialize',
         RESPONSE = 'response',
@@ -9334,6 +9414,7 @@ app.scope(function (app) {
         BEFORE_RESPONDED = BEFORE_COLON + RESPONDED,
         BEFORE_RECEIVED = BEFORE_COLON + RECEIVED,
         QUEUED_MESSAGE_INDEX = 'queuedMessageIndex',
+        SENT_MESSAGE_INDEX = 'sentMessageIndex',
         RECEIVED_REFERRER = 'receiveReferrer',
         EMIT_REFERRER = 'emitReferrer',
         BUSTER = 'buster',
@@ -9452,43 +9533,58 @@ app.scope(function (app) {
             if (buster.connectPromise) {
                 buster.connectPromise.reject();
             }
-            buster.set(CONNECTED, BOOLEAN_FALSE);
+            buster.unmark(CONNECTED);
+            buster[DISPATCH_EVENT](DISCONNECTED);
             buster.connectPromise = _.Promise();
         },
         connected = function (buster, message) {
             buster.connectPromise.fulfill(message);
-            buster.set(CONNECTED, BOOLEAN_TRUE);
+            buster.mark(CONNECTED);
+            buster[DISPATCH_EVENT](CONNECTED);
         },
         connectReceived = function (e) {
             // first submit a response so the other side can flush
             var buster = this,
                 dataDirective = buster.directive(DATA);
             if (dataDirective.get(IS_LATE)) {
-                dataDirective.set(QUEUED_MESSAGE_INDEX, 1);
+                dataDirective.set(SENT_MESSAGE_INDEX, 1);
             }
             buster.respond((e.message || e.origin).id);
-            buster.set(CONNECTED, BOOLEAN_TRUE);
+            buster.mark(CONNECTED);
+            buster[DISPATCH_EVENT](CONNECTED);
         },
-        Buster = factories.Buster = factories.Model.extend(upCase(BUSTER), {
+        UPCASED_BUSTER = upCase(BUSTER),
+        defaultMessage = function (buster) {
+            return {
+                from: buster.get(ID),
+                postTo: buster.get(POST_TO),
+                group: buster.get(GROUP),
+                version: app[VERSION],
+                messageId: buster.directive(CHILDREN)[LENGTH](),
+                timeStamp: _.now()
+            };
+        },
+        Buster = factories[UPCASED_BUSTER] = factories.Model.extend(UPCASED_BUSTER, {
             Child: Message,
             bounce: function (e) {
                 return this.respond(e.message.id);
             },
-            connected: function (handler) {
-                this.connectPromise.success(handler);
+            connected: function () {
+                this.connectPromise.success(arguments);
                 return this;
             },
             response: function (original, data) {
-                var originalData = original[DATA];
+                var buster = this,
+                    originalData = original[DATA];
                 if (!originalData) {
                     return;
                 }
                 originalData.set(LATEST_RESPONSE, data);
-                if (originalData.get('isResolved')) {
+                if (original.is(RESOLVED)) {
                     original[DISPATCH_EVENT](DEFERRED, data.packet);
                 } else {
                     originalData.set(RESPONDED_WITH, data);
-                    originalData.set('isResolved', BOOLEAN_TRUE);
+                    original.mark(RESOLVED);
                     original[DISPATCH_EVENT](RESPONSE, data.packet);
                 }
             },
@@ -9498,7 +9594,7 @@ app.scope(function (app) {
                 data.originMessageId = data.messageId;
                 data.messageId = receiveHistory.length();
                 data.isDeferred = BOOLEAN_FALSE;
-                message = new Message(data);
+                message = Message(data);
                 receiveHistory.push(message);
                 receiveHistory.register(ID, data.messageId, message);
                 buster[DISPATCH_EVENT](BEFORE_RECEIVED);
@@ -9521,26 +9617,14 @@ app.scope(function (app) {
              * @func
              * @name Buster#defaults
              */
-            defaults: function () {
-                return {
-                    documentReady: BOOLEAN_TRUE,
-                    version: app[VERSION],
-                    group: defaultGroupId,
-                    connected: BOOLEAN_FALSE,
-                    friendly: BOOLEAN_FALSE
-                };
-            },
             defineWindows: function (receiveWindow, emitWindow) {
                 var buster = this,
                     busterData = buster.directive(DATA);
                 if (receiveWindow && receiveWindow[IS_WINDOW]) {
-                    if (buster.receiveWindow) {
-                        buster.receiveWindow.off(receiveWindowEvents);
-                    }
+                    // takes care of preventing duplicate handlers
                     buster.receiveWindow = receiveWindow.on(receiveWindowEvents);
-                    // buster.receiveWindow.owner.$(function () {
-                    buster.set(DOCUMENT_READY, BOOLEAN_TRUE);
-                    // });
+                    buster.mark(DOCUMENT_READY);
+                    buster.flush();
                 }
                 if (emitWindow && emitWindow[IS_WINDOW]) {
                     buster.emitWindow = emitWindow;
@@ -9552,7 +9636,7 @@ app.scope(function (app) {
                 if (!iframe || !iframe.isIframe) {
                     return;
                 }
-                buster.iframe = iframe;
+                buster[IFRAME] = iframe;
                 if (iframe.is('attached') && (windo = iframe.window())) {
                     buster.defineWindows(NULL, windo);
                 }
@@ -9562,15 +9646,15 @@ app.scope(function (app) {
             },
             setupIframe: function () {
                 var emitReferrer, buster = this,
-                    iframe = buster.iframe,
+                    iframe = buster[IFRAME],
                     busterData = buster.directive(DATA),
                     hrefSplit = buster.receiveWindow.element().location.href.split(ENCODED_BRACKET),
                     hrefShift = hrefSplit.shift(),
                     unshifted = hrefSplit.unshift(EMPTY_STRING),
                     href = hrefSplit.join(ENCODED_BRACKET),
                     receiveReferrer = parseUrl(busterData.get(RECEIVED_REFERRER) || href).origin,
-                    iframeSrc = busterData.get('iframeSrc'),
-                    iframeContent = busterData.get('iframeContent'),
+                    iframeSrc = busterData.get(IFRAME + 'Src'),
+                    iframeContent = busterData.get(IFRAME + 'Content'),
                     // this is going to the
                     data = {
                         postTo: buster.id,
@@ -9610,7 +9694,7 @@ app.scope(function (app) {
                 hashSplit.unshift(EMPTY_STRING);
                 hashString = hashSplit.join(ENCODED_BRACKET);
                 buster.set(parse(decodeURI(hashString || wraptry(function () {
-                    return receiveWindow.parent('iframe').data(BUSTER);
+                    return receiveWindow.parent(IFRAME).data(BUSTER);
                 }))));
             },
             constructor: function (listen, talk, settings_, events) {
@@ -9622,12 +9706,13 @@ app.scope(function (app) {
                 settings.id = settings.id === UNDEFINED ? uuid() : settings.id;
                 buster.receiveHistory = factories.Collection();
                 disconnected.call(buster);
+                settings.group = defaultGroupId;
                 factories.Model[CONSTRUCTOR].call(buster, settings);
-                buster.once('change:connected', function (e) {
+                buster.on(CONNECTED, function (e) {
                     buster.connectPromise.fulfill(buster.directive(CHILDREN).first());
+                    buster.flush();
                 });
                 buster.on({
-                    'change:connected change:documentReady': 'flush',
                     'received:update': 'bounce',
                     'received:unload': 'destroy',
                     destroy: disconnected,
@@ -9649,8 +9734,8 @@ app.scope(function (app) {
                 if (buster.get('strip')) {
                     buster.stripData();
                 }
-                buster.set(QUEUED_MESSAGE_INDEX, 0);
-                if (buster.iframe) {
+                buster.set(SENT_MESSAGE_INDEX, 0);
+                if (buster[IFRAME]) {
                     // oh, are we late?
                     if (buster.get(IS_LATE)) {
                         buster.begin(INITIALIZE);
@@ -9671,11 +9756,11 @@ app.scope(function (app) {
                 var command, children, n, item, gah, childrenLen, queuedMsg, nuData, i = 0,
                     buster = this,
                     dataManager = buster.directive(DATA),
-                    currentIdx = dataManager.get(QUEUED_MESSAGE_INDEX),
-                    connected = dataManager.get(CONNECTED),
+                    currentIdx = dataManager.get(SENT_MESSAGE_INDEX),
+                    connected = buster.is(CONNECTED),
                     initedFrom = dataManager.get('initedFromPartner'),
                     flushing = dataManager.get(FLUSHING);
-                if (!dataManager.get(DOCUMENT_READY)) {
+                if (!buster.is(DOCUMENT_READY)) {
                     return buster;
                 }
                 if (!initedFrom || connected && ((connected || !currentIdx) && !flushing)) {
@@ -9687,8 +9772,8 @@ app.scope(function (app) {
                         queuedMsg.directive(DATA).set(RUN_COUNT, 0);
                         if (currentIdx || connected) {
                             queuedMsg = children.index(currentIdx);
-                            currentIdx = (dataManager.get(QUEUED_MESSAGE_INDEX) + 1) || 0;
-                            dataManager.set(QUEUED_MESSAGE_INDEX, currentIdx);
+                            currentIdx = (dataManager.get(SENT_MESSAGE_INDEX) + 1) || 0;
+                            dataManager.set(SENT_MESSAGE_INDEX, currentIdx);
                             postMessage(queuedMsg, buster);
                         } else {
                             // initializing
@@ -9700,8 +9785,8 @@ app.scope(function (app) {
                         }
                     }
                     buster.set(FLUSHING, BOOLEAN_FALSE);
-                    if (buster.get(CONNECTED)) {
-                        if (children[LENGTH]() > buster.get(QUEUED_MESSAGE_INDEX)) {
+                    if (buster.is(CONNECTED)) {
+                        if (children[LENGTH]() > buster.get(SENT_MESSAGE_INDEX)) {
                             buster.flush();
                         }
                     }
@@ -9721,7 +9806,7 @@ app.scope(function (app) {
                     message = buster.add(extend({
                         command: command,
                         packet: packet
-                    }, buster.defaultMessage(), extra));
+                    }, defaultMessage(buster), extra));
                 return message[0];
             },
             /**
@@ -9738,17 +9823,6 @@ app.scope(function (app) {
              * @func
              * @name Buster#defaultMessage
              */
-            defaultMessage: function () {
-                var buster = this;
-                return {
-                    from: buster.get(ID),
-                    postTo: buster.get(POST_TO),
-                    group: buster.get(GROUP),
-                    version: app[VERSION],
-                    messageId: buster.directive(CHILDREN)[LENGTH](),
-                    timeStamp: _.now()
-                };
-            },
             /**
              * respond trigger.
              * @arg {object} original data object (same pointer) that was sent over
@@ -9770,7 +9844,7 @@ app.scope(function (app) {
                 messageData = originalMessage.directive(DATA);
                 messageData.set(RUN_COUNT, (messageData.get(RUN_COUNT) || 0) + 1);
                 packet = extend(BOOLEAN_TRUE, result(buster, 'package') || {}, packet_);
-                newMessage = extend(buster.defaultMessage(), {
+                newMessage = extend(defaultMessage(buster), {
                     from: originalMessage.get(POST_TO),
                     postTo: originalMessage.get('from'),
                     messageId: originalMessage.get('originMessageId'),
@@ -9940,13 +10014,15 @@ application.scope().run(function (app, _, factories) {
         setup = function (expectation) {
             testisrunning = BOOLEAN_TRUE;
             expectation.runId = setTimeout(function () {
-                var errThat, doThis, errThis, finallyThis;
+                var errThat, doThis, errThis, err, finallyThis;
                 currentTest = expectation;
                 runningEach(expectation.beforeStack);
                 errThis = errHandler(expectation);
                 if (makesOwnCallback(expectation.handler)) {
+                    err = new Error();
                     expectation.timeoutId = setTimeout(function () {
-                        timeoutErr(expectation.current);
+                        console.error('timeout:\n' + expectation.current.join('\n'));
+                        errThat(err);
                         executedone(expectation);
                     }, 5000);
                     doThis = function () {

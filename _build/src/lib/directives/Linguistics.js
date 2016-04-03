@@ -52,6 +52,9 @@ app.scope(function (app) {
                 fn: negative_bound
             };
         },
+        abstractedStopListening = function () {
+            this.stopListening();
+        },
         Linguistics = factories.Linguistics = factories.Events.extend(LINGUISTICS, {
             then: push(SUCCESS),
             always: push(EVERY),
@@ -75,8 +78,8 @@ app.scope(function (app) {
                 sequencer[EVERY] = new Collection[CONSTRUCTOR]();
                 sequencer.group();
                 sequencer.listenTo(sequencer.origin, {
-                    change: sequencer.apply,
-                    destroy: sequencer.stopListening
+                    change: 'apply',
+                    destroy: abstractedStopListening
                 });
                 return this;
             },

@@ -1,15 +1,18 @@
 this.Odette = function (global, WHERE, version, fn) {
     'use strict';
-    var UNDEFINED, topmostDoc, LENGTH = 'length',
+    var UNDEFINED, odette_version = '0.0.0',
+        LENGTH = 'length',
         PARENT = 'global',
         PROTOTYPE = 'prototype',
         TOUCH_TOP = 'touchTop',
         TOP_ACCESS = 'topAccess',
-        global_ = this || global || window,
+        PERIOD = '.',
+        global_ = this || window || global,
         doc = global_.document,
         BOOLEAN_TRUE = !0,
         BOOLEAN_FALSE = !1,
         NULL = null,
+        noop = function () {},
         typeConstructor = function (str) {
             return function (thing) {
                 return typeof thing === str;
@@ -18,7 +21,18 @@ this.Odette = function (global, WHERE, version, fn) {
         now = function () {
             return +(new Date());
         },
+        map = function (arra, fn) {
+            var i = 0,
+                len = arra[LENGTH],
+                arr = [];
+            while (len > i) {
+                arr[i] = fn(arra[i], i, arra);
+                i++;
+            }
+            return arr;
+        },
         isString = typeConstructor('string'),
+        isNumber = typeConstructor('number'),
         isFunction = typeConstructor('function'),
         executionTime = now(),
         makeParody = function (parent, fn) {
@@ -26,13 +40,62 @@ this.Odette = function (global, WHERE, version, fn) {
                 return fn.apply(parent, arguments);
             };
         },
-        wraptry = function (fn, try_, finally_) {
+        wraptry = function (trythis, errthat, finalfunction) {
+            var returnValue, err = NULL;
             try {
-                return fn();
+                returnValue = trythis();
             } catch (e) {
-                return try_ && try_(e);
+                err = e;
+                returnValue = errthat ? errthat(e) : returnValue;
             } finally {
-                return finally_ && finally_();
+                returnValue = finalfunction ? finalfunction(err, returnValue) : returnValue;
+            }
+            return returnValue;
+        },
+        isVersionString = function (string) {
+            return isNumber(string) || (isString(string) && (string.split(PERIOD)[LENGTH] > 1 || +string === +string)) ? BOOLEAN_TRUE : BOOLEAN_FALSE;
+        },
+        maxVersion = function (string1, string2) {
+            // string 2 is always the underdog
+            var split1, split2, provenLarger, cvs1Result = convertVersionString(string1);
+            var cvs2Result = convertVersionString(string2);
+            // keyword checks
+            if (cvs1Result === BOOLEAN_TRUE) {
+                return cvs1Result;
+            }
+            if (cvs2Result === BOOLEAN_TRUE) {
+                return cvs2Result;
+            }
+            if (cvs1Result === BOOLEAN_FALSE && cvs2Result === BOOLEAN_FALSE) {
+                // compare them as version strings
+                split1 = string1.split(PERIOD);
+                split2 = string2.split(PERIOD);
+                map(split1, function (value, index) {
+                    if (+value < +(split2[index] || 0)) {
+                        provenLarger = BOOLEAN_TRUE;
+                    }
+                });
+                if (provenLarger === UNDEFINED && split2[LENGTH] > split1[LENGTH]) {
+                    provenLarger = BOOLEAN_TRUE;
+                }
+                return !!provenLarger ? string2 : string1;
+            } else {
+                return string1 > string2 ? string1 : string2;
+            }
+        },
+        convertVersionString = function (string_) {
+            var converted, string = string_;
+            if (isNumber(string)) {
+                return string;
+            } else {
+                string += '';
+                converted = +string;
+                // could be a number hiding as a string
+                if (converted === converted) {
+                    return converted;
+                } else {
+                    return string.split(PERIOD)[LENGTH] === 1;
+                }
             }
         };
 
@@ -40,8 +103,10 @@ this.Odette = function (global, WHERE, version, fn) {
         this.version = name;
         this.scoped = BOOLEAN_TRUE;
         this.missedDefinitions = [];
+        this.createdAt = now();
         return this;
     }
+    Application[PROTOTYPE].destroy = noop;
     Application[PROTOTYPE].wraptry = wraptry;
     Application[PROTOTYPE].now = now;
     Application[PROTOTYPE].extend = function (obj) {
@@ -73,8 +138,6 @@ this.Odette = function (global, WHERE, version, fn) {
         var fn = name_ && (isFunction(name_) ? name_ : (isFunction(fn_) ? fn_ : NULL));
         return this[PARENT].scope(name, fn);
     };
-    // Application[PROTOTYPE].loadedAgainst = function (win) {};
-    // Application[PROTOTYPE].lastLoaded = function () {};
     Application[PROTOTYPE][TOUCH_TOP] = function () {
         // allows the top part of this script to be swapped out against different globals_
         return this[PARENT][TOUCH_TOP](global_);
@@ -87,16 +150,18 @@ this.Odette = function (global, WHERE, version, fn) {
         versions: {},
         executionTime: executionTime,
         versionOrder: [],
-        global: BOOLEAN_TRUE,
+        VERSION: odette_version,
+        shared: BOOLEAN_TRUE,
         scoped: BOOLEAN_FALSE,
         wraptry: wraptry,
-        registerVersion: function (name) {
-            var application = this,
+        maxVersion: maxVersion,
+        registerVersion: function (name, app) {
+            var defaultVersion, application = this,
                 cachedOrCreated = application.versions[name],
-                newApp = application.versions[name] = cachedOrCreated || new Application(name, application);
+                newApp = application.versions[name] = cachedOrCreated || app || new Application(name, application);
             newApp[PARENT] = application;
             application.currentVersion = name;
-            application.upsetDefaultVersion(name);
+            application.defaultVersion = (defaultVersion = application.defaultVersion) === UNDEFINED ? version : maxVersion(defaultVersion, version);
             if (!cachedOrCreated) {
                 application.versionOrder.push(name);
             }
@@ -115,27 +180,15 @@ this.Odette = function (global, WHERE, version, fn) {
             }
             return app;
         },
-        upsetDefaultVersion: function (version) {
-            var application = this;
-            if (application.defaultVersion) {
-                // keyword version only works the first time then it's set for the lifespan
-                if (+application.defaultVersion === +application.defaultVersion) {
-                    // keyword version overwrites default (dev / hotfix)
-                    if (+version !== +version) {
-                        application.defaultVersion = version;
-                    }
-                }
-            } else {
-                application.defaultVersion = version;
-            }
-        },
         unRegisterVersion: function (name) {
             var application = this,
                 saved = application.versions[name],
                 orderIdx = application.versionOrder.indexOf(name);
-            if (orderIdx !== -1) {
-                application.versionOrder.splice(orderIdx, 1);
+            if (orderIdx === -1) {
+                return application;
             }
+            saved.destroy();
+            application.versionOrder.splice(orderIdx, 1);
             saved[PARENT] = UNDEFINED;
             application.versions[name] = UNDEFINED;
             return saved;
@@ -143,7 +196,7 @@ this.Odette = function (global, WHERE, version, fn) {
         scope: function (name_, fn_) {
             var name, fn, scoped, app = this,
                 hash = app.versions;
-            if (isString(name_)) {
+            if (isString(name_) || isNumber(name_)) {
                 name = name_;
                 fn = fn_;
             } else {
@@ -164,16 +217,7 @@ this.Odette = function (global, WHERE, version, fn) {
             });
             return scoped;
         },
-        map: function (arra, fn, ctx) {
-            var i = 0,
-                len = arra[LENGTH],
-                arr = [];
-            while (len > i) {
-                arr[i] = fn.call(ctx, arra[i], i, arra);
-                i++;
-            }
-            return arr;
-        },
+        map: map,
         registerScopedMethod: function (name, expects_) {
             var application = this,
                 expects = expects_ || 3,
@@ -211,29 +255,35 @@ this.Odette = function (global, WHERE, version, fn) {
                 lastScript = allScripts[allScripts[LENGTH] - 1];
             return currentScript || lastScript;
         },
-        touchTop: function (global_) {
+        touchTop: function (global_, preventMap) {
             // assume you have top access
-            var href, topAccess = 1,
-                application = this;
+            var topAccess, origin = this,
+                application = origin;
             if (application[TOP_ACCESS] === UNDEFINED) {
-                application.wraptry(function () {
-                    href = global_.top.location.href;
-                    // safari bug WHERE unfriendly frame returns undefined
-                    if (href) {
-                        topAccess = BOOLEAN_TRUE;
-                        application = global_.top[WHERE] || application;
-                    }
-                }, function () {
-                    topAccess = BOOLEAN_FALSE;
-                });
-                if (global_ === global_.top) {
+                // we dont get a top variable on the global object in node
+                // probably because there are no scoped globals
+                if (global_ === global_.top || !global_.top) {
                     topAccess = BOOLEAN_TRUE;
+                } else {
+                    // test for browsers
+                    topAccess = wraptry(function () {
+                        var doc = global_.top.document;
+                        // overwrite the scoped application variable
+                        application = global_.top[WHERE] || application;
+                        return BOOLEAN_TRUE;
+                    }, function () {
+                        return BOOLEAN_FALSE;
+                    });
                 }
                 if (topAccess) {
-                    topmostDoc = global_.top.document;
                     global_.top[WHERE] = application;
                 }
                 application[TOP_ACCESS] = topAccess;
+            }
+            if (!preventMap && global_[WHERE] !== application) {
+                map(origin.versionOrder, function (version) {
+                    application.registerVersion(version, origin.versions[version]);
+                });
             }
             global_[WHERE] = application;
             return application;
@@ -241,10 +291,11 @@ this.Odette = function (global, WHERE, version, fn) {
     };
     app = application.get(version);
     if (app) {
-        // there is already an app with this same version that originated from this window
+        // there is already an app with this same version that originated from this global object
         return app;
     }
-    app = application.registerVersion(version, global_);
+    app = application.registerVersion(version);
+    // call is used because apply is finicky and bind is not universal
     fn.call(global_, application, app);
     return app;
 };

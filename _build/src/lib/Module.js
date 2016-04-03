@@ -6,6 +6,7 @@ app.scope(function (app) {
         MODULES = 'Modules',
         STARTED = START + 'ed',
         INITIALIZED = 'initialized',
+        COMPLETED = 'completed',
         startableMethods = {
             start: function (evnt) {
                 var startable = this;
@@ -56,14 +57,14 @@ app.scope(function (app) {
             return [module].concat(module.application.createArguments(), args || []);
         },
         checks = function (app, list) {
-            var exports = [];
+            var exporting = [];
             duff(list, function (path) {
                 var module = app.module(path);
                 if (module.is(INITIALIZED)) {
-                    exports.push(module.exports);
+                    exporting.push(module.exports);
                 }
             });
-            return exports[LENGTH] === list[LENGTH] ? exports : BOOLEAN_FALSE;
+            return exporting[LENGTH] === list[LENGTH] ? exporting : BOOLEAN_FALSE;
         },
         Promise = _.Promise,
         moduleMethods = {
@@ -75,8 +76,8 @@ app.scope(function (app) {
                     namespace = name.split(PERIOD),
                     module = parent.directive(CHILDREN).get(name_),
                     triggerBubble = function () {
-                        module.mark(INITIALIZED);
-                        module.bubble(INITIALIZED + ':submodule');
+                        module.mark(COMPLETED);
+                        module.parent.bubble(INITIALIZED + ':submodule');
                     };
                 if (module) {
                     // hey, i found it. we're done here
@@ -116,6 +117,7 @@ app.scope(function (app) {
                 }
                 if (isWindow(windo) || isFunction(windo) || isFunction(fn)) {
                     module.exports = module.exports || {};
+                    module.mark(INITIALIZED);
                     initResult = module.run(windo, fn);
                     // allows us to create dependency graphs
                     if (initResult && isInstance(initResult, Promise)) {
@@ -162,11 +164,11 @@ app.scope(function (app) {
                 return !this.application || this.application === this[PARENT];
             },
             require: function (modulename, handler) {
-                var promise, module, list, mapppedArguments, app = this;
+                var promise, module, list, mappedArguments, app = this;
                 if (!isFunction(handler)) {
                     module = app.module(modulename);
-                    return module.is(INITIALIZED) ? module.exports : exception({
-                        message: 'that module has not been ' + INITIALIZED + ' yet'
+                    return module.is(COMPLETED) ? module.exports : exception({
+                        message: 'that module has not ' + COMPLETED + ' initialization yet'
                     });
                 } else {
                     promise = _.Promise();
@@ -177,12 +179,12 @@ app.scope(function (app) {
                     list = list.slice(0);
                     promise.success(bind(handler, app));
                     if ((mappedArguments = checks(app, list))) {
-                        promise.fulfill(mapppedArguments);
+                        promise.fulfill(mappedArguments);
                     } else {
-                        app.on(INITIALIZED + ':submodule', function () {
+                        app.application.on(INITIALIZED + ':submodule', function () {
                             if ((mappedArguments = checks(app, list))) {
                                 app.off();
-                                promise.fulfill(mapppedArguments);
+                                promise.fulfill(mappedArguments);
                             }
                         });
                     }

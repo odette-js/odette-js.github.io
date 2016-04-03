@@ -528,17 +528,17 @@ application.scope().run(function (app, _, factories) {
             _.expect(numberCollection.length()).toEqual(10);
         });
         _.it('can give you all of it\'s values at once', function () {
-            _.expect(collection.unwrap()).toEqual(collection.directive('list').items);
+            _.expect(collection.unwrap()).toEqual(collection.directive('List').items);
         });
         _.it('or one at a time', function () {
             numberCollection.duff(function (item, idx) {
-                _.expect(numberCollection.index(idx)).toEqual(numberCollection.directive('list').items[idx]);
+                _.expect(numberCollection.index(idx)).toEqual(numberCollection.items[idx]);
             });
         });
         _.it('as well as in reverse order', function () {
             var list = [];
             numberCollection.duffRight(function (item, idx) {
-                _.expect(numberCollection.index(idx)).toEqual(numberCollection.directive('list').items[idx]);
+                _.expect(numberCollection.index(idx)).toEqual(numberCollection.items[idx]);
                 list.push(item);
             });
             _.expect(list).toEqual([9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
@@ -575,17 +575,22 @@ application.scope().run(function (app, _, factories) {
                 }).unwrap()).toEqual([0, 3, 6, 9, 1, 4, 7, 2, 5, 8]);
             });
             _.it('unshift', function () {
-                _.expect(numberCollection.unshift(-1).unwrap()).toEqual([-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+                numberCollection.unshift(-1);
+                _.expect(numberCollection.unwrap()).toEqual([-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
             });
             _.it('push', function () {
-                _.expect(numberCollection.push(10).unwrap()).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-                _.expect(numberCollection.push([11, 12, 13]).unwrap()).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+                numberCollection.push(10);
+                _.expect(numberCollection.unwrap()).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+                numberCollection.push([11, 12, 13]);
+                _.expect(numberCollection.unwrap()).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
             });
             _.it('cycle', function () {
-                _.expect(numberCollection.cycle(3).unwrap()).toEqual([3, 4, 5, 6, 7, 8, 9, 0, 1, 2]);
+                numberCollection.cycle(3);
+                _.expect(numberCollection.unwrap()).toEqual([3, 4, 5, 6, 7, 8, 9, 0, 1, 2]);
             });
             _.it('uncycle', function () {
-                _.expect(numberCollection.uncycle(3).unwrap()).toEqual([7, 8, 9, 0, 1, 2, 3, 4, 5, 6]);
+                numberCollection.uncycle(3);
+                _.expect(numberCollection.unwrap()).toEqual([7, 8, 9, 0, 1, 2, 3, 4, 5, 6]);
             });
             _.it('count', function () {
                 _.expect(numberCollection.count(function (item, idx, list) {
@@ -1430,14 +1435,14 @@ application.scope().run(function (app, _, factories) {
                 }]);
                 box.comparator = 'two';
                 box.sort();
-                _.expect(box.directive('Children').list.map(function (model) {
+                _.expect(box.directive('Children').map(function (model) {
                     return model.get('two');
-                })).toEqual([1, 2, 8]);
+                }).unwrap()).toEqual([1, 2, 8]);
                 box.comparator = '!two';
                 box.sort();
-                _.expect(box.directive('Children').list.map(function (model) {
+                _.expect(box.directive('Children').map(function (model) {
                     return model.get('two');
-                })).toEqual([8, 2, 1]);
+                }).unwrap()).toEqual([8, 2, 1]);
             });
             _.it('set up events on their children', function () {
                 var counter = 0;
@@ -1642,7 +1647,7 @@ application.scope().run(function (app, _, factories) {
             // make sure promise is an object
             _.expect(_.isObject(promise)).toEqual(true);
             // make sure it has the right "state"
-            _.expect(promise.state).toEqual(false);
+            _.expect(promise.state).toEqual('pending');
             // fulfill the promise
             promise.fulfill();
             // make sure that it hit the function once and only once
@@ -1657,7 +1662,7 @@ application.scope().run(function (app, _, factories) {
         });
         _.describe('can tell you what state it is in such as', function () {
             _.it('pending', function () {
-                _.expect(promise.state).toEqual(false);
+                _.expect(promise.state).toEqual('pending');
             });
             _.it('success', function () {
                 promise.fulfill();
@@ -1786,17 +1791,17 @@ application.scope().run(function (app, _, factories) {
 application.scope().run(function (app, _, factories) {
     var BOOLEAN_TRUE = true,
         isObject = _.isObject;
-    _.describe('Ajax', function () {
+    _.describe('HTTP', function () {
         var ajax, allstates;
         _.beforeEach(function () {
-            ajax = factories.Ajax();
+            ajax = factories.HTTP();
             allstates = ajax.allStates();
         });
         _.it('is an object', function () {
             _.expect(isObject(ajax)).toEqual(BOOLEAN_TRUE);
         });
         _.it('can accept an object as a first argument', function (done) {
-            factories.Ajax({
+            factories.HTTP({
                 url: '/json/reporting.json'
             }).success(function (json) {
                 _.expect(isObject(json)).toEqual(BOOLEAN_TRUE);
@@ -1805,7 +1810,7 @@ application.scope().run(function (app, _, factories) {
         });
         _.it('can accept a string as a first argument', function (done) {
             var original, handlerCounter = 0;
-            factories.Ajax('/json/reporting.json').handle('status:200', function (json) {
+            factories.HTTP('/json/reporting.json').handle('status:200', function (json) {
                 handlerCounter++;
                 original = json;
             }).success(function (json) {
@@ -1820,7 +1825,7 @@ application.scope().run(function (app, _, factories) {
         _.describe('can handle', function () {
             _.it('failures', function (done) {
                 var handlerCounter = 0;
-                var prom = factories.Ajax().failure(function () {
+                var prom = factories.HTTP().failure(function () {
                     handlerCounter++;
                 }).always(function () {
                     handlerCounter++;
@@ -1831,7 +1836,7 @@ application.scope().run(function (app, _, factories) {
             });
             _.it('errors', function (done) {
                 var handlerCounter = 0;
-                factories.Ajax('/json/reporting.json').success(function (json) {
+                factories.HTTP('/json/reporting.json').success(function (json) {
                     handlerCounter++;
                     _.expect(handlerCounter).toEqual(1);
                     throw new Error('some message here');
@@ -1846,7 +1851,7 @@ application.scope().run(function (app, _, factories) {
             _.describe('status codes (more than the ones listed here)', function () {
                 _.it('200', function (done) {
                     var handlerCounter = 0;
-                    factories.Ajax('/gibberish/200').handle('status:200', function () {
+                    factories.HTTP('/gibberish/200').handle('status:200', function () {
                         handlerCounter++;
                     }).success(function () {
                         handlerCounter++;
@@ -1860,7 +1865,7 @@ application.scope().run(function (app, _, factories) {
                 });
                 _.it('404', function (done) {
                     var handlerCounter = 0;
-                    factories.Ajax('/gibberish/404').handle('status:404', function () {
+                    factories.HTTP('/gibberish/404').handle('status:404', function () {
                         handlerCounter++;
                     }).failure(function () {
                         handlerCounter++;
@@ -1872,7 +1877,7 @@ application.scope().run(function (app, _, factories) {
                 });
                 _.it('500', function (done) {
                     var handlerCounter = 0;
-                    factories.Ajax('/gibberish/500').handle('status:500', function () {
+                    factories.HTTP('/gibberish/500').handle('status:500', function () {
                         handlerCounter++;
                     }).error(function () {
                         handlerCounter++;
@@ -2628,7 +2633,7 @@ application.scope().run(function (app, _, factories) {
                 count += (expects === this);
             };
         },
-        pagePromise = factories.Ajax.get('/test/framed.html');
+        pagePromise = factories.HTTP.get('/test/framed.html');
     _.describe('Buster', function () {
         _.beforeEach(function () {
             count = 0;

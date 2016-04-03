@@ -15,7 +15,7 @@ application.scope().run(function (app, _, factories) {
             // make sure promise is an object
             _.expect(_.isObject(promise)).toEqual(true);
             // make sure it has the right "state"
-            _.expect(promise.state).toEqual(false);
+            _.expect(promise.state).toEqual('pending');
             // fulfill the promise
             promise.fulfill();
             // make sure that it hit the function once and only once
@@ -30,7 +30,7 @@ application.scope().run(function (app, _, factories) {
         });
         _.describe('can tell you what state it is in such as', function () {
             _.it('pending', function () {
-                _.expect(promise.state).toEqual(false);
+                _.expect(promise.state).toEqual('pending');
             });
             _.it('success', function () {
                 promise.fulfill();

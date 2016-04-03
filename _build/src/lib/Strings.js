@@ -65,7 +65,7 @@ var cacheable = function (fn) {
         return function (string) {
             var found = cache[string];
             if (!found) {
-                cache[string] = found = new Function.constructor('return ' + string);
+                cache[string] = found = new Function[CONSTRUCTOR]('return ' + string);
             }
             return found();
         };

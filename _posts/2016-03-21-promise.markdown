@@ -25,7 +25,7 @@ permalink: /api/v0/promise
             <li class="left clear-left"><a href="#methods_reject">reject</a></li>
             <li class="left clear-left"><a href="#methods_resolveAs">resolveAs</a></li>
             <li class="left clear-left"><a href="#methods_stash">stash</a></li>
-            <li class="left clear-left"><a href="#methods_when">when</a></li>
+            <li class="left clear-left"><a href="#methods_all">all</a></li>
         </ul>
     </li>
     <li class="left clear-left">
@@ -48,6 +48,7 @@ _.isFunction(promise.circle); // false
 promise.handle('circle', function () {
     // do something
 });
+_.isFunction(promise.circle); // false
 promise.addHandler('circle');
 _.isFunction(promise.circle); // true
 promise.circle(function () {
@@ -65,32 +66,7 @@ promise.circle(function () {
 <p>As you can see from the tree above, the success, failure, and error handlers all resolve to always, which terminates the tree with a non string value.</p>
 <h5 id="methods_auxiliaryStates" class="title-headline">#auxiliaryStates</h5>
 <p>In order to add more states than the base 4, odette's promise implementation allows you to extend the state tree by overwriting the auxiliaryStates method.</p>
-<p>Below is an example of a different type of tree that is also used in odette. This particular tree is used in the Ajax prototype for resolving against specific http codes when ajax calls finish.</p>
-<pre class="code code-section"><code class="language-javascript">{
-    auxiliaryStates: function () {
-        return {
-            'status:0': 'failure',
-            'status:200': 'success',
-            'status:202': 'success',
-            'status:205': 'success',
-            'status:302': 'success',
-            'status:304': 'success',
-            'status:400': 'failure',
-            'status:401': 'failure',
-            'status:403': 'failure',
-            'status:404': 'failure',
-            'status:405': 'failure',
-            'status:406': 'failure',
-            'status:500': 'error',
-            'status:502': 'error',
-            'status:505': 'error',
-            'status:511': 'error',
-            timeout: 'failure',
-            abort: 'failure'
-        };
-    },
-}</code></pre>
-<p>These auxiliary states, compounded with the original state resolution types, give a full tree that can be followed until it resolves to always. For example, a request with a status of 200 would follow the following resolution tree: <code class="inline-code">status:200 > success > always</code>, whereas a request with a status of 400 would follow this resolution tree: <code class="inline-code">status:400 > failure > always</code></p>
+<p>An example of an auxiliary state being used is the <a href="http">HTTP</a> object. These auxiliary states, compounded with the original state resolution types, give a full tree that can be followed until it resolves to always. For example, a request with a status of 200 would follow the following resolution tree: <code class="inline-code">status:200 > success > always</code>, whereas a request with a status of 400 would follow this resolution tree: <code class="inline-code">status:400 > failure > always</code></p>
 <h5 id="methods_fulfill" class="title-headline">#fulfill</h5>
 <p>A Promise can be fulfilled in either a failure state, or a success state. Fulfill resolves into a success state.</p>
 <p>To fulfill a promise in the success state and only trigger the success and always handlers, simply call the fulfill method.</p>
@@ -116,7 +92,7 @@ promise.handle('circle', function () {
     console.log('second-circle');
 }); // logs 'second-circle'</code></pre>
 <h5 id="methods_isChildType" class="title-headline">#isChildType</h5>
-<p>An isChildType method is used to quickly check the validity of a child that is being added to a when statement. At default, a simple check is made for the success, failure, and always methods, instead of checking the instance. This method can be overwritten in cases where a more specific child check is needed for state resolution.</p>
+<p>An isChildType method is used to quickly check the validity of a child that is being added to a all statement. At default, a simple check is made for the success, failure, and always methods, instead of checking the instance. This method can be overwritten in cases where a more specific child check is needed for state resolution.</p>
 <h5 id="methods_reject" class="title-headline">#reject</h5>
 <p>A Promise can be resolved in either a failure state, or a success state. Reject resolves into a failure state. Consider the following code for the next couple of examples.</p>
 <p>To resolve a promise in the rejected state and only trigger the failure and always handlers, simply call the reject method.</p>
@@ -153,15 +129,15 @@ promise.stash('success', function () {
 promise.success(function () {
     console.log('tree emptied');
 }); // logs "successfully stashed", "tree emptied"</code></pre>
-<h5 id="methods_when" class="title-headline">#when</h5>
-<p>When is a convenience function to wrap multiple Promises in an all or nothing manner. If you are waiting for 3 different promises to resolve, then you can use the when method, as well as the _.when method to wrap those 3 promises into a singular promise that will only be fulfilled if all of the promises added to it are also fulfilled. If any are rejected, then the parent promise is also rejected.</p>
-<p>Below is an example of three independently resolved promises that both sychronously and asychronously resolve, and use the a when wrapping.</p>
+<h5 id="methods_all" class="title-headline">#all</h5>
+<p>When is a convenience function to wrap multiple Promises in an all or nothing manner. If you are waiting for 3 different promises to resolve, then you can use the all method, as well as the _.all method to wrap those 3 promises into a singular promise that will only be fulfilled if all of the promises added to it are also fulfilled. If any are rejected, then the parent promise is also rejected.</p>
+<p>Below is an example of three independently resolved promises that both sychronously and asychronously resolve, and use the a all wrapping.</p>
 <pre class="code code-section"><code class="language-javascript">var promise1 = _.Promise();
 var promise2 = _.Promise();
 var promise3 = _.Promise();
 var parentPromise = _.Promise();
 promise2.fulfill();
-parentPromise.when(promise2, promise1, promise3).success(function () {
+parentPromise.all(promise2, promise1, promise3).success(function () {
     console.log('everyone is fulfilled');
 }).failure(function () {
     console.log('someone was rejected');
@@ -170,3 +146,26 @@ setTimeout(function () {
     promise1.fulfill(); // logs "everyone is fulfilled"
 });
 promise3.fulfill();</code></pre>
+<p>Interesting conditions can be created when using all. Take the following for example. Because promises are only resolved once, and they automatically try to resolve as soon as the all method ends, certain conditions and groupings can be created.</p>
+<pre class="code code-section"><code class="language-javascript">var p1 = _.Promise();
+var p2 = _.Promise();
+var p3 = _.Promise();
+var p4 = _.Promise();
+p2.resolve(2);
+_.Promise().all(p1, p2).all(p3, p4).success(function (list) {
+    console.log('finished', list);
+});
+p3.resolve(3);
+p1.resolve(1);
+p4.resolve(4); // logs "finished", [1, 2, 3, 4]</code></pre>
+<p>The same is true of the race method, which resolves as soon as first of a group resolves. Take the following for example. Because promises are only resolved once, and they automatically try to resolve as soon as the race method ends, certain conditions and groupings can be created. In the following example, p3, and p4 are never even looked at since p2 had already resolved.</p>
+<pre class="code code-section"><code class="language-javascript">var p1 = _.Promise();
+var p2 = _.Promise();
+var p3 = _.Promise();
+var p4 = _.Promise();
+p4.resolve(4);
+p2.resolve(2);
+_.Promise().race(p1, p2).race(p3, p4).success(function (result) {
+    console.log('finished', result);
+}); // logs "finished", 2
+</code></pre>

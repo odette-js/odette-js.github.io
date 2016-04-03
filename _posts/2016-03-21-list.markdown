@@ -1,33 +1,80 @@
 ---
 layout: post
-title:  "Collection"
+title:  "List"
 date:   2016-03-20 12:35:34 -0500
 categories: API
 author: Michael McLaughlin
-permalink: /api/v0/collection
+permalink: /api/v0/list
 ---
 
 
-<p>Collections are the root for dealing with many objects at the same time. Many of the methods described are available in the regular underscore library or ES6. Collections depend on the <a href="list">List</a> directive, which manages arrays directly, and provides allows the array to be iteratable without ever having to set up a for or while loop. Collections also depend on the <a href="registry">Registry</a> directive to track what is in the list and the items registered in said list. Collections are very powerful, but if you just need to iterate over something, or just need a registry to group different objects, then look no further than it's dependant directives.</p>
+<p>Lists are an abstraction for arrays. They handle adding and removing items on arrays, and doing other fancy things that parody many of the methods available in libraries such as underscore. To create a list, simply call the List method on the factories object. Below is a list of numbers being created.</p>
+<pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3, 4, 5]);</code></pre>
 <ul class="list">
     <li class="left clear-left">
-        <a href="#methods">Methods</a>
-        <ul class="list nested-list">
-            <li class="left clear-left"><a href="#methods_begin">begin</a></li>
-            <li class="left clear-left"><a href="#methods_bounce">bounce</a></li>
-            <li class="left clear-left"><a href="#methods_connected">connected</a></li>
-            <li class="left clear-left"><a href="#methods_create">create</a></li>
-            <li class="left clear-left"><a href="#methods_defineIframe">defineIframe</a></li>
-            <li class="left clear-left"><a href="#methods_defineWindows">defineWindows</a></li>
-            <li class="left clear-left"><a href="#methods_flush">flush</a></li>
-            <li class="left clear-left"><a href="#methods_receive">receive</a></li>
-            <li class="left clear-left"><a href="#methods_respond">respond</a></li>
-            <li class="left clear-left"><a href="#methods_response">response</a></li>
-            <li class="left clear-left"><a href="#methods_setGroup">setGroup</a></li>
-            <li class="left clear-left"><a href="#methods_setupIframe">setupIframe</a></li>
-            <li class="left clear-left"><a href="#methods_stripData">stripData</a></li>
-            <li class="left clear-left"><a href="#methods_sync">sync</a></li>
-        </ul>
+        <a data-custom="expands-next" data-target=".nested-list-collapser">Methods</a>
+        <div class="nested-list-collapser" data-duration="300">
+            <ul class="list nested-list">
+                <li class="left clear-left"><a href="#methods_add">add</a></li>
+                <li class="left clear-left"><a href="#methods_call">call</a></li>
+                <li class="left clear-left"><a href="#methods_concat">concat</a></li>
+                <li class="left clear-left"><a href="#methods_count">count</a></li>
+                <li class="left clear-left"><a href="#methods_countFrom">countFrom</a></li>
+                <li class="left clear-left"><a href="#methods_countTo">countTo</a></li>
+                <li class="left clear-left"><a href="#methods_cycle">cycle</a></li>
+                <li class="left clear-left"><a href="#methods_duff">duff</a></li>
+                <li class="left clear-left"><a href="#methods_duffRight">duffRight</a></li>
+                <li class="left clear-left"><a href="#methods_each">each</a></li>
+                <li class="left clear-left"><a href="#methods_eachCall">eachCall</a></li>
+                <li class="left clear-left"><a href="#methods_eachCallRight">eachCallRight</a></li>
+                <li class="left clear-left"><a href="#methods_eachRight">eachRight</a></li>
+                <li class="left clear-left"><a href="#methods_empty">empty</a></li>
+                <li class="left clear-left"><a href="#methods_eq">eq</a></li>
+                <li class="left clear-left"><a href="#methods_filter">filter</a></li>
+                <li class="left clear-left"><a href="#methods_find">find</a></li>
+                <li class="left clear-left"><a href="#methods_findLast">findLast</a></li>
+                <li class="left clear-left"><a href="#methods_findLastWhere">findLastWhere</a></li>
+                <li class="left clear-left"><a href="#methods_findWhere">findWhere</a></li>
+                <li class="left clear-left"><a href="#methods_first">first</a></li>
+                <li class="left clear-left"><a href="#methods_flatten">flatten</a></li>
+                <li class="left clear-left"><a href="#methods_foldl">foldl</a></li>
+                <li class="left clear-left"><a href="#methods_foldr">foldr</a></li>
+                <li class="left clear-left"><a href="#methods_forEach">forEach</a></li>
+                <li class="left clear-left"><a href="#methods_forEachRight">forEachRight</a></li>
+                <li class="left clear-left"><a href="#methods_gather">gather</a></li>
+                <li class="left clear-left"><a href="#methods_has">has</a></li>
+                <li class="left clear-left"><a href="#methods_index">index</a></li>
+                <li class="left clear-left"><a href="#methods_indexOf">indexOf</a></li>
+                <li class="left clear-left"><a href="#methods_insertAt">insertAt</a></li>
+                <li class="left clear-left"><a href="#methods_join">join</a></li>
+                <li class="left clear-left"><a href="#methods_last">last</a></li>
+                <li class="left clear-left"><a href="#methods_length">length</a></li>
+                <li class="left clear-left"><a href="#methods_map">map</a></li>
+                <li class="left clear-left"><a href="#methods_mapCall">mapCall</a></li>
+                <li class="left clear-left"><a href="#methods_merge">merge</a></li>
+                <li class="left clear-left"><a href="#methods_pluck">pluck</a></li>
+                <li class="left clear-left"><a href="#methods_pop">pop</a></li>
+                <li class="left clear-left"><a href="#methods_posit">posit</a></li>
+                <li class="left clear-left"><a href="#methods_push">push</a></li>
+                <li class="left clear-left"><a href="#methods_range">range</a></li>
+                <li class="left clear-left"><a href="#methods_reduce">reduce</a></li>
+                <li class="left clear-left"><a href="#methods_remove">remove</a></li>
+                <li class="left clear-left"><a href="#methods_removeAt">removeAt</a></li>
+                <li class="left clear-left"><a href="#methods_reset">reset</a></li>
+                <li class="left clear-left"><a href="#methods_results">results</a></li>
+                <li class="left clear-left"><a href="#methods_reverse">reverse</a></li>
+                <li class="left clear-left"><a href="#methods_shift">shift</a></li>
+                <li class="left clear-left"><a href="#methods_sort">sort</a></li>
+                <li class="left clear-left"><a href="#methods_splice">splice</a></li>
+                <li class="left clear-left"><a href="#methods_toJSON">toJSON</a></li>
+                <li class="left clear-left"><a href="#methods_toString">toString</a></li>
+                <li class="left clear-left"><a href="#methods_uncycle">uncycle</a></li>
+                <li class="left clear-left"><a href="#methods_unshift">unshift</a></li>
+                <li class="left clear-left"><a href="#methods_unwrap">unwrap</a></li>
+                <li class="left clear-left"><a href="#methods_where">where</a></li>
+                <li class="left clear-left"><a href="#methods_whereNot">whereNot</a></li>
+            </ul>
+        </div>
     </li>
     <li class="left clear-left">
         <a href="javascript:void 0;">Augments</a>
@@ -41,31 +88,42 @@ permalink: /api/v0/collection
     </li>
 </ul>
 <h4 id="methods" class="title-headline">Methods</h4>
-<div id="methods_begin">
-    <h5 class="title-headline">#begin</h5>
-    <p>The begin method is a method that is called on initialization. It posts up to it's parent if it is in a nested global object, and it posts down if it was handed an iframe to watch. The begin method accepts one of two strings for it's first argument. If the buster is watching an iframe and it may have been created after the iframe was appended to the document, then it will pass "initialize" as the first argument. If it is watching the iframe before it was appended, or it did the appending (most likely) then the buster will not call the begin method and simply wait for the inner buster to post out that it is ready to begin. Inner busters are much more likely to utilize this method. They automatically post up a begin message to the parent window, which, if another buster is watching it, will begin a series of posts to eachother to establish a connection.</p>
-    <pre class="code code-section"><code class="language-javascript">buster.begin('connect');</code></pre>
-</div>
-
 <div id="methods_add">
     <h5 class="title-headline">#add</h5>
-    <p>The add method is a combination of indexOf and push. First the list will check to see if it already has the object in question. If it determines that it does not then it will push it onto the back of the list. If it does, it will simply ignore it.</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The add method is a combination of indexOf and push. First the list will check to see if it already has the object in question. If the list determines that it does not then it will push it onto the back of the list. If it does, it will simply ignore it. The list will return true or false based on whether or not the item was added to the list.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3, 4, 5]);
+list.add(1); // false
+list.add(6); // true</code></pre>
 </div>
 <div id="methods_call">
     <h5 class="title-headline">#call</h5>
-    <p>The call method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The call method is used for calling a bunch of functions in sequence. If you have a list of functions, they can be called using the call method. Because List objects are not functions, the call method does not conflict. Pass something into the call method for it to be passed to each function. Only one argument is permitted.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([function () {
+    // do something
+}, handler2, function (a, b) {
+    console.log(arguments);
+}]);
+list.call(1, 2); // logs [1]</code></pre>
 </div>
 <div id="methods_concat">
     <h5 class="title-headline">#concat</h5>
-    <p>The concat method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The concat method is simply a parody for concatonating lists directly onto the managed array. This call maps the arguments and unwraps any objects that are lists or that extend from lists as it maps.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([1, 2]);
+var list2 = factories.List([5, 6]);
+list.concat([3, 4], list2);
+list.unwrap(); // [1, 2, 3, 4, 5, 6]</code></pre>
 </div>
 <div id="methods_count">
     <h5 class="title-headline">#count</h5>
-    <p>The count method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The count method is a parody of the utility given count method which allows you to count items on the array, regardless of the length of the list.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3, 4, 5]);
+var arra = [];
+list.count(function (item, index, array) {
+    while (array[index] === undefined && array.length <= index) {
+        array.push(0);
+    }
+}, 3, 13);
+list.unwrap(); // [0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0]</code></pre>
 </div>
 <div id="methods_countFrom">
     <h5 class="title-headline">#countFrom</h5>

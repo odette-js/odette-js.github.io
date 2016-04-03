@@ -17,7 +17,7 @@ app.scope(function (app) {
         returnsId = function () {
             return this.id;
         },
-        SERIALIZED_DATA = '_sharedData',
+        PASSED_DATA = '_passedData',
         ObjectEvent = factories.ObjectEvent = factories.Directive.extend('ObjectEvent', {
             constructor: function (target, data, name, options, when) {
                 var evnt = this;
@@ -26,7 +26,7 @@ app.scope(function (app) {
                 evnt[NAME] = name;
                 evnt[TYPE] = name.split(COLON)[0];
                 evnt.timeStamp = when || now();
-                evnt[SERIALIZED_DATA] = {};
+                evnt[PASSED_DATA] = {};
                 evnt.data(data);
                 if (options) {
                     extend(evnt, options);
@@ -37,14 +37,14 @@ app.scope(function (app) {
                 return this[PROPAGATION_IS_STOPPED] || this[IMMEDIATE_PROP_IS_STOPPED];
             },
             data: function (datum) {
-                return arguments[LENGTH] ? this.set(datum) : this[SERIALIZED_DATA];
+                return arguments[LENGTH] ? this.set(datum) : this[PASSED_DATA];
             },
             get: function (key) {
-                return this[SERIALIZED_DATA][key];
+                return this[PASSED_DATA][key];
             },
             set: function (data) {
                 var evnt = this;
-                evnt[SERIALIZED_DATA] = isObject(data) ? data : {};
+                evnt[PASSED_DATA] = isObject(data) ? data : {};
                 return evnt;
             },
             stopImmediatePropagation: function () {
@@ -111,32 +111,25 @@ app.scope(function (app) {
             create: function (target, data, name, options) {
                 return ObjectEvent(target, data, name, options);
             },
-            make: function (name, handler, origin, context) {
+            make: function (name, handler, origin) {
                 return {
                     disabled: BOOLEAN_FALSE,
-                    namespace: name.split(COLON)[0],
+                    namespace: name && name.split(COLON)[0],
                     name: name,
                     handler: handler,
-                    context: context,
                     origin: origin
                 };
             },
             seekAndDestroy: function (list, handler, context) {
-                var events = this,
-                    stackLength = events[STACK][LENGTH](),
-                    todo = [];
-                return list.duff(function (obj, idx) {
-                    if (obj.disabled || (handler && obj.handler !== handler) || (context && obj.context !== context)) {
-                        return;
+                var obj, events = this,
+                    array = list.unwrap(),
+                    i = array[LENGTH] - 1;
+                for (; i >= 0; i--) {
+                    obj = array[i];
+                    if (!obj.disabled && (!handler || obj.handler === handler) && (!context || obj.context === context)) {
+                        events.detach(obj, i);
                     }
-                    if (stackLength) {
-                        events.detach(obj, idx);
-                    } else {
-                        todo.push([obj, idx]);
-                    }
-                }) && todo[LENGTH] && duff(todo, function (tuple) {
-                    events.detach(tuple[0], tuple[1]);
-                });
+                }
             },
             nextBubble: function (start) {
                 return start.parent;
@@ -235,15 +228,15 @@ app.scope(function (app) {
                     return;
                 }
                 running[name] = BOOLEAN_TRUE;
-                List(events.subset(list.unwrap(), evnt)).each(function (handler) {
+                if (List(events.subset(list.unwrap(), evnt)).find(function (handler) {
                     if (!handler.disabled && events.queue(stack, handler, evnt)) {
                         handler.fn(evnt);
                         stopped = !!evnt[IMMEDIATE_PROP_IS_STOPPED];
                         events.unQueue(stack, handler, evnt);
                     }
-                });
-                if (stopped) {
-                    events.cancelled(stack, evnt, i);
+                    return stopped;
+                })) {
+                    events.cancelled(stack, evnt);
                 }
                 evnt.finished();
                 running[name] = !!cached;
@@ -252,34 +245,7 @@ app.scope(function (app) {
             subset: function (list) {
                 return list.slice(0);
             },
-            bus: function (id, handler, context) {
-                var bus = this.proxyStack,
-                    object = {
-                        id: id,
-                        fn: bind(handler, context),
-                        context: context,
-                        disabled: BOOLEAN_FALSE,
-                        handler: handler
-                    };
-                bus.push(object);
-                bus.register(ID, id, object);
-                return this;
-            },
-            unBus: function (id, index) {
-                var handler, directive = this,
-                    bus = directive.proxyStack;
-                if (!(handler = bus.get(ID, id))) {
-                    return directive;
-                }
-                if (bus.list.iterating) {
-                    bus.mark('dirty');
-                    handler.disabled = BOOLEAN_TRUE;
-                } else {
-                    bus.remove(handler, index);
-                    bus.unRegister(ID, id);
-                }
-                return directive;
-            }
+            cancelled: function () {}
         });
     app.defineDirective(EVENTS, factories.EventsDirective[CONSTRUCTOR]);
 });

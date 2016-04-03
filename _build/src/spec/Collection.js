@@ -21,17 +21,17 @@ application.scope().run(function (app, _, factories) {
             _.expect(numberCollection.length()).toEqual(10);
         });
         _.it('can give you all of it\'s values at once', function () {
-            _.expect(collection.unwrap()).toEqual(collection.directive('list').items);
+            _.expect(collection.unwrap()).toEqual(collection.directive('List').items);
         });
         _.it('or one at a time', function () {
             numberCollection.duff(function (item, idx) {
-                _.expect(numberCollection.index(idx)).toEqual(numberCollection.directive('list').items[idx]);
+                _.expect(numberCollection.index(idx)).toEqual(numberCollection.items[idx]);
             });
         });
         _.it('as well as in reverse order', function () {
             var list = [];
             numberCollection.duffRight(function (item, idx) {
-                _.expect(numberCollection.index(idx)).toEqual(numberCollection.directive('list').items[idx]);
+                _.expect(numberCollection.index(idx)).toEqual(numberCollection.items[idx]);
                 list.push(item);
             });
             _.expect(list).toEqual([9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
@@ -68,17 +68,22 @@ application.scope().run(function (app, _, factories) {
                 }).unwrap()).toEqual([0, 3, 6, 9, 1, 4, 7, 2, 5, 8]);
             });
             _.it('unshift', function () {
-                _.expect(numberCollection.unshift(-1).unwrap()).toEqual([-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+                numberCollection.unshift(-1);
+                _.expect(numberCollection.unwrap()).toEqual([-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
             });
             _.it('push', function () {
-                _.expect(numberCollection.push(10).unwrap()).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-                _.expect(numberCollection.push([11, 12, 13]).unwrap()).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+                numberCollection.push(10);
+                _.expect(numberCollection.unwrap()).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+                numberCollection.push([11, 12, 13]);
+                _.expect(numberCollection.unwrap()).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
             });
             _.it('cycle', function () {
-                _.expect(numberCollection.cycle(3).unwrap()).toEqual([3, 4, 5, 6, 7, 8, 9, 0, 1, 2]);
+                numberCollection.cycle(3);
+                _.expect(numberCollection.unwrap()).toEqual([3, 4, 5, 6, 7, 8, 9, 0, 1, 2]);
             });
             _.it('uncycle', function () {
-                _.expect(numberCollection.uncycle(3).unwrap()).toEqual([7, 8, 9, 0, 1, 2, 3, 4, 5, 6]);
+                numberCollection.uncycle(3);
+                _.expect(numberCollection.unwrap()).toEqual([7, 8, 9, 0, 1, 2, 3, 4, 5, 6]);
             });
             _.it('count', function () {
                 _.expect(numberCollection.count(function (item, idx, list) {

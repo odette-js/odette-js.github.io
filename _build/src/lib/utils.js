@@ -589,10 +589,7 @@ var factories = {},
     },
     constructorWrapper = function (Constructor) {
         var __ = function (one, two, three, four, five, six) {
-            if (isInstance(one, Constructor)) {
-                return one;
-            }
-            return new Constructor(one, two, three, four, five, six);
+            return one instanceof Constructor ? one : new Constructor(one, two, three, four, five, six);
         };
         __.isInstance = Constructor.isInstance = function (instance) {
             return isInstance(instance, Constructor);
@@ -966,13 +963,12 @@ var factories = {},
         var val, n, base = obj.url,
             query = [];
         if (isObject(obj)) {
-            for (n in obj.query) {
-                val = obj.query[n];
+            each(obj.query, function (val, n) {
                 if (val !== UNDEFINED) {
                     val = encodeURIComponent(stringify(val));
                     query.push(n + '=' + val);
                 }
-            }
+            });
             if (query[LENGTH]) {
                 base += '?';
             }

@@ -306,14 +306,14 @@ application.scope().run(function (app, _, factories) {
                 }]);
                 box.comparator = 'two';
                 box.sort();
-                _.expect(box.directive('Children').list.map(function (model) {
+                _.expect(box.directive('Children').map(function (model) {
                     return model.get('two');
-                })).toEqual([1, 2, 8]);
+                }).unwrap()).toEqual([1, 2, 8]);
                 box.comparator = '!two';
                 box.sort();
-                _.expect(box.directive('Children').list.map(function (model) {
+                _.expect(box.directive('Children').map(function (model) {
                     return model.get('two');
-                })).toEqual([8, 2, 1]);
+                }).unwrap()).toEqual([8, 2, 1]);
             });
             _.it('set up events on their children', function () {
                 var counter = 0;

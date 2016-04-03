@@ -29,6 +29,9 @@ html, body {
 .clearfix-overflow {
     overflow: hidden;
 }
+.display-block {
+    display: block;
+}
 .fa {
     line-height: inherit;
 }
@@ -62,7 +65,7 @@ html, body {
     margin: auto;
     transition: all 100ms;
     &:hover {
-        transform: rotate(45deg);
+        transform: rotate(30deg);
     }
     &:before {
         content: " ";

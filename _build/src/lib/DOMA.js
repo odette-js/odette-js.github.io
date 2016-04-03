@@ -1,4 +1,5 @@
 var ATTACHED = 'attached',
+    IFRAME = 'iframe',
     isWindow = function (obj) {
         return obj && obj === obj[WINDOW];
     };
@@ -34,7 +35,6 @@ app.scope(function (app) {
         FONT_SIZE = 'fontSize',
         DEFAULT_VIEW = 'defaultView',
         DIV = 'div',
-        IFRAME = 'iframe',
         devicePixelRatio = (win.devicePixelRatio || 1),
         ensure = function (el, owner) {
             var data;
@@ -109,7 +109,7 @@ app.scope(function (app) {
             // if (!settings.variable) source = 'with(this||{}){\n' + source + '}\n';
             source = "var __t,__HTML__='',__j=Array.prototype.join," + "print=function(){__HTML__+=__j.call(arguments,'');};\n" + source + 'return __HTML__;\n';
             var render = _.wraptry(function () {
-                return new Function.constructor(settings.variable || '_', source);
+                return new Function[CONSTRUCTOR](settings.variable || '_', source);
             }, console.error);
             var template = function (data) {
                 return render.call(data || {}, _);
@@ -2053,7 +2053,7 @@ app.scope(function (app) {
                 return ret || 0;
             };
         },
-        historyResult = app.extendDirective('registry', 'History'),
+        historyResult = app.extendDirective('Registry', 'History'),
         DomManager = factories.DomManager = factories.Events.extend(DOM_MANAGER_STRING, extend(classApi, {
             'directive:creation:EventManager': DomEventsDirective,
             isValidDomManager: BOOLEAN_TRUE,
@@ -2563,8 +2563,7 @@ app.scope(function (app) {
             var capture = !!capture_,
                 directive = manager.directive(EVENTS),
                 removeFromList = function (list, name) {
-                    var newList = [];
-                    return list && list.seeker(function (obj) {
+                    return list.obliteration(function (obj) {
                         if ((!name || name === obj.passedName) && (!handler || obj.handler === handler) && (!group || obj.group === group) && (!selector || obj.selector === selector)) {
                             directive.detach(obj);
                         }
@@ -2750,7 +2749,7 @@ app.scope(function (app) {
             },
             push: function () {
                 var owner = this.context.owner;
-                this.directive('list').push(foldl(arguments, function (memo, el) {
+                this.items.push.apply(this.items, foldl(arguments, function (memo, el) {
                     if (!el) {
                         return memo;
                     }

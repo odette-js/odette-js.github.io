@@ -1,0 +1,87 @@
+---
+layout: post
+title:  "HTTP"
+date:   2016-03-20 12:35:34 -0500
+categories: API
+author: Michael McLaughlin
+permalink: /api/v0/http
+---
+
+<p>HTTP objects are Odette promises that specialize in retrieving and sending data over http connections. By using a promise api as the root of the HTTP api, we are able to create some awesome extensions specific to AJAX.</p>
+<pre class="code code-section"><code class="language-javascript">// does a get request directed at the passed in url
+var httpInstance = factories.HTTP('https://example.com');</code></pre>
+<p>A few other things that HTTP objects abstract for you includes the progress event, which is dispatched using the <a href="events">Events</a> api, and can be listened for at "progress". The data passed with the event includes the count, as well as the progress given by the originating event.</p>
+<div id="methods_status">
+    <p>You can use the status method just like handle on promises, except it can be directed at the status code of the request. Consider the following code:</p>
+    <pre class="code code-section"><code class="language-javascript">var httpInstance = factories.HTTP.get('http://example.com').status(200, function () {
+    console.log('status:200');
+}).status(500, function () {
+    console.log('status:500');
+}).success(function () {
+    console.log('success');
+}).failure(function () {
+    console.log('failure');
+}).then(function () {
+    console.log('finished');
+});
+// ... later
+// logs "status:200", "success", "finished"</code></pre>
+</div>
+<div id="methods_headers">
+    <p>Because HTTP calls are sent on a separate stack from the javascript that created it, headers can still be set before it is sent off. Use the headers method to set extra headers outside of passing in headers at the headers property on HTTP initialization.</p>
+    <pre class="code code-section"><code class="language-javascript">var httpInstance = factories.HTTP('https://example.com');
+httpInstance.headers('X-my-custom-header', 'my-custom-value');
+httpInstance.headers({
+    'X-my-custom-header': 'my-custom-value',
+    'X-my-second-header': 'my-second-value'
+});</code></pre>
+</div>
+<div id="methods_parse">
+    <h5 class="title-headline">#parse</h5>
+    <p>Responses are automatically parsed using a default parser, which is provided at under the utils object under _.parse. In order to overwrite this default functionality, simply overwrite the parse property on your httpInstance and the response will be parsed a different way for you. You should rarely ever have to overwrite this method unless you're working with a very specific server response that requires a transformation. The parse method will run irreverent of the type of response.</p>
+    <pre class="code code-section"><code class="language-javascript">httpInstance.parse = function (response) {
+    // custom parse
+    var customparsed = response + '5';
+    return customparsed;
+};</code></pre>
+</div>
+<div id="methods_auxiliaryStates">
+    <h5 class="title-headline">#auxiliaryStates</h5>
+    <p>HTTP objects create a resolution tree for promises to iterate through. This is done by overwriting the auxiliaryStates method, which provides pathways for the promise resolution methods to follow.</p>
+    <pre class="code code-section"><code class="language-javascript">auxiliaryStates: function () {
+    return {
+        'status:0': 'failure',
+        'status:200': 'success',
+        'status:202': 'success',
+        'status:205': 'success',
+        'status:302': 'success',
+        'status:304': 'success',
+        'status:400': 'failure',
+        'status:401': 'failure',
+        'status:403': 'failure',
+        'status:404': 'failure',
+        'status:405': 'failure',
+        'status:406': 'failure',
+        'status:500': 'error',
+        'status:502': 'error',
+        'status:505': 'error',
+        'status:511': 'error',
+        'timeout': 'failure',
+        'abort': 'failure'
+    };
+}</code></pre>
+</div>
+<div id="methods_convenience">
+    <h5 class="title-headline">#convenience</h5>
+    <p>Basic methods are provided on the HTTP constructor for your convenience. They include get, post, put, delete, options, head, trace, and connect.</p>
+    <pre class="code code-section"><code class="language-javascript">var httpInstance = factories.HTTP.get('http://example.com');</code></pre>
+    <p>HTTP objects can also be passed directly to Promises for chaining with all, when, or race.</p>
+    <pre class="code code-section"><code class="language-javascript">var http1 = factories.HTTP('/api1');
+var http2 = factories.HTTP('/api2');
+_.Promise().all(http1, http2).then(function (list) {
+    // all finished
+});
+_.Promise().race(http1, http2).then(function (first) {
+    // first finished
+});</code></pre>
+</div>

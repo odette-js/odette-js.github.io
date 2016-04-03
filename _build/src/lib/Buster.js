@@ -8,6 +8,7 @@ app.scope(function (app) {
         DOCUMENT_READY = 'documentReady',
         IS_WINDOW = 'isWindow',
         DEFERRED = 'deferred',
+        RESOLVED = 'resolved',
         IS_DEFERRED = 'is' + upCase(DEFERRED),
         GROUP = 'group',
         POST_TO = 'postTo',
@@ -16,6 +17,7 @@ app.scope(function (app) {
         FLUSHING = 'flushing',
         CONNECT = 'connect',
         CONNECTED = CONNECT + 'ed',
+        DISCONNECTED = 'dis' + CONNECTED,
         COMPONENT = 'component',
         INITIALIZE = 'initialize',
         RESPONSE = 'response',
@@ -30,6 +32,7 @@ app.scope(function (app) {
         BEFORE_RESPONDED = BEFORE_COLON + RESPONDED,
         BEFORE_RECEIVED = BEFORE_COLON + RECEIVED,
         QUEUED_MESSAGE_INDEX = 'queuedMessageIndex',
+        SENT_MESSAGE_INDEX = 'sentMessageIndex',
         RECEIVED_REFERRER = 'receiveReferrer',
         EMIT_REFERRER = 'emitReferrer',
         BUSTER = 'buster',
@@ -148,43 +151,58 @@ app.scope(function (app) {
             if (buster.connectPromise) {
                 buster.connectPromise.reject();
             }
-            buster.set(CONNECTED, BOOLEAN_FALSE);
+            buster.unmark(CONNECTED);
+            buster[DISPATCH_EVENT](DISCONNECTED);
             buster.connectPromise = _.Promise();
         },
         connected = function (buster, message) {
             buster.connectPromise.fulfill(message);
-            buster.set(CONNECTED, BOOLEAN_TRUE);
+            buster.mark(CONNECTED);
+            buster[DISPATCH_EVENT](CONNECTED);
         },
         connectReceived = function (e) {
             // first submit a response so the other side can flush
             var buster = this,
                 dataDirective = buster.directive(DATA);
             if (dataDirective.get(IS_LATE)) {
-                dataDirective.set(QUEUED_MESSAGE_INDEX, 1);
+                dataDirective.set(SENT_MESSAGE_INDEX, 1);
             }
             buster.respond((e.message || e.origin).id);
-            buster.set(CONNECTED, BOOLEAN_TRUE);
+            buster.mark(CONNECTED);
+            buster[DISPATCH_EVENT](CONNECTED);
         },
-        Buster = factories.Buster = factories.Model.extend(upCase(BUSTER), {
+        UPCASED_BUSTER = upCase(BUSTER),
+        defaultMessage = function (buster) {
+            return {
+                from: buster.get(ID),
+                postTo: buster.get(POST_TO),
+                group: buster.get(GROUP),
+                version: app[VERSION],
+                messageId: buster.directive(CHILDREN)[LENGTH](),
+                timeStamp: _.now()
+            };
+        },
+        Buster = factories[UPCASED_BUSTER] = factories.Model.extend(UPCASED_BUSTER, {
             Child: Message,
             bounce: function (e) {
                 return this.respond(e.message.id);
             },
-            connected: function (handler) {
-                this.connectPromise.success(handler);
+            connected: function () {
+                this.connectPromise.success(arguments);
                 return this;
             },
             response: function (original, data) {
-                var originalData = original[DATA];
+                var buster = this,
+                    originalData = original[DATA];
                 if (!originalData) {
                     return;
                 }
                 originalData.set(LATEST_RESPONSE, data);
-                if (originalData.get('isResolved')) {
+                if (original.is(RESOLVED)) {
                     original[DISPATCH_EVENT](DEFERRED, data.packet);
                 } else {
                     originalData.set(RESPONDED_WITH, data);
-                    originalData.set('isResolved', BOOLEAN_TRUE);
+                    original.mark(RESOLVED);
                     original[DISPATCH_EVENT](RESPONSE, data.packet);
                 }
             },
@@ -194,7 +212,7 @@ app.scope(function (app) {
                 data.originMessageId = data.messageId;
                 data.messageId = receiveHistory.length();
                 data.isDeferred = BOOLEAN_FALSE;
-                message = new Message(data);
+                message = Message(data);
                 receiveHistory.push(message);
                 receiveHistory.register(ID, data.messageId, message);
                 buster[DISPATCH_EVENT](BEFORE_RECEIVED);
@@ -217,26 +235,14 @@ app.scope(function (app) {
              * @func
              * @name Buster#defaults
              */
-            defaults: function () {
-                return {
-                    documentReady: BOOLEAN_TRUE,
-                    version: app[VERSION],
-                    group: defaultGroupId,
-                    connected: BOOLEAN_FALSE,
-                    friendly: BOOLEAN_FALSE
-                };
-            },
             defineWindows: function (receiveWindow, emitWindow) {
                 var buster = this,
                     busterData = buster.directive(DATA);
                 if (receiveWindow && receiveWindow[IS_WINDOW]) {
-                    if (buster.receiveWindow) {
-                        buster.receiveWindow.off(receiveWindowEvents);
-                    }
+                    // takes care of preventing duplicate handlers
                     buster.receiveWindow = receiveWindow.on(receiveWindowEvents);
-                    // buster.receiveWindow.owner.$(function () {
-                    buster.set(DOCUMENT_READY, BOOLEAN_TRUE);
-                    // });
+                    buster.mark(DOCUMENT_READY);
+                    buster.flush();
                 }
                 if (emitWindow && emitWindow[IS_WINDOW]) {
                     buster.emitWindow = emitWindow;
@@ -248,7 +254,7 @@ app.scope(function (app) {
                 if (!iframe || !iframe.isIframe) {
                     return;
                 }
-                buster.iframe = iframe;
+                buster[IFRAME] = iframe;
                 if (iframe.is('attached') && (windo = iframe.window())) {
                     buster.defineWindows(NULL, windo);
                 }
@@ -258,15 +264,15 @@ app.scope(function (app) {
             },
             setupIframe: function () {
                 var emitReferrer, buster = this,
-                    iframe = buster.iframe,
+                    iframe = buster[IFRAME],
                     busterData = buster.directive(DATA),
                     hrefSplit = buster.receiveWindow.element().location.href.split(ENCODED_BRACKET),
                     hrefShift = hrefSplit.shift(),
                     unshifted = hrefSplit.unshift(EMPTY_STRING),
                     href = hrefSplit.join(ENCODED_BRACKET),
                     receiveReferrer = parseUrl(busterData.get(RECEIVED_REFERRER) || href).origin,
-                    iframeSrc = busterData.get('iframeSrc'),
-                    iframeContent = busterData.get('iframeContent'),
+                    iframeSrc = busterData.get(IFRAME + 'Src'),
+                    iframeContent = busterData.get(IFRAME + 'Content'),
                     // this is going to the
                     data = {
                         postTo: buster.id,
@@ -306,7 +312,7 @@ app.scope(function (app) {
                 hashSplit.unshift(EMPTY_STRING);
                 hashString = hashSplit.join(ENCODED_BRACKET);
                 buster.set(parse(decodeURI(hashString || wraptry(function () {
-                    return receiveWindow.parent('iframe').data(BUSTER);
+                    return receiveWindow.parent(IFRAME).data(BUSTER);
                 }))));
             },
             constructor: function (listen, talk, settings_, events) {
@@ -318,12 +324,13 @@ app.scope(function (app) {
                 settings.id = settings.id === UNDEFINED ? uuid() : settings.id;
                 buster.receiveHistory = factories.Collection();
                 disconnected.call(buster);
+                settings.group = defaultGroupId;
                 factories.Model[CONSTRUCTOR].call(buster, settings);
-                buster.once('change:connected', function (e) {
+                buster.on(CONNECTED, function (e) {
                     buster.connectPromise.fulfill(buster.directive(CHILDREN).first());
+                    buster.flush();
                 });
                 buster.on({
-                    'change:connected change:documentReady': 'flush',
                     'received:update': 'bounce',
                     'received:unload': 'destroy',
                     destroy: disconnected,
@@ -345,8 +352,8 @@ app.scope(function (app) {
                 if (buster.get('strip')) {
                     buster.stripData();
                 }
-                buster.set(QUEUED_MESSAGE_INDEX, 0);
-                if (buster.iframe) {
+                buster.set(SENT_MESSAGE_INDEX, 0);
+                if (buster[IFRAME]) {
                     // oh, are we late?
                     if (buster.get(IS_LATE)) {
                         buster.begin(INITIALIZE);
@@ -367,11 +374,11 @@ app.scope(function (app) {
                 var command, children, n, item, gah, childrenLen, queuedMsg, nuData, i = 0,
                     buster = this,
                     dataManager = buster.directive(DATA),
-                    currentIdx = dataManager.get(QUEUED_MESSAGE_INDEX),
-                    connected = dataManager.get(CONNECTED),
+                    currentIdx = dataManager.get(SENT_MESSAGE_INDEX),
+                    connected = buster.is(CONNECTED),
                     initedFrom = dataManager.get('initedFromPartner'),
                     flushing = dataManager.get(FLUSHING);
-                if (!dataManager.get(DOCUMENT_READY)) {
+                if (!buster.is(DOCUMENT_READY)) {
                     return buster;
                 }
                 if (!initedFrom || connected && ((connected || !currentIdx) && !flushing)) {
@@ -383,8 +390,8 @@ app.scope(function (app) {
                         queuedMsg.directive(DATA).set(RUN_COUNT, 0);
                         if (currentIdx || connected) {
                             queuedMsg = children.index(currentIdx);
-                            currentIdx = (dataManager.get(QUEUED_MESSAGE_INDEX) + 1) || 0;
-                            dataManager.set(QUEUED_MESSAGE_INDEX, currentIdx);
+                            currentIdx = (dataManager.get(SENT_MESSAGE_INDEX) + 1) || 0;
+                            dataManager.set(SENT_MESSAGE_INDEX, currentIdx);
                             postMessage(queuedMsg, buster);
                         } else {
                             // initializing
@@ -396,8 +403,8 @@ app.scope(function (app) {
                         }
                     }
                     buster.set(FLUSHING, BOOLEAN_FALSE);
-                    if (buster.get(CONNECTED)) {
-                        if (children[LENGTH]() > buster.get(QUEUED_MESSAGE_INDEX)) {
+                    if (buster.is(CONNECTED)) {
+                        if (children[LENGTH]() > buster.get(SENT_MESSAGE_INDEX)) {
                             buster.flush();
                         }
                     }
@@ -417,7 +424,7 @@ app.scope(function (app) {
                     message = buster.add(extend({
                         command: command,
                         packet: packet
-                    }, buster.defaultMessage(), extra));
+                    }, defaultMessage(buster), extra));
                 return message[0];
             },
             /**
@@ -434,17 +441,6 @@ app.scope(function (app) {
              * @func
              * @name Buster#defaultMessage
              */
-            defaultMessage: function () {
-                var buster = this;
-                return {
-                    from: buster.get(ID),
-                    postTo: buster.get(POST_TO),
-                    group: buster.get(GROUP),
-                    version: app[VERSION],
-                    messageId: buster.directive(CHILDREN)[LENGTH](),
-                    timeStamp: _.now()
-                };
-            },
             /**
              * respond trigger.
              * @arg {object} original data object (same pointer) that was sent over
@@ -466,7 +462,7 @@ app.scope(function (app) {
                 messageData = originalMessage.directive(DATA);
                 messageData.set(RUN_COUNT, (messageData.get(RUN_COUNT) || 0) + 1);
                 packet = extend(BOOLEAN_TRUE, result(buster, 'package') || {}, packet_);
-                newMessage = extend(buster.defaultMessage(), {
+                newMessage = extend(defaultMessage(buster), {
                     from: originalMessage.get(POST_TO),
                     postTo: originalMessage.get('from'),
                     messageId: originalMessage.get('originMessageId'),
