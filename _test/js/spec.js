@@ -2472,14 +2472,14 @@ application.scope().run(function (app, _, factories) {
                     div.destroy();
                     _.expect(count).toEqual(1);
                 });
-                _.it('can even apply to elements that have already been created', function () {
-                    $.createElement('test2');
-                    _.expect(count).toEqual(0);
-                    $.registerElement('test2', {
-                        onCreate: handler
-                    });
-                    _.expect(count).toEqual(1);
-                });
+                // _.it('can even apply to elements that have already been created', function () {
+                //     $.createElement('test2');
+                //     _.expect(count).toEqual(0);
+                //     $.registerElement('test2', {
+                //         onCreate: handler
+                //     });
+                //     _.expect(count).toEqual(1);
+                // });
             });
         });
         _.it('tags cannot be created without being registered first', function () {

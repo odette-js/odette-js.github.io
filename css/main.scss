@@ -2,13 +2,8 @@
 # Only the main Sass file needs front matter (the dashes are enough)
 ---
 @charset "utf-8";
-
-// @import "materialize/prefixer";
 @import "materialize/mixins";
-
-// Variables;
 @import "materialize/variables";
-
 html, body {
     height: 100%;
     width: 100%;
@@ -16,9 +11,6 @@ html, body {
     padding: 0;
     line-height: 1.8rem;
 }
-/**
- * Clearfix
- */
 %clearfix {
     &:after {
         content: "";
@@ -44,7 +36,6 @@ html, body {
 .position-relative {
     position: relative;
 }
-
 .odette-icon {
     display: block;
     font: normal normal normal 14px/1 FontAwesome;
@@ -99,7 +90,6 @@ html, body {
         margin: auto;
     }
 }
-
 .notselectable {
     -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none;   /* Chrome/Safari/Opera */
@@ -185,6 +175,7 @@ pre.code-section {
     background-color: color('grey', 'lighten-5');
     padding: 1rem;
     line-height: 1.4rem;
+    @extend .selectable;
     code {
         display: block;
     }

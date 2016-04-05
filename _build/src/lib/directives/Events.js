@@ -77,6 +77,7 @@ app.scope(function (app) {
             }
         }),
         EventsDirective = factories.EventsDirective = factories.Directive.extend('EventsDirective', {
+            cancelled: _.noop,
             constructor: function (target) {
                 var eventsDirective = this;
                 eventsDirective.target = target;
@@ -84,6 +85,7 @@ app.scope(function (app) {
                 eventsDirective.handlers = {};
                 eventsDirective.listeningTo = {};
                 eventsDirective.running = {};
+                eventsDirective.queued = {};
                 eventsDirective.stack = List();
                 eventsDirective.removeQueue = List();
                 eventsDirective.proxyStack = Collection();
@@ -220,6 +222,7 @@ app.scope(function (app) {
                     handlers = events[HANDLERS],
                     list = handlers[name],
                     running = events.running,
+                    // prevents infinite loops
                     cached = running[name],
                     stopped = evnt[PROPAGATION_IS_STOPPED],
                     bus = events.proxyStack;
@@ -245,7 +248,19 @@ app.scope(function (app) {
             subset: function (list) {
                 return list.slice(0);
             },
-            cancelled: function () {}
+            queueStack: function (name) {
+                var queued = this.queued;
+                if (!queued[name]) {
+                    queued[name] = 0;
+                }
+                ++queued[name];
+                return queued[name];
+            },
+            unQueueStack: function (name) {
+                if (!--this.queued[name]) {
+                    delete this.queued[name];
+                }
+            }
         });
     app.defineDirective(EVENTS, factories.EventsDirective[CONSTRUCTOR]);
 });

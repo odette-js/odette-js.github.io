@@ -290,31 +290,31 @@ app.scope(function (app) {
             dispatchEvent: function (name, data, options) {
                 var bus, evnt, returnValue, eventer = this,
                     eventsDirective = eventer[EVENTS];
-                if (!eventsDirective || eventsDirective.running[name]) {
+                if (!eventsDirective || eventsDirective.running[name] || eventsDirective.queued[name]) {
                     return;
                 }
                 evnt = eventsDirective.create(eventer, data, name, options);
                 returnValue = eventsDirective.dispatch(name, evnt);
-                bus = eventsDirective.proxyStack;
-                if (!bus[LENGTH]()) {
-                    return returnValue;
-                }
-                bus.each(function (row) {
-                    if (row.disabled) {
-                        return;
-                    }
-                    row.fn(name, evnt);
-                }, NULL);
-                if (!bus.is('dirty')) {
-                    return returnValue;
-                }
-                bus.obliteration(function (handler, index) {
-                    if (!handler.disabled) {
-                        return;
-                    }
-                    bus.remove(handler.id, index - 1);
-                }, NULL);
+                // bus = eventsDirective.proxyStack;
+                // if (!bus[LENGTH]()) {
                 return returnValue;
+                // }
+                // bus.each(function (row) {
+                //     if (row.disabled) {
+                //         return;
+                //     }
+                //     row.fn(name, evnt);
+                // }, NULL);
+                // if (!bus.is('dirty')) {
+                //     return returnValue;
+                // }
+                // bus.obliteration(function (handler, index) {
+                //     if (!handler.disabled) {
+                //         return;
+                //     }
+                //     bus.remove(handler.id, index - 1);
+                // }, NULL);
+                // return returnValue;
             }
         });
 });

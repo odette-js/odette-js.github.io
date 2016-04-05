@@ -369,11 +369,14 @@ app.scope(function (app) {
                 var changedList = [],
                     model = this,
                     dataDirective = model.directive(DATA),
-                    previous = {};
+                    previous = {},
+                    eventsDirective;
                 intendedObject(key, value, function (key, value) {
                     // definitely set the value, and let us know what happened
                     // and if you're not changing already, (already)
                     if (dataDirective.set(key, value) && !dataDirective.changing[name]) {
+                        eventsDirective = eventsDirective || model.directive(EVENTS);
+                        eventsDirective.queueStack(CHANGE_COLON + key);
                         changedList.push(key);
                     }
                 });
@@ -384,8 +387,10 @@ app.scope(function (app) {
                 // list
                 dataDirective.digest(model, function () {
                     duff(changedList, function (name) {
+                        var eventName = CHANGE_COLON + name;
                         dataDirective.changing[name] = BOOLEAN_TRUE;
-                        model[DISPATCH_EVENT](CHANGE_COLON + name);
+                        eventsDirective.unQueueStack(eventName);
+                        model[DISPATCH_EVENT](eventName);
                         dataDirective.changing[name] = BOOLEAN_FALSE;
                     });
                 });

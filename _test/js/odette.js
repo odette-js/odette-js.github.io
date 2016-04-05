@@ -3618,31 +3618,31 @@ app.scope(function (app) {
             dispatchEvent: function (name, data, options) {
                 var bus, evnt, returnValue, eventer = this,
                     eventsDirective = eventer[EVENTS];
-                if (!eventsDirective || eventsDirective.running[name]) {
+                if (!eventsDirective || eventsDirective.running[name] || eventsDirective.queued[name]) {
                     return;
                 }
                 evnt = eventsDirective.create(eventer, data, name, options);
                 returnValue = eventsDirective.dispatch(name, evnt);
-                bus = eventsDirective.proxyStack;
-                if (!bus[LENGTH]()) {
-                    return returnValue;
-                }
-                bus.each(function (row) {
-                    if (row.disabled) {
-                        return;
-                    }
-                    row.fn(name, evnt);
-                }, NULL);
-                if (!bus.is('dirty')) {
-                    return returnValue;
-                }
-                bus.obliteration(function (handler, index) {
-                    if (!handler.disabled) {
-                        return;
-                    }
-                    bus.remove(handler.id, index - 1);
-                }, NULL);
+                // bus = eventsDirective.proxyStack;
+                // if (!bus[LENGTH]()) {
                 return returnValue;
+                // }
+                // bus.each(function (row) {
+                //     if (row.disabled) {
+                //         return;
+                //     }
+                //     row.fn(name, evnt);
+                // }, NULL);
+                // if (!bus.is('dirty')) {
+                //     return returnValue;
+                // }
+                // bus.obliteration(function (handler, index) {
+                //     if (!handler.disabled) {
+                //         return;
+                //     }
+                //     bus.remove(handler.id, index - 1);
+                // }, NULL);
+                // return returnValue;
             }
         });
 });
@@ -4017,11 +4017,14 @@ app.scope(function (app) {
                 var changedList = [],
                     model = this,
                     dataDirective = model.directive(DATA),
-                    previous = {};
+                    previous = {},
+                    eventsDirective;
                 intendedObject(key, value, function (key, value) {
                     // definitely set the value, and let us know what happened
                     // and if you're not changing already, (already)
                     if (dataDirective.set(key, value) && !dataDirective.changing[name]) {
+                        eventsDirective = eventsDirective || model.directive(EVENTS);
+                        eventsDirective.queueStack(CHANGE_COLON + key);
                         changedList.push(key);
                     }
                 });
@@ -4032,8 +4035,10 @@ app.scope(function (app) {
                 // list
                 dataDirective.digest(model, function () {
                     duff(changedList, function (name) {
+                        var eventName = CHANGE_COLON + name;
                         dataDirective.changing[name] = BOOLEAN_TRUE;
-                        model[DISPATCH_EVENT](CHANGE_COLON + name);
+                        eventsDirective.unQueueStack(eventName);
+                        model[DISPATCH_EVENT](eventName);
                         dataDirective.changing[name] = BOOLEAN_FALSE;
                     });
                 });
@@ -4156,6 +4161,7 @@ app.scope(function (app) {
             }
         }),
         EventsDirective = factories.EventsDirective = factories.Directive.extend('EventsDirective', {
+            cancelled: _.noop,
             constructor: function (target) {
                 var eventsDirective = this;
                 eventsDirective.target = target;
@@ -4163,6 +4169,7 @@ app.scope(function (app) {
                 eventsDirective.handlers = {};
                 eventsDirective.listeningTo = {};
                 eventsDirective.running = {};
+                eventsDirective.queued = {};
                 eventsDirective.stack = List();
                 eventsDirective.removeQueue = List();
                 eventsDirective.proxyStack = Collection();
@@ -4299,6 +4306,7 @@ app.scope(function (app) {
                     handlers = events[HANDLERS],
                     list = handlers[name],
                     running = events.running,
+                    // prevents infinite loops
                     cached = running[name],
                     stopped = evnt[PROPAGATION_IS_STOPPED],
                     bus = events.proxyStack;
@@ -4324,7 +4332,19 @@ app.scope(function (app) {
             subset: function (list) {
                 return list.slice(0);
             },
-            cancelled: function () {}
+            queueStack: function (name) {
+                var queued = this.queued;
+                if (!queued[name]) {
+                    queued[name] = 0;
+                }
+                ++queued[name];
+                return queued[name];
+            },
+            unQueueStack: function (name) {
+                if (!--this.queued[name]) {
+                    delete this.queued[name];
+                }
+            }
         });
     app.defineDirective(EVENTS, factories.EventsDirective[CONSTRUCTOR]);
 });
@@ -6061,7 +6081,10 @@ app.scope(function (app) {
                 elementName = foundElement === BOOLEAN_TRUE ? tagName : foundElement;
             // native create
             if (!elementName) {
-                foundElement = elementName = registeredElements[tagName] = DIV;
+                exception({
+                    message: 'custom tag names must be registered before they can be used'
+                });
+                // foundElement = elementName = registeredElements[tagName] = DIV;
             }
             newElement = documnt.createElement(elementName);
             if (foundElement && foundElement !== BOOLEAN_TRUE) {
@@ -9886,6 +9909,12 @@ app.scope(function (app) {
 application.scope().run(function (app, _, factories) {
     var currentTest, current, pollerTimeout, failedTests = 0,
         testisrunning = BOOLEAN_FALSE,
+        EXPECTED = 'expected',
+        SPACE_NOT = ' not',
+        TO_EQUAL = ' to equal ',
+        AN_ERROR = ' an error',
+        TO_BE_THROWN = ' to be thrown',
+        TO_BE_STRICTLY_EQUAL_STRING = ' to be strictly equal to ',
         console = _.console,
         stringify = _.stringify,
         negate = _.negate,
@@ -9902,9 +9931,9 @@ application.scope().run(function (app, _, factories) {
         globalBeforeEachStack = [],
         globalAfterEachStack = [],
         errIfFalse = function (handler, makemessage) {
-            return function () {
+            return function (arg) {
                 var err, expectation = {};
-                if (handler.apply(this, arguments)) {
+                if (handler.call(this, current, arg)) {
                     successfulExpectations.push(expectation);
                 } else {
                     ++failedTests;
@@ -9916,55 +9945,43 @@ application.scope().run(function (app, _, factories) {
                 return this;
             };
         },
-        internalToThrow = function (handler) {
-            var errRan = false;
+        expectationsHash = {
+            not: {}
+        },
+        expect = function (start) {
+            current = start;
+            return expectationsHash;
+        },
+        maker = expect.maker = function (where, test, positive, negative) {
+            expectationsHash[where] = errIfFalse(test, positive);
+            expectationsHash.not[where] = errIfFalse(negate(test), negative);
+        },
+        internalToThrowResult = maker('toThrow', function (handler) {
+            var errRan = BOOLEAN_FALSE;
             return _.wraptry(handler, function () {
-                errRan = true;
+                errRan = BOOLEAN_TRUE;
             }, function () {
                 return errRan;
             });
-        },
-        toThrow = function () {
-            errIfFalse(internalToThrow, function () {
-                return 'expected an error to be thrown';
-            });
-        },
-        notToThrow = function () {
-            errIfFalse(negate(internalToThrow), function () {
-                return 'expected an error not to be thrown';
-            });
-        },
-        internalToEqual = function (comparison) {
-            return _.isEqual(current, comparison);
-        },
-        toEqual = errIfFalse(internalToEqual, function (comparison) {
-            return 'expected ' + current + ' to equal ' + comparison;
+        }, function () {
+            return EXPECTED + AN_ERROR + TO_BE_THROWN;
+        }, function () {
+            return EXPECTED + AN_ERROR + SPACE_NOT + TO_BE_THROWN;
         }),
-        notToEqual = errIfFalse(negate(internalToEqual), function (comparison) {
-            return 'expected ' + stringify(current) + ' not to equal ' + stringify(comparison);
-        }),
-        internalToBe = function (comparison) {
+        internalToBeResult = maker('toBe', function (current, comparison) {
             return current === comparison;
-        },
-        toBe = errIfFalse(internalToBe, function (comparison) {
-            return 'expected ' + stringify(current) + ' to be strictly equal to ' + stringify(comparison);
+        }, function (current, comparison) {
+            return EXPECTED + SPACE + stringify(current) + TO_BE_STRICTLY_EQUAL_STRING + stringify(comparison);
+        }, function (current, comparison) {
+            return EXPECTED + SPACE + stringify(current) + SPACE_NOT + TO_BE_STRICTLY_EQUAL_STRING + stringify(comparison);
         }),
-        notToBe = errIfFalse(negate(internalToBe), function (comparison) {
-            return 'expected ' + stringify(current) + ' to be strictly equal to ' + stringify(comparison);
+        internalToEqualResult = maker('toEqual', function (current, comparison) {
+            return _.isEqual(current, comparison);
+        }, function (current, comparison) {
+            return EXPECTED + SPACE + current + TO_EQUAL + comparison;
+        }, function (current, comparison) {
+            return EXPECTED + SPACE + stringify(current) + SPACE_NOT + TO_EQUAL + stringify(comparison);
         }),
-        expect = function (start) {
-            current = start;
-            return {
-                toEqual: toEqual,
-                toThrow: toThrow,
-                toBe: toBe,
-                not: {
-                    toEqual: notToEqual,
-                    toThrow: notToThrow,
-                    toBe: notToBe
-                }
-            };
-        },
         errHandler = function (expectation) {
             return function (err) {
                 expectation.erred = err;

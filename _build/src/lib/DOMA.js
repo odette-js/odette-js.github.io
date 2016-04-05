@@ -690,7 +690,10 @@ app.scope(function (app) {
                 elementName = foundElement === BOOLEAN_TRUE ? tagName : foundElement;
             // native create
             if (!elementName) {
-                foundElement = elementName = registeredElements[tagName] = DIV;
+                exception({
+                    message: 'custom tag names must be registered before they can be used'
+                });
+                // foundElement = elementName = registeredElements[tagName] = DIV;
             }
             newElement = documnt.createElement(elementName);
             if (foundElement && foundElement !== BOOLEAN_TRUE) {

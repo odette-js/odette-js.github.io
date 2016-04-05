@@ -127,93 +127,164 @@ list.unwrap(); // [0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0]</code></pre>
 </div>
 <div id="methods_countFrom">
     <h5 class="title-headline">#countFrom</h5>
-    <p>The countFrom method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The countFrom method is a convenience method for counting up along a subset of the list the method is called on. Instead of passing two numbers like the count method.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3, 4, 5, 6, 7]);
+list.countFrom(function (item, index, list) {
+    list.push(item);
+}, 4); // [0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7]</code></pre>
 </div>
 <div id="methods_countTo">
     <h5 class="title-headline">#countTo</h5>
-    <p>The countTo method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The countTo method is another convenience method for counting up along a subset of the list from 0.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3, 4, 5, 6, 7]);
+list.countFrom(function (item, index, list) {
+    list.push(item);
+}, 4); // [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3]</code></pre>
 </div>
 <div id="methods_cycle">
     <h5 class="title-headline">#cycle</h5>
-    <p>The cycle method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The cycle method cycles items through the array, putting items after the index passed at the front of the array. The cycle method modifies the array in place.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3, 4, 5, 6, 7]);
+list.cycle(2).unwrap(); // [2, 3, 4, 5, 6, 7, 0, 1]</code></pre>
 </div>
 <div id="methods_duff">
     <h5 class="title-headline">#duff</h5>
-    <p>The duff method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The duff method the closest thing to a for loop possible. It iterates through every item in the list that is present when the method is first called. While this method is exposed, it's parody, <a href="#methods_each">each</a>, is much more user friendly.</p>
+    <pre class="code code-section"><code class="language-javascript">list.duff(function (item, index, array) {
+    // exposes all items
+});</code></pre>
 </div>
 <div id="methods_duffRight">
     <h5 class="title-headline">#duffRight</h5>
-    <p>The duffRight method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The duffRight method iterates over the array in reverse. It does not take into account the reversed property.</p>
+    <pre class="code code-section"><code class="language-javascript">list.duffRight(function (item, index, array) {
+    // exposes all items... in reverse
+});</code></pre>
 </div>
 <div id="methods_each">
     <h5 class="title-headline">#each</h5>
-    <p>The each method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The each method is a parody for duff and exposes each item on the list, in order, with each item's respective index.</p>
+    <pre class="code code-section"><code class="language-javascript">list.each(function (value, index, array) {
+    // exposes each item
+});</code></pre>
 </div>
 <div id="methods_eachCall">
     <h5 class="title-headline">#eachCall</h5>
-    <p>The eachCall method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The eachCall method is a method that calls a singular method on a list of items. The method takes up to two arguments. The first is the key of the method to be called, and the second is a singular argument to be passed to each function call on the objects in the list.</p>
+    <pre class="code code-section"><code class="language-javascript">var item = {
+    method: function (arg) {
+        console.log(arg, list.indexOf(this));
+    }
+};
+var list = factories.List([item, item, item, item]);
+list.eachCall('method', "a"); // logs "a", 0, "a", 1, "a", 2, "a", 3</code></pre>
 </div>
 <div id="methods_eachCallRight">
     <h5 class="title-headline">#eachCallRight</h5>
     <p>The eachCallRight method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <pre class="code code-section"><code class="language-javascript">var item = {
+    method: function (arg) {
+        console.log(arg, list.indexOf(this));
+    }
+};
+var list = factories.List([item, item, item, item]);
+list.eachCallRight('method', "a"); // logs "a", 3, "a", 2, "a", 1, "a", 0</code></pre>
 </div>
 <div id="methods_eachRight">
     <h5 class="title-headline">#eachRight</h5>
-    <p>The eachRight method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The eachRight method iterates over the array in reverse. It does not take into account the reversed property.</p>
+    <pre class="code code-section"><code class="language-javascript">list.eachRight(function (item, index, array) {
+    // exposes all items... in reverse
+});</code></pre>
 </div>
 <div id="methods_empty">
     <h5 class="title-headline">#empty</h5>
-    <p>The empty method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The empty method simply replaces the array with a blank array.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([1, 2, 3, 4]);
+list.unwrap(); // [1, 2, 3, 4]
+list.empty();
+list.unwrap(); // []</code></pre>
 </div>
 <div id="methods_eq">
     <h5 class="title-headline">#eq</h5>
-    <p>The eq method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The eq method can be passed a number or list of numbers to create another list with.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([5, 3, 2, 0, 4, 1]);
+list.eq(3).unwrap(); // [0]
+list.eq([3, 0, 1]).unwrap(); // [0, 5, 3]</code></pre>
 </div>
 <div id="methods_filter">
     <h5 class="title-headline">#filter</h5>
-    <p>The filter method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The filter method collects items on the list. Return a truthy value to keep the item in the next list that is created by the method.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3, 4, 5]);
+list.filter(function (item) {
+    return item % 2;
+});</code></pre>
 </div>
 <div id="methods_find">
     <h5 class="title-headline">#find</h5>
-    <p>The find method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The find method returns the first item that returns a truthy value.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([5, 3, 2, 0, 4, 1, 6]);
+list.find(function (item, index) {
+    return item * index > 10;
+}); // 4</code></pre>
 </div>
 <div id="methods_findLast">
     <h5 class="title-headline">#findLast</h5>
-    <p>The findLast method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The findLast method returns the first item that returns a truthy value starting from the last item.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([5, 3, 2, 0, 4, 1, 6]);
+list.findLast(function (item, index) {
+    return item * index > 10;
+}); // 6</code></pre>
 </div>
 <div id="methods_findLastWhere">
     <h5 class="title-headline">#findLastWhere</h5>
-    <p>The findLastWhere method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The findLastWhere method returns the first object that matches the object passed in.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([{
+    key: "notthevalue",
+    unknown: "value0"
+}, {
+    key: "value",
+    unknown: "value1"
+}, {
+    key: "value",
+    unknown: "value2"
+}]).findWhere({
+    key: "value"
+}); // { key:"value", unknown:"value1" }</code></pre>
 </div>
-<div id="methods_findWhere">
-    <h5 class="title-headline">#findWhere</h5>
-    <p>The findWhere method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+<div id="methods_findLastWhere">
+    <h5 class="title-headline">#findLastWhere</h5>
+    <p>The findLastWhere method returns the last object that matches.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([{
+    key: "notthevalue",
+    unknown: "value0"
+}, {
+    key: "value",
+    unknown: "value1"
+}, {
+    key: "value",
+    unknown: "value2"
+}]).findLastWhere({
+    key: "value"
+}); // { key:"value", unknown:"value2" }</code></pre>
 </div>
 <div id="methods_first">
     <h5 class="title-headline">#first</h5>
-    <p>The first method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The first method is basically a parody of calling index and passing in 0.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([5, 3, 4, 2]);
+list.first(); // 5</code></pre>
 </div>
 <div id="methods_flatten">
     <h5 class="title-headline">#flatten</h5>
-    <p>The flatten method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The flatten method can take nested arrays and flatten them with a transformer.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([[1, 5, 4], [[2], [[0], 3]]]);
+list.flatten().unwrap();       // [1, 5, 4, [2], [[0], 3]]
+list = factories.List([[1, 5, 4], [[2], [[0], 3]]]);
+list.flatten(true).unwrap(); // [1, 5, 4, 2, 0, 3]
+list = factories.List([[1, 5, 4], [[2], [[0], 3]]]);
+list.flatten(true, function (items) {
+    // exposure to each that will populate the list
+}).unwrap(); // [1, 5, 4, 2, 0, 3]</code></pre>
 </div>
 <div id="methods_foldl">
     <h5 class="title-headline">#foldl</h5>

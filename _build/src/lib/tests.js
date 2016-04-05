@@ -1,6 +1,12 @@
 application.scope().run(function (app, _, factories) {
     var currentTest, current, pollerTimeout, failedTests = 0,
         testisrunning = BOOLEAN_FALSE,
+        EXPECTED = 'expected',
+        SPACE_NOT = ' not',
+        TO_EQUAL = ' to equal ',
+        AN_ERROR = ' an error',
+        TO_BE_THROWN = ' to be thrown',
+        TO_BE_STRICTLY_EQUAL_STRING = ' to be strictly equal to ',
         console = _.console,
         stringify = _.stringify,
         negate = _.negate,
@@ -17,9 +23,9 @@ application.scope().run(function (app, _, factories) {
         globalBeforeEachStack = [],
         globalAfterEachStack = [],
         errIfFalse = function (handler, makemessage) {
-            return function () {
+            return function (arg) {
                 var err, expectation = {};
-                if (handler.apply(this, arguments)) {
+                if (handler.call(this, current, arg)) {
                     successfulExpectations.push(expectation);
                 } else {
                     ++failedTests;
@@ -31,55 +37,43 @@ application.scope().run(function (app, _, factories) {
                 return this;
             };
         },
-        internalToThrow = function (handler) {
-            var errRan = false;
+        expectationsHash = {
+            not: {}
+        },
+        expect = function (start) {
+            current = start;
+            return expectationsHash;
+        },
+        maker = expect.maker = function (where, test, positive, negative) {
+            expectationsHash[where] = errIfFalse(test, positive);
+            expectationsHash.not[where] = errIfFalse(negate(test), negative);
+        },
+        internalToThrowResult = maker('toThrow', function (handler) {
+            var errRan = BOOLEAN_FALSE;
             return _.wraptry(handler, function () {
-                errRan = true;
+                errRan = BOOLEAN_TRUE;
             }, function () {
                 return errRan;
             });
-        },
-        toThrow = function () {
-            errIfFalse(internalToThrow, function () {
-                return 'expected an error to be thrown';
-            });
-        },
-        notToThrow = function () {
-            errIfFalse(negate(internalToThrow), function () {
-                return 'expected an error not to be thrown';
-            });
-        },
-        internalToEqual = function (comparison) {
-            return _.isEqual(current, comparison);
-        },
-        toEqual = errIfFalse(internalToEqual, function (comparison) {
-            return 'expected ' + current + ' to equal ' + comparison;
+        }, function () {
+            return EXPECTED + AN_ERROR + TO_BE_THROWN;
+        }, function () {
+            return EXPECTED + AN_ERROR + SPACE_NOT + TO_BE_THROWN;
         }),
-        notToEqual = errIfFalse(negate(internalToEqual), function (comparison) {
-            return 'expected ' + stringify(current) + ' not to equal ' + stringify(comparison);
-        }),
-        internalToBe = function (comparison) {
+        internalToBeResult = maker('toBe', function (current, comparison) {
             return current === comparison;
-        },
-        toBe = errIfFalse(internalToBe, function (comparison) {
-            return 'expected ' + stringify(current) + ' to be strictly equal to ' + stringify(comparison);
+        }, function (current, comparison) {
+            return EXPECTED + SPACE + stringify(current) + TO_BE_STRICTLY_EQUAL_STRING + stringify(comparison);
+        }, function (current, comparison) {
+            return EXPECTED + SPACE + stringify(current) + SPACE_NOT + TO_BE_STRICTLY_EQUAL_STRING + stringify(comparison);
         }),
-        notToBe = errIfFalse(negate(internalToBe), function (comparison) {
-            return 'expected ' + stringify(current) + ' to be strictly equal to ' + stringify(comparison);
+        internalToEqualResult = maker('toEqual', function (current, comparison) {
+            return _.isEqual(current, comparison);
+        }, function (current, comparison) {
+            return EXPECTED + SPACE + current + TO_EQUAL + comparison;
+        }, function (current, comparison) {
+            return EXPECTED + SPACE + stringify(current) + SPACE_NOT + TO_EQUAL + stringify(comparison);
         }),
-        expect = function (start) {
-            current = start;
-            return {
-                toEqual: toEqual,
-                toThrow: toThrow,
-                toBe: toBe,
-                not: {
-                    toEqual: notToEqual,
-                    toThrow: notToThrow,
-                    toBe: notToBe
-                }
-            };
-        },
         errHandler = function (expectation) {
             return function (err) {
                 expectation.erred = err;
