@@ -684,10 +684,6 @@ application.scope().run(function (app, _, factories) {
                     two: 2
                 })).toEqual(secondFindObj);
             });
-            _.it('posit', function () {
-                _.expect(numberCollection.posit(5)).toEqual(6);
-                _.expect(numberCollection.posit(11)).toEqual(0);
-            });
             _.it('foldr', function () {
                 _.expect(numberCollection.foldr(function (memo, idx, item) {
                     memo.push(item);

@@ -7,7 +7,6 @@ app.scope(function (app) {
     var _ = app._,
         ATTRIBUTES = 'Attributes',
         factories = _.factories,
-        posit = _.posit,
         Collection = factories.Collection,
         globalAssociator = factories.Associator(),
         DOM_MANAGER_STRING = 'DomManager',
@@ -28,7 +27,7 @@ app.scope(function (app) {
         OUTER_HTML = 'outerHTML',
         ATTRIBUTE_CHANGE = 'attributeChange',
         ATTRIBUTES_CHANGING = 'attributesChanging',
-        DELEGATE_COUNT = '__delegateCount',
+        DELEGATE_COUNT = 'delegateCount',
         CUSTOM_KEY = DATA + HYPHEN + CUSTOM,
         CUSTOM_ATTRIBUTE = '[' + CUSTOM_KEY + ']',
         CLASS__NAME = (CLASS + HYPHEN + NAME),
@@ -310,7 +309,7 @@ app.scope(function (app) {
         ProgressEvent = gapSplit('abort error load loadend loadstart popstate progress timeout'),
         AllEvents = _.concatUnique(Events, SVGEvent, KeyboardEvent, CompositionEvent, GamePadEvent, MouseEvents, TouchEvents, DeviceEvents, FocusEvent, TimeEvent, AnimationEvent, AudioProcessingEvent, UIEvents, ProgressEvent),
         knownPrefixes = gapSplit('-o- -ms- -moz- -webkit- mso- -xv- -atsc- -wap- -khtml- -apple- prince- -ah- -hp- -ro- -rim- -tc-'),
-        trustedEvents = gapSplit('load scroll resize orientationchange click dblclick mousedown mouseup mouseover mouseout mouseenter mouseleave mousemove change contextmenu hashchange load mousewheel wheel readystatechange'),
+        // trustedEvents = gapSplit('load scroll resize orientationchange click dblclick mousedown mouseup mouseover mouseout mouseenter mouseleave mousemove change contextmenu hashchange load mousewheel wheel readystatechange'),
         validTagNames = gapSplit('a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del dfn div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hr html i iframe img input ins kbd keygen label legend li link main map mark meta meter nav noscript object ol optgroup option output p param pre progress q rb rp rt rtc ruby s samp script section select small source span strong style sub sup table tbody td template textarea tfoot th thead time title tr track u ul var video wbr'),
         validTagsNamesHash = wrap(validTagNames, BOOLEAN_TRUE),
         ALL_EVENTS_HASH = wrap(AllEvents, BOOLEAN_TRUE),
@@ -403,7 +402,7 @@ app.scope(function (app) {
                 prefixed = {},
                 len = 0,
                 addPrefix = function (list, prefix) {
-                    if (!posit(list, __prefix)) {
+                    if (indexOf(list, __prefix) === -1) {
                         list.push(__prefix);
                     }
                 };
@@ -745,7 +744,7 @@ app.scope(function (app) {
                 parent = createElement(DIV, NULL, NULL, ensure(element.ownerDocument, BOOLEAN_TRUE));
                 parent[APPEND_CHILD](element);
             }
-            return !!posit(query(selector, parent), element);
+            return indexOf(query(selector, parent), element) !== -1;
         },
         createDocumentFragment = function (nulled, context) {
             return context.isDocument && context.element().createDocumentFragment();
@@ -998,12 +997,22 @@ app.scope(function (app) {
             });
             return memo;
         }, {}),
-        eventExpander = function (fn_) {
+        eventExpander = function (expanders, fn, stack_) {
+            var stack = stack_ || [];
             return function (nme) {
-                var fn = bind(fn_, this);
-                duff(gapSplit(_eventExpander[nme] || nme), function (name) {
-                    fn(name, nme);
-                });
+                var name = nme,
+                    hadInList = indexOf(stack, name) !== -1;
+                if (!hadInList) {
+                    stack.push(name);
+                }
+                if (expanders[name] && !hadInList) {
+                    duff(expanders[name], eventExpander(expanders, fn, stack));
+                } else {
+                    fn(name, stack[0], stack.slice(0));
+                }
+                if (!hadInList) {
+                    stack.pop();
+                }
             };
         },
         addEventListener = expandEventListenerArguments(function (name, group, selector, callback, capture) {
@@ -1023,7 +1032,7 @@ app.scope(function (app) {
         }),
         _addEventListener = function (manager, types, group, selector, handler, capture) {
             var events, wasCustom = manager.is(CUSTOM);
-            duff(gapSplit(types), eventExpander(function (name, passedName) {
+            duff(gapSplit(types), eventExpander(manager.owner.events.expanders, function (name, passedName, nameStack) {
                 events = events || manager.directive(EVENTS);
                 if (!ALL_EVENTS_HASH[name]) {
                     manager.mark(CUSTOM_LISTENER);
@@ -1035,7 +1044,8 @@ app.scope(function (app) {
                     selector: selector,
                     passedName: passedName,
                     domName: name,
-                    domTarget: manager
+                    domTarget: manager,
+                    nameStack: nameStack
                 });
             }));
             if (!wasCustom && manager.is(CUSTOM_LISTENER)) {
@@ -1224,11 +1234,11 @@ app.scope(function (app) {
                 });
             } else {
                 // write with importance
-                attributeApi.write(element, STYLE, (newStyles = _.foldl(cached.split(';'), function (memo, item_, index, items) {
-                    var item = item_.trim();
-                    var itemSplit = item.split(COLON);
-                    var property = itemSplit[0].trim();
-                    var setValue = itemSplit[1].trim();
+                attributeApi.write(element, STYLE, (newStyles = foldl(cached.split(';'), function (memo, item_, index, items) {
+                    var item = item_.trim(),
+                        itemSplit = item.split(COLON),
+                        property = itemSplit[0].trim(),
+                        setValue = itemSplit[1].trim();
                     if (property === key) {
                         found = BOOLEAN_TRUE;
                         setValue = value + ' !important';
@@ -1246,7 +1256,7 @@ app.scope(function (app) {
             set: function (attributeManager, set, nulled, read) {
                 attributeManager.refill(set === BOOLEAN_TRUE ? [] : set);
                 if (set === BOOLEAN_FALSE) {
-                    attributeManager.isRemoving = BOOLEAN_TRUE;
+                    attributeManager.mark(REMOVING);
                 }
             },
             add: function (attributeManager, add) {
@@ -1292,14 +1302,14 @@ app.scope(function (app) {
                     }
                     return returnValue;
                 }
-                attributeManager.api = api;
+                // attributeManager.api = api;
                 intendedObject(second_, third_, function (second, third) {
                     var currentMerge = merge || (third === BOOLEAN_TRUE ? 'add' : (third === BOOLEAN_FALSE ? REMOVE : 'toggle'));
                     attributeValuesHash[currentMerge](attributeManager, gapSplit(second), third, read);
                 });
-                if (attributeManager._changeCounter) {
-                    if (attributeManager.isRemoving) {
-                        attributeManager.isRemoving = BOOLEAN_FALSE;
+                if (attributeManager.changeCounter) {
+                    if (attributeManager.is(REMOVING)) {
+                        attributeManager.unmark(REMOVING);
                         api.remove(el, unCamelCased);
                     } else {
                         generated = attributeManager.generate(SPACE);
@@ -1392,13 +1402,13 @@ app.scope(function (app) {
             }, {});
         },
         markCustom = function (manager, forceCustom) {
-            var isCustom, isCustomValue = attributeApi.read(manager.element(), CUSTOM_KEY);
+            var resultant, isCustom, isCustomValue = manager.isElement && attributeApi.read(manager.element(), CUSTOM_KEY);
             manager.remark(CUSTOM, forceCustom || !!isCustomValue);
             if (manager.is(CUSTOM) && !isCustomValue) {
                 isCustomValue = BOOLEAN_TRUE;
             }
             // isCustomValue = isCustomValue || BOOLEAN_TRUE;
-            writeAttribute(manager.element(), CUSTOM_KEY, isCustomValue);
+            resultant = manager.isElement && writeAttribute(manager.element(), CUSTOM_KEY, isCustomValue);
             if (isCustomValue) {
                 manager.registeredAs = isCustomValue;
             }
@@ -1472,7 +1482,27 @@ app.scope(function (app) {
         },
         DOMA_SETUP = factories.DOMA_SETUP = function (doc_) {
             var registeredElements, $, setup, wrapped, manager = returnsManager(doc_, BOOLEAN_TRUE),
-                unregisteredElements = factories.Registry();
+                unregisteredElements = factories.Registry(),
+                expanders = parse(stringify(_eventExpander)),
+                cachedMotionEvent, lastCalculatedMotionEvent = 0,
+                cachedMotionCalculation = {},
+                defaultMotion = function () {
+                    cachedMotionEvent = NULL;
+                    return {
+                        x: 0,
+                        y: 0,
+                        z: 0,
+                        motionX: 0,
+                        motionY: 0,
+                        motionZ: 0,
+                        interval: 1,
+                        rotationRate: 0,
+                        alpha: 0,
+                        beta: 0,
+                        gamma: 0,
+                        absolute: 0
+                    };
+                };
             if (manager.documentId) {
                 return manager.$;
             }
@@ -1501,23 +1531,111 @@ app.scope(function (app) {
                     return handler(one, manager);
                 };
             }), {
+                events: {
+                    custom: {},
+                    expanders: {},
+                    lists: wrap({
+                        base: Events,
+                        svg: SVGEvent,
+                        keyboard: KeyboardEvent,
+                        gamepad: GamePadEvent,
+                        composition: CompositionEvent,
+                        mouse: MouseEvents,
+                        touch: TouchEvents,
+                        device: DeviceEvents,
+                        focus: FocusEvent,
+                        time: TimeEvent,
+                        animation: AnimationEvent,
+                        audioProcessing: AudioProcessingEvent,
+                        ui: UIEvents,
+                        progress: ProgressEvent,
+                        all: AllEvents
+                    }, function (value, key) {
+                        return parse(stringify(value));
+                    })
+                },
+                supports: {},
                 returnsManager: function (item) {
                     return item === manager || item === manager[TARGET] ? manager : returnsManager(item, manager);
                 },
                 createElement: function (one, two, three) {
                     return createElement(one, two, three, manager);
                 },
+                expandEvent: function (passedEvent, actualEvent) {
+                    var expanders = manager.events.expanders;
+                    duff(gapSplit(actualEvent), function (actualEvent) {
+                        duff(gapSplit(passedEvent), function (passedEvent) {
+                            expanders[passedEvent] = expanders[passedEvent] || [];
+                            if (indexOf(expanders[passedEvent], actualEvent) === -1) {
+                                expanders[passedEvent].push(actualEvent);
+                            }
+                        });
+                    });
+                    return manager;
+                },
+                customEvent: function (key, value) {
+                    duff(gapSplit(key), function (key) {
+                        manager.events.custom[key] = value;
+                    });
+                    return manager;
+                },
                 iframeContent: iframeContent,
                 orderEventsByHeirarchy: BOOLEAN_TRUE,
                 data: factories.Associator(),
                 documentId: manager.documentId,
                 document: manager,
+                devicePixelRatio: devicePixelRatio,
                 constructor: DOMA[CONSTRUCTOR],
                 registeredElements: registeredElements,
                 templateSettings: {
                     evaluate: /<%([\s\S]+?)%>/g,
                     interpolate: /<%=([\s\S]+?)%>/g,
                     escape: /<%-([\s\S]+?)%>/g
+                },
+                stashMotionEvent: function (evnt) {
+                    cachedMotionEvent = evnt;
+                },
+                motion: function () {
+                    var originalEvent, acc, acc_, someData;
+                    if (!cachedMotionEvent) {
+                        return defaultMotion();
+                    }
+                    if (lastCalculatedMotionEvent >= cachedMotionEvent.timestamp) {
+                        return cachedMotionCalculation;
+                    }
+                    lastCalculatedMotionEvent = now();
+                    originalEvent = cachedMotionEvent.originalEvent;
+                    acc = originalEvent.acceleration || ((acc_ = originalEvent.accelerationIncludingGravity) && {
+                        x: acc_.x - 9.81,
+                        y: acc_.y - 9.81,
+                        z: acc_.z - 9.81
+                    });
+                    if (acc && isNumber(acc.x)) {
+                        cachedMotionCalculation.x = acc.x;
+                        cachedMotionCalculation.y = acc.y;
+                        cachedMotionCalculation.z = acc.z;
+                        cachedMotionCalculation.interval = originalEvent.interval;
+                        cachedMotionCalculation.rotationRate = originalEvent.rotationRate;
+                        someData = BOOLEAN_TRUE;
+                    }
+                    if (originalEvent.alpha != NULL) {
+                        cachedMotionCalculation.alpha = originalEvent.alpha;
+                        cachedMotionCalculation.beta = originalEvent.beta;
+                        cachedMotionCalculation.gamma = originalEvent.gamma;
+                        cachedMotionCalculation.absolute = originalEvent.absolute;
+                        someData = BOOLEAN_TRUE;
+                    }
+                    if (!someData) {
+                        return defaultMotion();
+                    }
+                    return cachedMotionCalculation;
+                },
+                // shared across all documents running this version
+                addPlugin: function (handler) {
+                    plugins.push(handler);
+                    duff(allSetups, function (setup) {
+                        handler(setup);
+                    });
                 },
                 compile: function (id, string) {
                     return compile(id, string, manager);
@@ -1574,7 +1692,7 @@ app.scope(function (app) {
                     if ((group = unregisteredElements.group(newName))) {
                         each(group, function (manager, id) {
                             delete manager[newName];
-                            manager.History.drop('category', 'custom');
+                            manager.History.drop('category', CUSTOM);
                             manager.registerAs();
                             unregisteredElements.drop(newName, id);
                         });
@@ -1582,14 +1700,34 @@ app.scope(function (app) {
                 }
             });
             extend(manager, wrapped);
-            extend($, wrapped, {
-                isWindow: isWindow,
-                isDocument: isDocument,
-                isFragment: isFragment,
-                isElement: isElement
-            });
+            extend($, wrapped);
+            runSupport(manager.supports, manager);
             setupDomContentLoaded(setup, manager);
             return $;
+        },
+        testWithHandler = function (win, evntname, handler, failure) {
+            duff(gapSplit(evntname), function (evntname) {
+                if (win.addEventListener) {
+                    win.addEventListener(evntname, handler);
+                    win.removeEventListener(evntname, handler);
+                } else {
+                    handler(failure);
+                }
+            });
+        },
+        runSupport = function (supported, manager) {
+            var windowManager = manager.window();
+            var windowElement = windowManager.element();
+            supported.deviceMotion = !!windowElement.DeviceMotionEvent;
+            supported.deviceOrientation = !!windowElement.DeviceOrientationEvent;
+            supported.motion = supported.deviceMotion || supported.deviceOrientation;
+            testWithHandler(windowElement, 'deviceorientation devicemotion', function (e) {
+                if (e.alpha === NULL) {
+                    supported.motion = supported.deviceMotion = supported.deviceOrientation = BOOLEAN_FALSE;
+                }
+            }, {
+                alpha: NULL
+            });
         },
         styleManipulator = function (one, two) {
             var unCameled, styles, manager = this;
@@ -1673,6 +1811,7 @@ app.scope(function (app) {
             return fragment;
         },
         IS_TRUSTED = 'isTrusted',
+        FULLSCREEN = 'fullscreen',
         fixHooks = {
             // Includes some event props shared by KeyEvent and MouseEvent
             props: gapSplit("altKey bubbles cancelable ctrlKey currentTarget eventPhase metaKey relatedTarget shiftKey target timeStamp view which"),
@@ -1698,8 +1837,8 @@ app.scope(function (app) {
             },
             motionHooks: {
                 props: [],
-                filter: function () {
-                    this.watchingMotion = BOOLEAN_TRUE;
+                reaction: function (evnt) {
+                    evnt.origin.owner.stashMotionEvent(evnt);
                 }
             },
             mouseHooks: {
@@ -1729,97 +1868,55 @@ app.scope(function (app) {
                     return evnt;
                 }
             },
-            make: (function () {
-                var cached = {};
-                return function (evnt, originalEvent, options) {
-                    var acc, acc_, doc, target, val, i, prop, copy, type = originalEvent.type,
-                        // Create a writable copy of the event object and normalize some properties
-                        fixHook = fixHooks.fixedHooks[type],
-                        origin = options.origin;
-                    if (!fixHook) {
-                        fixHooks.fixedHooks[type] = fixHook = rmouseEvent.test(type) ? this.mouseHooks : rkeyEvent.test(type) ? this.keyHooks : rforceEvent.test(type) ? this.forceHooks : motionMorph.test(type) ? this.motionHooks : {};
-                        // rfocusMorph
-                        // motionMorph
+            make: function (evnt, originalEvent, options) {
+                var acc, acc_, doc, target, val, i, prop, copy, type = originalEvent.type,
+                    // Create a writable copy of the event object and normalize some properties
+                    fixHook = fixHooks.fixedHooks[type],
+                    origin = options.origin;
+                if (!fixHook) {
+                    fixHooks.fixedHooks[type] = fixHook = rmouseEvent.test(type) ? this.mouseHooks : rkeyEvent.test(type) ? this.keyHooks : rforceEvent.test(type) ? this.forceHooks : motionMorph.test(type) ? this.motionHooks : {};
+                }
+                copy = fixHook.props ? this.props.concat(fixHook.props) : this.props;
+                i = copy[LENGTH];
+                duff(copy, function (prop) {
+                    var val = originalEvent[prop];
+                    if (val != NULL) {
+                        evnt[prop] = val;
                     }
-                    copy = fixHook.props ? this.props.concat(fixHook.props) : this.props;
-                    i = copy[LENGTH];
-                    while (i--) {
-                        prop = copy[i];
-                        val = originalEvent[prop];
-                        if (val != NULL) {
-                            evnt[prop] = val;
+                });
+                evnt.originalType = type;
+                // Support: Cordova 2.5 (WebKit) (#13255)
+                // All events should have a target; Cordova deviceready doesn't
+                // ie also does not have a target... so use current target
+                target = evnt.target || (evnt.view ? evnt.view.event.currentTarget : event && event.currentTarget) || evnt.delegateTarget.element();
+                if (!target) {
+                    target = evnt.target = doc;
+                }
+                // Support: Safari 6.0+, Chrome<28
+                // Target should not be a text node (#504, #13143)
+                if (target[NODE_TYPE] === 3) {
+                    evnt.target = target[PARENT_NODE];
+                }
+                (fixHook.filter || noop)(evnt, originalEvent);
+                type = distilledEventName[originalEvent.type] || originalEvent.type;
+                cachedObjectEventConstructor.call(evnt, options.origin, parse(originalEvent.data), type, NULL, evnt.timeStamp);
+                if (evnt.type === FULLSCREEN + CHANGE) {
+                    doc = evnt.target;
+                    if (isWindow(doc)) {
+                        doc = doc[DOCUMENT];
+                    } else {
+                        while (doc && !isDocument(doc) && doc[PARENT_NODE]) {
+                            doc = doc[PARENT_NODE];
                         }
                     }
-                    evnt.originalType = originalEvent.type;
-                    // Support: Cordova 2.5 (WebKit) (#13255)
-                    // All events should have a target; Cordova deviceready doesn't
-                    // ie also does not have a target... so use current target
-                    target = evnt.target || (evnt.view ? evnt.view.event.currentTarget : event && event.currentTarget) || evnt.delegateTarget.element();
-                    if (!target) {
-                        target = evnt.target = doc;
+                    evnt.fullscreenDocument = doc;
+                    if (isDocument(doc)) {
+                        evnt.remark(FULLSCREEN, (doc.fullScreen || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.fullscreenElement) ? BOOLEAN_TRUE : BOOLEAN_FALSE);
                     }
-                    // Support: Safari 6.0+, Chrome<28
-                    // Target should not be a text node (#504, #13143)
-                    if (target[NODE_TYPE] === 3) {
-                        evnt.target = target[PARENT_NODE];
-                    }
-                    if (isFunction(fixHook.filter)) {
-                        fixHook.filter(evnt, originalEvent);
-                    }
-                    type = distilledEventName[originalEvent.type] || originalEvent.type;
-                    cachedObjectEventConstructor.call(evnt, options.origin, parse(originalEvent.data), type, NULL, evnt.timeStamp);
-                    if (evnt.type === 'fullscreenchange') {
-                        doc = evnt.target;
-                        if (isWindow(doc)) {
-                            doc = doc[DOCUMENT];
-                        } else {
-                            while (doc && !isDocument(doc) && doc[PARENT_NODE]) {
-                                doc = doc[PARENT_NODE];
-                            }
-                        }
-                        evnt.fullscreenDocument = doc;
-                        if (isDocument(doc)) {
-                            evnt.isFullScreen = (doc.fullScreen || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.fullscreenElement) ? BOOLEAN_TRUE : BOOLEAN_FALSE;
-                        }
-                    }
-                    evnt[IS_TRUSTED] = _.has(originalEvent, IS_TRUSTED) ? originalEvent[IS_TRUSTED] : !DO_NOT_TRUST;
-                    if (!this.watchingMotion) {
-                        return evnt;
-                    }
-                    acc = originalEvent.acceleration || ((acc_ = originalEvent.accelerationIncludingGravity) && {
-                        x: acc_.x - 9.81,
-                        y: acc_.y - 9.81,
-                        z: acc_.z - 9.81
-                    });
-                    if (acc) {
-                        cached.x = acc.x;
-                        cached.y = acc.y;
-                        cached.z = acc.z;
-                        cached.interval = originalEvent.interval;
-                        cached.rotationRate = originalEvent.rotationRate;
-                    }
-                    if (cached.x != NULL) {
-                        evnt.motionX = cached.x;
-                        evnt.motionY = cached.y;
-                        evnt.motionZ = cached.z;
-                        evnt.interval = cached.interval;
-                        evnt.rotationRate = cached.rotationRate;
-                    }
-                    if (originalEvent.alpha != NULL) {
-                        cached.alpha = originalEvent.alpha;
-                        cached.beta = originalEvent.beta;
-                        cached.gamma = originalEvent.gamma;
-                        cached.absolute = originalEvent.absolute;
-                    }
-                    if (cached.alpha != NULL) {
-                        evnt.alpha = cached.alpha;
-                        evnt.beta = cached.beta;
-                        evnt.gamma = cached.gamma;
-                        evnt.absolute = cached.absolute;
-                    }
-                    return evnt;
-                };
-            }())
+                }
+                evnt[IS_TRUSTED] = _.has(originalEvent, IS_TRUSTED) ? originalEvent[IS_TRUSTED] : !DO_NOT_TRUST;
+                (fixHook.reaction || noop)(evnt, originalEvent);
+            }
         },
         cachedObjectEventConstructor = factories.ObjectEvent[CONSTRUCTOR],
         DomEvent = factories.DomEvent = factories.ObjectEvent.extend('DomEvent', {
@@ -1837,6 +1934,12 @@ app.scope(function (app) {
                 fixHooks.make(e, evnt, opts);
                 e.capturing = opts.capturing === UNDEFINED ? isCapturing(e) : opts.capturing;
                 return e;
+            },
+            motion: function () {
+                var acc, acc_, cached, evnt = this,
+                    owner = evnt.origin.owner,
+                    motion = owner.motion();
+                return motion;
             },
             preventDefault: function () {
                 var e = this.originalEvent;
@@ -1863,29 +1966,71 @@ app.scope(function (app) {
         }),
         DomEventsDirective = factories.EventsDirective.extend('DomEventsDirective', {
             remove: function (list, evnt) {
+                var el, mainHandler, events = this,
+                    elementHandlers = events.elementHandlers,
+                    name = list.name;
                 list.remove(evnt);
                 if (evnt.selector) {
                     evnt.mainHandler[DELEGATE_COUNT]--;
                 }
+                if (!elementHandlers || list[LENGTH]()) {
+                    return;
+                }
+                el = evnt.origin.element();
+                mainHandler = elementHandlers[name];
+                if (el.removeEventListener) {
+                    el.removeEventListener(name, mainHandler.fn, mainHandler.capturing);
+                } else {
+                    el.detachEvent(name, mainHandler.fn);
+                }
             },
             add: function (list, evnt) {
-                var __delegateCount, eventHandler, events = this,
+                var foundDuplicate, delegateCount, obj, eventHandler, hadMainHandler, events = this,
                     el = evnt.element,
+                    i = 0,
                     // needs an extra hash to care for the actual event hanlders that get attached to dom
                     elementHandlers = events.elementHandlers = events.elementHandlers || {},
                     name = list.name,
                     mainHandler = elementHandlers[name],
                     capture = evnt.capture,
-                    foundDuplicate = list.find(function (obj) {
-                        return evnt.handler === obj.handler && obj.group === evnt.group && evnt.selector === obj.selector;
-                    });
+                    items = list.unwrap(),
+                    customEvents = evnt.origin.owner.events.custom;
+                for (; i < items[LENGTH] && !foundDuplicate; i++) {
+                    obj = items[i];
+                    foundDuplicate = evnt.handler === obj.handler && obj.group === evnt.group && evnt.selector === obj.selector;
+                }
                 if (foundDuplicate) {
                     return;
                 }
+                hadMainHandler = mainHandler;
                 if (!mainHandler) {
                     eventHandler = function (e) {
                         return eventDispatcher(evnt.domTarget, e.type, e, capture);
                     };
+                    mainHandler = elementHandlers[name] = {
+                        fn: eventHandler,
+                        delegateCount: 0,
+                        events: events,
+                        currentEvent: NULL,
+                        capturing: capture
+                    };
+                }
+                evnt.mainHandler = mainHandler;
+                if (evnt.selector) {
+                    delegateCount = mainHandler[DELEGATE_COUNT];
+                    ++mainHandler[DELEGATE_COUNT];
+                    if (delegateCount) {
+                        list.insertAt(evnt, delegateCount);
+                    } else {
+                        list.unshift([evnt]);
+                    }
+                } else {
+                    list.push([evnt]);
+                }
+                duff(evnt.nameStack, function (name) {
+                    evnt.fn = (customEvents[name] || returnsFirstArgument)(evnt.fn, name, evnt) || evnt.fn;
+                });
+                if (!hadMainHandler) {
                     el = evnt.origin.element();
                     if (el.addEventListener) {
                         el.addEventListener(evnt.domName, eventHandler, capture);
@@ -1895,25 +2040,6 @@ app.scope(function (app) {
                         }
                         el.attachEvent(evnt.domName, eventHandler);
                     }
-                    mainHandler = elementHandlers[name] = {
-                        fn: eventHandler,
-                        __delegateCount: 0,
-                        events: events,
-                        currentEvent: NULL,
-                        capturing: capture
-                    };
-                }
-                evnt.mainHandler = mainHandler;
-                if (evnt.selector) {
-                    __delegateCount = mainHandler.__delegateCount;
-                    ++mainHandler.__delegateCount;
-                    if (__delegateCount) {
-                        list.insertAt(evnt, __delegateCount);
-                    } else {
-                        list.unshift([evnt]);
-                    }
-                } else {
-                    list.push([evnt]);
                 }
             },
             create: function (origin, original, type, opts) {
@@ -1938,17 +2064,17 @@ app.scope(function (app) {
                 return this;
             },
             cancelled: function (list_, evnt, last) {
-                var mainHandler, __delegateCount, first, events = this;
+                var mainHandler, delegateCount, first, events = this;
                 if (!list_[LENGTH]) {
                     return events;
                 }
                 first = list_[0];
                 mainHandler = first.mainHandler;
-                __delegateCount = mainHandler.__delegateCount;
-                if (!__delegateCount || __delegateCount < last) {
+                delegateCount = mainHandler[DELEGATE_COUNT];
+                if (!delegateCount || delegateCount < last) {
                     return events;
                 }
-                while (last <= __delegateCount) {
+                while (last <= delegateCount) {
                     first = list_[last];
                     first.temporaryTarget = NULL;
                     ++last;
@@ -1971,7 +2097,7 @@ app.scope(function (app) {
                 });
             },
             subset: function (list_, evnt) {
-                var parent, found, target, element, counter, el, afterwards, selector, branch, first, mainHandler, __delegateCount, i = 0,
+                var parent, found, target, element, counter, el, afterwards, selector, branch, first, mainHandler, delegateCount, i = 0,
                     j = 0,
                     list = [],
                     manager = evnt.origin;
@@ -1980,15 +2106,15 @@ app.scope(function (app) {
                 }
                 first = list_[0];
                 mainHandler = first.mainHandler;
-                __delegateCount = mainHandler.__delegateCount;
+                delegateCount = mainHandler[DELEGATE_COUNT];
                 manager = evnt.origin;
                 el = manager.element();
                 target = evnt.target;
-                if (!__delegateCount || evnt.target === el) {
+                if (!delegateCount || evnt.target === el) {
                     return list_.slice(0);
                 }
-                afterwards = list_.slice(__delegateCount);
-                while (i < __delegateCount) {
+                afterwards = list_.slice(delegateCount);
+                while (i < delegateCount) {
                     first = list_[i];
                     ++i;
                     selector = first.selector;
@@ -2002,7 +2128,7 @@ app.scope(function (app) {
                             first.temporaryTarget = found;
                             // how far up did you have to go before you got to the top
                             first.parentNodeNumber = counter;
-                            if (manager.owner.$.orderEventsByHeirarchy) {
+                            if (manager.owner.orderEventsByHeirarchy) {
                                 if (!(j = list[LENGTH])) {
                                     list.push(first);
                                 } else {
@@ -2350,12 +2476,12 @@ app.scope(function (app) {
             registerAs: function (registeredAs_) {
                 var historyDirective, newName, oldName, manager = this,
                     registeredAs = registeredAs_ || manager.registeredAs;
-                if (!manager.is(CUSTOM) || ((historyDirective = manager.directive('History')) && registeredAs === historyDirective.get('category', 'custom'))) {
+                if (!manager.is(CUSTOM) || ((historyDirective = manager.directive('History')) && registeredAs === historyDirective.get('category', CUSTOM))) {
                     return manager;
                 }
-                oldName = manager.owner.registeredElementName(historyDirective.get('category', 'custom'));
+                oldName = manager.owner.registeredElementName(historyDirective.get('category', CUSTOM));
                 manager.directiveDestruction(oldName);
-                historyDirective.keep('category', 'custom', registeredAs);
+                historyDirective.keep('category', CUSTOM, registeredAs);
                 newName = manager.owner.registeredElementName(registeredAs);
                 manager.directive(newName);
                 if (!manager[newName].validCustomElement) {
@@ -2572,7 +2698,9 @@ app.scope(function (app) {
                         }
                     });
                 };
-            return name ? removeFromList(directive[HANDLERS][capture + COLON + name], name) : each(directive[HANDLERS], removeFromList);
+            return name ? duff(gapSplit(name), eventExpander(manager.owner.events.expanders, function (name, passedName) {
+                removeFromList(directive[HANDLERS][capture + COLON + name], passedName);
+            })) : each(directive[HANDLERS], passesFirstArgument(removeFromList));
         },
         /**
          * @class DOMA
@@ -2639,14 +2767,20 @@ app.scope(function (app) {
                 domHandler = function (e) {
                     documentManager.off('DOMContentLoaded', domHandler);
                     windo.off('load', domHandler);
-                    bound($, e);
+                    documentManager.$(CUSTOM_ATTRIBUTE).each(documentManager.returnsManager);
+                    bound(documentManager.$, e);
                 };
             if (documentManager.is('ready')) {
-                bound($, documentManager.DOMContentLoadedEvent);
+                bound(documentManager.$, documentManager.DOMContentLoadedEvent);
             } else {
+                // if (!documentManager.is('setup')) {
                 documentManager.on('DOMContentLoaded', domHandler);
                 windo.on('load', domHandler);
+                // } else {
+                //     debugger;
+                // }
             }
+            documentManager.mark('setup');
             return documentManager;
         },
         applyToEach = function (method) {
@@ -2767,10 +2901,7 @@ app.scope(function (app) {
             },
             elements: function () {
                 // to array of DOMAanagers
-                return map(this.unwrap(), function (manager) {
-                    // to element
-                    return manager.element();
-                });
+                return this.mapCall('element');
             },
             /**
              * @func
@@ -3032,7 +3163,7 @@ app.scope(function (app) {
                     collection = Collection(els),
                     length = collection[LENGTH]();
                 return !!length && collection.find(function (el) {
-                    return doma.posit(el) ? BOOLEAN_FALSE : BOOLEAN_TRUE;
+                    return doma.indexOf(el) === -1;
                 });
             },
             /**
@@ -3061,18 +3192,25 @@ app.scope(function (app) {
                 return stringify(this);
             }
         }, wrap(allEachMethods, applyToEach), wrap(firstMethods, applyToFirst), wrap(readMethods, applyToTarget))),
+        allSetups = [],
         setupWindow = function (windo) {
-            windo.DOMA = DOMA_SETUP(windo[DOCUMENT]);
-            windo.$ = has(windo, '$') ? windo.$ : windo.DOMA;
-            return windo.DOMA;
+            var setup = DOMA_SETUP(windo[DOCUMENT]);
+            allSetups.push(setup);
+            windo.DOMA = windo.DOMA || setup;
+            windo.$ = has(windo, '$') ? windo.$ : setup;
+            duff(plugins, function (plugin) {
+                plugin(setup);
+            });
+            return setup;
         },
+        plugins = [],
+        // pushResult = plugins.push(),
         $ = setupWindow(win);
     app.undefine(setupWindow);
     // collect all templates with an id
     $.collectTemplates();
     // register all custom elements...
     // everything that's created after this should go through the DomManager to be marked appropriately
-    $(CUSTOM_ATTRIBUTE).each($.returnsManager);
     // add $ to module madness
     // app.addModuleArguments([$]);
     // define a hash for attribute caching

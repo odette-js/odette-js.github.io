@@ -1,4 +1,5 @@
 var COLLECTION = 'Collection',
+    REVERSED = 'reversed',
     eachCall = function (array, method, arg) {
         return duff(array, function (item) {
             result(item, method, arg);
@@ -37,10 +38,11 @@ app.scope(function (app) {
             };
         },
         remove = function (list, item, lookAfter, lookBefore, fromRight) {
-            var index = posit(list, item, lookAfter, lookBefore, fromRight);
-            if (index) {
-                removeAt(list, index - 1);
+            var index = indexOf(list, item, lookAfter, lookBefore, fromRight);
+            if (index + 1) {
+                removeAt(list, index);
             }
+            index = index + 1;
             return !!index;
         },
         removeAll = doToAll(remove),
@@ -49,8 +51,8 @@ app.scope(function (app) {
         },
         add = function (list, item, lookAfter, lookBefore, fromRight) {
             var value = 0,
-                index = posit(list, item, lookAfter, lookBefore, fromRight);
-            if (!index) {
+                index = indexOf(list, item, lookAfter, lookBefore, fromRight);
+            if (index === -1) {
                 value = list.push(item);
             }
             return !!value;
@@ -161,106 +163,12 @@ app.scope(function (app) {
         /**
          * @func
          */
-        posit = function (list, item, lookAfter, lookBefore, fromRight) {
-            return indexOf(list, item, lookAfter, lookBefore, fromRight) + 1;
-        },
-        /**
-         * @func
-         */
-        concat = function () {
-            return foldl(arguments, function (memo, arg) {
-                duff(arg, function (item) {
-                    memo.push(item);
-                });
-                return memo;
-            }, []);
-        },
-        /**
-         * @func
-         */
-        concatUnique = function () {
-            return foldl(arguments, function (memo, argument) {
-                duff(argument, function (item) {
-                    if (smartIndexOf(memo, item) === -1) {
-                        memo.push(item);
-                    }
-                });
-                return memo;
-            }, []);
-        },
-        cycle = function (arr, num_) {
-            var num, piece, length = arr[LENGTH];
-            if (isNumber(length)) {
-                num = num_ % length;
-                piece = arr.splice(num);
-                arr.unshift.apply(arr, piece);
-            }
-            return arr;
-        },
-        internalMambo = function (fn) {
-            return function (arr) {
-                arr.reverse();
-                fn.apply(this, arguments);
-                arr.reverse();
-                return arr;
-            };
-        },
-        // Returns whether an object has a given set of `key:value` pairs.
-        isMatch = function (object, attrs) {
-            var key, i = 0,
-                keysResult = keys(attrs),
-                obj = Object(object);
-            return !find(keysResult, function (val) {
-                if (attrs[val] !== obj[val] || !(val in obj)) {
-                    return BOOLEAN_TRUE;
-                }
-            });
-        },
-        // Returns a predicate for checking whether an object has a given set of
-        // `key:value` pairs.
-        matches = function (obj1) {
-            return function (obj2) {
-                return isMatch(obj2, obj1);
-            };
-        },
-        uncycle = internalMambo(cycle),
-        // externalMambo = internalMambo(function (list, fn) {
-        //     return fn.apply(this, arguments);
-        // }),
-        pluck = function (arr, key) {
-            return map(arr, function (item) {
-                return result(item, key);
-            });
-        },
-        // Convenience version of a common use case of `filter`: selecting only objects
-        // containing specific `key:value` pairs.
-        where = function (obj, attrs) {
-            return filter(obj, matches(attrs));
-        },
-        // Convenience version of a common use case of `find`: getting the first object
-        // containing specific `key:value` pairs.
-        findWhere = function (obj, attrs) {
-            return find(obj, matches(attrs));
-        },
-        // Convenience version of a common use case of `find`: getting the first object
-        // containing specific `key:value` pairs.
-        findLastWhere = function (obj, attrs) {
-            return findLast(obj, matches(attrs));
-        },
-        whereNot = function (obj, attrs) {
-            return filter(obj, negate(matches(attrs)));
-        },
-        // splat = function (fn, spliceat) {
-        //     spliceat = spliceat || 0;
-        //     return function () {
-        //         var ctx = this,
-        //             arr = toArray(arguments),
-        //             args = splice(arr, spliceat);
-        //         duff(args, function (idx, item, list) {
-        //             fn.apply(ctx, arr.concat([idx, item, list]));
-        //         });
-        //     };
+        // posit = function (list, item, lookAfter, lookBefore, fromRight) {
+        //     return indexOf(list, item, lookAfter, lookBefore, fromRight) + 1;
         // },
+        /**
+         * @func
+         */
         recreateSelf = function (fn, ctx) {
             return function () {
                 return new this.__constructor__(fn.apply(ctx || this, arguments));
@@ -269,22 +177,6 @@ app.scope(function (app) {
         /**
          * @func
          */
-        filter = function (obj, iteratee, context) {
-            var isArrayResult = isArrayLike(obj),
-                bound = bind(iteratee, context),
-                runCount = 0;
-            return foldl(obj, function (memo, item, key, all) {
-                runCount++;
-                if (bound(item, key, all)) {
-                    if (isArrayResult) {
-                        memo.push(item);
-                    } else {
-                        memo[key] = item;
-                    }
-                }
-                return memo;
-            }, isArrayResult ? [] : {});
-        },
         unwrapInstance = function (instance_) {
             return isInstance(instance, factories[COLLECTION]) ? instance_ : instance.unwrap();
         },
@@ -352,7 +244,7 @@ app.scope(function (app) {
         countingList = gapSplit('count countTo countFrom merge'),
         foldIteration = gapSplit('foldr foldl reduce'),
         findIteration = gapSplit('find findLast findWhere findLastWhere'),
-        indexers = gapSplit('indexOf posit'),
+        indexers = gapSplit('indexOf'),
         foldFindIteration = foldIteration.concat(findIteration),
         marksIterating = function (fn) {
             return function (one, two, three, four, five, six) {
@@ -400,7 +292,7 @@ app.scope(function (app) {
         }), wrap(reverseList, function (name) {
             return function () {
                 var list = this;
-                list.directive('status').toggle('reversed');
+                list.directive('StatusManager').toggle(REVERSED);
                 list.items[name]();
                 return list;
             };
@@ -446,7 +338,7 @@ app.scope(function (app) {
             where: where,
             findWhere: findWhere,
             findLastWhere: findLastWhere,
-            posit: posit,
+            // posit: posit,
             range: range,
             count: count,
             countTo: countTo,
@@ -482,7 +374,7 @@ app.scope(function (app) {
                     old = list.items || [];
                 list.iterating = list.iterating ? exception(cannotModifyMessage) : 0;
                 list.items = items == NULL ? [] : (isArrayLike(items) ? toArray(items) : [items]);
-                list.reversed = BOOLEAN_FALSE;
+                list.unmark(REVERSED);
                 return list;
             },
             unwrap: function () {
@@ -505,8 +397,9 @@ app.scope(function (app) {
             },
             sort: function (fn_) {
                 // normalization sort function for cross browsers
-                sort(this.items, fn_);
-                return this;
+                var list = this;
+                sort(list.items, fn_, list.is(REVERSED), list);
+                return list;
             },
             toString: function () {
                 return stringify(this.items);
@@ -533,51 +426,14 @@ app.scope(function (app) {
         directiveResult = app.defineDirective(LIST, function () {
             return new List[CONSTRUCTOR]();
         }),
+        // just combining two directives here. nothing to see
         Collection = factories[COLLECTION] = factories.List.extend(COLLECTION, extend({
-                empty: _.flow(directives.parody(LIST, 'reset'), directives.parody(REGISTRY, 'reset')),
-                get: directives.parody(REGISTRY, 'get'),
-                register: directives.parody(REGISTRY, 'keep'),
-                unRegister: directives.parody(REGISTRY, 'drop'),
-                swapRegister: directives.parody(REGISTRY, 'swap')
-                //     ,
-                //     constructor: function (arr) {
-                //         this.directive(LIST).reset(arr);
-                //         return this;
-                //     },
-                // }, wrap(gapSplit('call range concat results has unwrap reset length first last index toString toJSON sort').concat(abstractedCanModify, abstractedCannotModify, nativeCannotModify, indexers, joinHandlers), function (key) {
-                //     return directives.parody(LIST, key);
-                // }), wrap(recreatingSelfList, function (key) {
-                //     return recreateSelf(function (one) {
-                //         return this.List[key](one);
-                //     });
-                // }), wrap(splatHandlers, function (key) {
-                //     return function (items) {
-                //         this.List[key](items);
-                //         return this;
-                //     };
-                // }), wrap(countingList, function (key) {
-                //     return function (runner, countFrom, countTo) {
-                //         var context = this;
-                //         context.List[key](runner, context, countFrom, countTo);
-                //         return context;
-                //     };
-                // }), wrap(reverseList.concat(eachHandlerKeys), function (key) {
-                //     return function (one, two, three, four) {
-                //         var context = this;
-                //         context.List[key](one, two || context);
-                //         return context;
-                //     };
-                // }), wrap(foldIteration, function (key) {
-                //     return function (handler, memo, context) {
-                //         return this.List[key](handler, memo, context || this);
-                //     };
-                // }), wrap(findIteration, function (key) {
-                //     return function (handler, context) {
-                //         return this.List[key](handler, context || this);
-                //     };
-            })
-            // )
-        ),
+            empty: _.flow(directives.parody(LIST, 'reset'), directives.parody(REGISTRY, 'reset')),
+            get: directives.parody(REGISTRY, 'get'),
+            register: directives.parody(REGISTRY, 'keep'),
+            unRegister: directives.parody(REGISTRY, 'drop'),
+            swapRegister: directives.parody(REGISTRY, 'swap')
+        })),
         appDirectiveResult = app.defineDirective(COLLECTION, function () {
             return Collection();
         }),
@@ -593,16 +449,14 @@ app.scope(function (app) {
             sort: function () {
                 // does not take a function because it relies on ids / valueOf results
                 var sorted = this;
-                sort(sorted.unwrap(), sorted.reversed ? function (a, b) {
+                sort(sorted.unwrap(), sorted.is(REVERSED) ? function (a, b) {
                     return a < b;
-                } : function (a, b) {
-                    return a > b;
-                });
+                } : NULL, BOOLEAN_FALSE, sorted);
                 return sorted;
             },
             reverse: function () {
                 var sorted = this;
-                sorted.reversed = !sorted.reversed;
+                sorted.toggle(REVERSED);
                 sorted.sort();
                 return sorted;
             },
@@ -617,7 +471,7 @@ app.scope(function (app) {
                 return isNumber(id) || isString(id);
             },
             indexOf: function (object, min, max) {
-                return smartIndexOf(this.unwrap(), object, min, max);
+                return smartIndexOf(this.unwrap(), object, BOOLEAN_TRUE);
             },
             load: function (values) {
                 var sm = this;
@@ -717,10 +571,10 @@ app.scope(function (app) {
                 return sm;
             },
             increment: function () {
-                this._changeCounter++;
+                this.changeCounter++;
             },
             decrement: function () {
-                this._changeCounter--;
+                this.changeCounter--;
             },
             remove: function (string) {
                 var sm = this,
@@ -770,7 +624,7 @@ app.scope(function (app) {
                     parent = this,
                     previousDelimiter = parent.delimiter,
                     delimiter = delimiter_;
-                if (!parent._changeCounter && delimiter === previousDelimiter) {
+                if (!parent.changeCounter && delimiter === previousDelimiter) {
                     return parent.current();
                 }
                 parent.delimiter = delimiter;
@@ -779,14 +633,14 @@ app.scope(function (app) {
                 parent.current(string);
                 return string;
             },
-            current: function (current_) {
+            current: function (current) {
                 var sm = this;
                 if (arguments[LENGTH]) {
-                    sm._changeCounter = 0;
-                    sm._currentValue = current_;
+                    sm.changeCounter = 0;
+                    sm.currentValue = current;
                     return sm;
                 } else {
-                    return sm._currentValue;
+                    return sm.currentValue;
                 }
             },
             ensure: function (value_, splitter) {

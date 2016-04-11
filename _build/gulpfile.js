@@ -1,6 +1,6 @@
 var content = ['browserify'],
     server = ['open', 'serve'],
-    allTasks = content.concat(server, ['watch']),
+    allTasks = content.concat(server, ['watch', 'jsduck']),
     devTasks = allTasks.concat(['build']),
     gulp = require('gulp'),
     gulpTasker = require('./gulp'),
@@ -15,12 +15,13 @@ var content = ['browserify'],
             }
         });
     },
-    modules = 'beforeSetup setup scopeStart constants utils shims Strings Directives Collection Messenger Events Model directives/Events directives/Data directives/Children directives/Linguistics Promise Associator HTTP Module DOMA Looper directives/Element View Buster tests scopeEnd'.split(' '),
+    modules = 'beforeSetup setup scopeStart constants utils shims Strings Directives Collection Messenger Events Model directives/Events directives/Data directives/Children directives/Linguistics Promise Associator HTTP Module DOMA Looper directives/Element View Buster directives/swipe tests scopeEnd'.split(' '),
     extraModules = 'Socket Router LocalStorage NoSock'.split(' '),
     framedModules = 'index'.split(' '),
     paths = makePath({
         // watch path
         jsAll: './src/**/*.js',
+        jsDocOutput: './docs',
         // build list
         jsList: _.map(modules, function (name) {
             return './src/lib/' + name + '.js';

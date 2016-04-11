@@ -30,6 +30,6 @@ application.scope().run(function (app, _, factories) {
     }, {
         link: '/api/v0/tests',
         headline: 'Unit Tests',
-        content: 'Write basic unit tests to make sure your code will always perform to perfection with our Baked-In testing suite. Only the things you need, with all of the goodies you\'re used to.'
+        content: 'Write basic unit tests to make sure your code will always perform to perfection with our Baked-In testing suite. Only the things you need, with all of the goodies you\'re used to. Not enough? Odette empowers you to make your own test types for whatever your need may be.'
     }]);
 });

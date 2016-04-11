@@ -48,7 +48,7 @@ app.scope(function (app) {
                 allstates = result(promise, ALL_STATES),
                 collected = [];
             while (!shouldstop) {
-                if (_.posit(collected, finalName)) {
+                if (_.indexOf(collected, finalName) !== -1) {
                     finalName = BOOLEAN_FALSE;
                 } else {
                     if (finalName === SUCCESS) {

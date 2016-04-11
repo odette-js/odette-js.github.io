@@ -1,5 +1,5 @@
 var factories = {},
-    object = Object,
+    // object = Object,
     fn = Function,
     FunctionConstructor = fn[CONSTRUCTOR],
     array = Array,
@@ -7,10 +7,10 @@ var factories = {},
     number = Number,
     BRACKET_OBJECT_SPACE = '[object ',
     stringProto = string[PROTOTYPE],
-    objectProto = object[PROTOTYPE],
+    // objectProto = object[PROTOTYPE],
     arrayProto = array[PROTOTYPE],
     funcProto = fn[PROTOTYPE],
-    nativeKeys = object.keys,
+    nativeKeys = Object.keys,
     hasEnumBug = !{
         toString: NULL
     }.propertyIsEnumerable(TO_STRING),
@@ -38,6 +38,11 @@ var factories = {},
         }
         return -1;
     },
+    property = function (string) {
+        return function (object) {
+            return object[string];
+        };
+    },
     indexOf = function (array, value, fromIndex, toIndex, fromRight) {
         var index, limit, incrementor;
         if (!array) {
@@ -56,10 +61,13 @@ var factories = {},
         }
         return -1;
     },
-    binaryIndexOf = function (list, item, minIndex_, maxIndex_) {
+    binaryIndexOf = function (list, item, minIndex_, maxIndex_, fromRight) {
         var guess, min = minIndex_ || 0,
             max = maxIndex_ || list[LENGTH] - 1,
             bitwise = (max <= TWO_TO_THE_31) ? BOOLEAN_TRUE : BOOLEAN_FALSE;
+        if (item !== item) {
+            return indexOfNaN(list, min, max, fromRight);
+        }
         if (bitwise) {
             while (min <= max) {
                 guess = (min + max) >> 1;
@@ -90,7 +98,7 @@ var factories = {},
         return -1;
     },
     smartIndexOf = function (array, item, _from, _to, _rtl) {
-        return (array && array[LENGTH] > 100 ? binaryIndexOf : indexOf)(array, item, _from, _to, _rtl);
+        return (_from === BOOLEAN_TRUE && array && array[LENGTH] > 100 ? binaryIndexOf : indexOf)(array, item, _from, _to, _rtl);
     },
     /**
      * @func
@@ -104,14 +112,20 @@ var factories = {},
     /**
      * @func
      */
-    sort = function (obj, fn_) {
+    sort = function (obj, fn_, reversed, context) {
         var fn = fn_ || function (a, b) {
             return a > b;
         };
+        if (context) {
+            fn = bind(fn, context);
+        }
         // normalize sort function handling for safari
-        return arrayProto.sort.call(obj, function () {
-            var result = fn.apply(this, arguments),
+        return obj.sort(function (a, b) {
+            var result = fn(a, b),
                 numericResult = +result;
+            if (numericResult == NULL) {
+                numericResult = 0;
+            }
             if (isNaN(numericResult)) {
                 numericResult = 0;
             }
@@ -121,9 +135,38 @@ var factories = {},
             if (result === BOOLEAN_FALSE || numericResult < -1) {
                 numericResult = -1;
             }
-            return numericResult;
+            return reversed ? numericResult * -1 : numericResult;
         });
     },
+    returnsFirstArgument = function (value) {
+        return value;
+    },
+    normalizeToFunction = function (value, context, argCount) {
+        if (value == NULL) return returnsFirstArgument;
+        if (isFunction(value)) return bind(value, context);
+        if (isObject(value)) return _.matcher(value);
+        return property(value);
+    },
+    // Sort the object's values by a criterion produced by an iteratee.
+    // _.sortBy = function(obj, iteratee, context) {
+    //   iteratee = cb(iteratee, context);
+    //   return _.pluck(_.map(obj, function(value, index, list) {
+    //     return {
+    //       value: value,
+    //       index: index,
+    //       criteria: iteratee(value, index, list)
+    //     };
+    //   }).sort(function(left, right) {
+    //     var a = left.criteria;
+    //     var b = right.criteria;
+    //     if (a !== b) {
+    //       if (a > b || a === void 0) return 1;
+    //       if (a < b || b === void 0) return -1;
+    //     }
+    //     return left.index - right.index;
+    //   }), 'value');
+    // };
+    sortBy = function (list, string) {},
     /**
      * @func
      */
@@ -180,13 +223,13 @@ var factories = {},
     isWrap = function (type, fn) {
         if (!fn) {
             fn = function () {
-                return 1;
+                return BOOLEAN_TRUE;
             };
         }
         return function (thing) {
             var ret = 0;
             if (typeof thing === type && fn(thing)) {
-                ret = 1;
+                ret = BOOLEAN_TRUE;
             }
             return !!ret;
         };
@@ -347,6 +390,40 @@ var factories = {},
         }
         return obj1;
     },
+    values = function (object) {
+        var collected = [];
+        each(object, function (value) {
+            collected.push(value);
+        });
+        return collected;
+    },
+    zip = function (lists) {
+        var aggregator = [];
+        duff(lists, function (list, listCount) {
+            // var zipped = aggregator
+            duff(list, function (item, index) {
+                var destination = aggregator[index];
+                if (!aggregator[index]) {
+                    destination = aggregator[index] = [];
+                }
+                destination[listCount] = item;
+            });
+        });
+        return aggregator;
+    },
+    object = function (keys, values) {
+        var obj = {};
+        if (values) {
+            duff(keys, function (key, index) {
+                obj[key] = values[index];
+            });
+        } else {
+            duff(keys, function (key, index) {
+                obj[key[0]] = key[1];
+            });
+        }
+        return obj;
+    },
     /**
      * @func
      */
@@ -388,6 +465,7 @@ var factories = {},
                 ret = iterates(list, iteratee, context);
                 iterator = ret.handler;
                 list = ret.keys;
+                // prevent duff from binding again
                 context = NULL;
             }
             return fn(list, iterator, context, direction);
@@ -781,6 +859,91 @@ var factories = {},
         img.src = url;
         return img;
     },
+    passesFirstArgument = function (fn) {
+        return function (first) {
+            return fn(first);
+        };
+    },
+    concat = function () {
+        var base = [];
+        return base.concat.apply(base, map(arguments, passesFirstArgument(toArray)));
+    },
+    /**
+     * @func
+     */
+    concatUnique = function () {
+        return foldl(arguments, function (memo, argument) {
+            duff(argument, function (item) {
+                if (smartIndexOf(memo, item) === -1) {
+                    memo.push(item);
+                }
+            });
+            return memo;
+        }, []);
+    },
+    cycle = function (arr, num_) {
+        var length = arr[LENGTH],
+            num = num_ % length,
+            piece = arr.splice(num);
+        arr.unshift.apply(arr, piece);
+        return arr;
+    },
+    uncycle = function (arr, num_) {
+        var length = arr[LENGTH],
+            num = num_ % length,
+            piece = arr.splice(0, length - num);
+        arr.push.apply(arr, piece);
+        return arr;
+    },
+    isMatch = function (object, attrs) {
+        var key, i = 0,
+            keysResult = keys(attrs),
+            obj = Object(object);
+        return !find(keysResult, function (val) {
+            if (attrs[val] !== obj[val] || !(val in obj)) {
+                return BOOLEAN_TRUE;
+            }
+        });
+    },
+    matches = function (obj1) {
+        return function (obj2) {
+            return isMatch(obj2, obj1);
+        };
+    },
+    // uncycle = internalMambo(cycle),
+    pluck = function (arr, key) {
+        return map(arr, function (item) {
+            return result(item, key);
+        });
+    },
+    filter = function (obj, iteratee, context) {
+        var isArrayResult = isArrayLike(obj),
+            bound = bind(iteratee, context),
+            runCount = 0;
+        return foldl(obj, function (memo, item, key, all) {
+            runCount++;
+            if (bound(item, key, all)) {
+                if (isArrayResult) {
+                    memo.push(item);
+                } else {
+                    memo[key] = item;
+                }
+            }
+            return memo;
+        }, isArrayResult ? [] : {});
+    },
+    where = function (obj, attrs) {
+        return filter(obj, matches(attrs));
+    },
+    findWhere = function (obj, attrs) {
+        return find(obj, matches(attrs));
+    },
+    findLastWhere = function (obj, attrs) {
+        return findLast(obj, matches(attrs));
+    },
+    whereNot = function (obj, attrs) {
+        return filter(obj, negate(matches(attrs)));
+    },
     parse = function (val_) {
         var coerced, val = val_;
         if (isString(val)) {
@@ -1061,7 +1224,7 @@ var factories = {},
         return (parseInt((mult * val), 10) / mult);
     },
     result = function (obj, str, arg, knows) {
-        return isObject(obj) ? (knows || isFunction(obj[str]) ? obj[str](arg) : obj[str]) : obj;
+        return obj == NULL ? obj : (isFunction(obj[str]) ? obj[str](arg) : (isObject(obj) ? obj[str] : obj));
     },
     maths = Math,
     mathArray = function (method) {
@@ -1074,12 +1237,6 @@ var factories = {},
             _fn = _fn || noop;
             return fn.call(this, _fn);
         };
-    },
-    matchesOneToOne = function (key, value) {
-        this[key] = value;
-    },
-    wipeKey = function (key) {
-        this[key] = UNDEFINED;
     },
     /**
      * @func
@@ -1188,7 +1345,21 @@ var factories = {},
             return arg;
         };
     },
+    is = {
+        number: isNumber,
+        string: isString,
+        object: isObject,
+        nan: isNaN,
+        array: isArray,
+        'function': isFunction,
+        boolean: isBoolean,
+        'null': isNull,
+        length: isLength,
+        validInteger: isValidInteger,
+        arrayLike: isArrayLike
+    },
     _ = app._ = {
+        is: is,
         performance: performance,
         months: gapSplit('january feburary march april may june july august september october november december'),
         weekdays: gapSplit('sunday monday tuesday wednesday thursday friday saturday'),
@@ -1211,6 +1382,9 @@ var factories = {},
         stringify: stringify,
         splitGen: splitGen,
         gapSplit: gapSplit,
+        values: values,
+        zip: zip,
+        object: object,
         // uniqueId: uniqueId,
         wraptry: wraptry,
         toString: toString,

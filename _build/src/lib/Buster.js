@@ -42,13 +42,7 @@ app.scope(function (app) {
         receive = function (evt) {
             var buster, data = evt.data(),
                 postTo = data.postTo;
-            if (!data) {
-                return;
-            }
-            if (app[VERSION] !== data[VERSION] || app.isDestroyed) {
-                return;
-            }
-            if (!postTo) {
+            if (app.isDestroyed || !data || !postTo || (app[VERSION] !== data[VERSION] && data[VERSION] !== '*')) {
                 return;
             }
             buster = (busterGroupHash[data.group] || {})[data.postTo];

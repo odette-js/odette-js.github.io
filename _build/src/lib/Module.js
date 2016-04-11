@@ -6,7 +6,7 @@ app.scope(function (app) {
         MODULES = 'Modules',
         STARTED = START + 'ed',
         INITIALIZED = 'initialized',
-        COMPLETED = 'completed',
+        DEFINED = 'defined',
         startableMethods = {
             start: function (evnt) {
                 var startable = this;
@@ -76,7 +76,7 @@ app.scope(function (app) {
                     namespace = name.split(PERIOD),
                     module = parent.directive(CHILDREN).get(name_),
                     triggerBubble = function () {
-                        module.mark(COMPLETED);
+                        module.mark(DEFINED);
                         module.parent.bubble(INITIALIZED + ':submodule');
                     };
                 if (module) {
@@ -167,8 +167,8 @@ app.scope(function (app) {
                 var promise, module, list, mappedArguments, app = this;
                 if (!isFunction(handler)) {
                     module = app.module(modulename);
-                    return module.is(COMPLETED) ? module.exports : exception({
-                        message: 'that module has not ' + COMPLETED + ' initialization yet'
+                    return module.is(DEFINED) ? module.exports : exception({
+                        message: 'that module has not ' + DEFINED + ' initialization yet'
                     });
                 } else {
                     promise = _.Promise();

@@ -54,7 +54,6 @@ permalink: /api/v0/list
                 <li class="left clear-left"><a href="#methods_merge">merge</a></li>
                 <li class="left clear-left"><a href="#methods_pluck">pluck</a></li>
                 <li class="left clear-left"><a href="#methods_pop">pop</a></li>
-                <li class="left clear-left"><a href="#methods_posit">posit</a></li>
                 <li class="left clear-left"><a href="#methods_push">push</a></li>
                 <li class="left clear-left"><a href="#methods_range">range</a></li>
                 <li class="left clear-left"><a href="#methods_reduce">reduce</a></li>
@@ -278,7 +277,9 @@ list.first(); // 5</code></pre>
     <h5 class="title-headline">#flatten</h5>
     <p>The flatten method can take nested arrays and flatten them with a transformer.</p>
     <pre class="code code-section"><code class="language-javascript">var list = factories.List([[1, 5, 4], [[2], [[0], 3]]]);
+list.length(); // 2
 list.flatten().unwrap();       // [1, 5, 4, [2], [[0], 3]]
+list.length(); 4
 list = factories.List([[1, 5, 4], [[2], [[0], 3]]]);
 list.flatten(true).unwrap(); // [1, 5, 4, 2, 0, 3]
 list = factories.List([[1, 5, 4], [[2], [[0], 3]]]);
@@ -288,158 +289,192 @@ list.flatten(true, function (items) {
 </div>
 <div id="methods_foldl">
     <h5 class="title-headline">#foldl</h5>
-    <p>The foldl method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The foldl method gives you a memo for those hard to compute processes.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([1, 10, 100, 1000]);
+list.foldl(function (x, y) {
+    return x + y;
+}, 0); // 1111</code></pre>
 </div>
 <div id="methods_foldr">
     <h5 class="title-headline">#foldr</h5>
-    <p>The foldr method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The foldr method gives you a memoized pathway for those hard to computer processes... in reverse.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([1, 10, 100, 1000]);
+list.foldl(function (x, y) {
+    return x + y;
+}, 0); // 1111</code></pre>
 </div>
 <div id="methods_forEach">
     <h5 class="title-headline">#forEach</h5>
-    <p>The forEach method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The forEach method is a parody of the <a href="#methods_each">each</a> method.</p>
 </div>
-<div id="methods_forEachRight">
+<div id="methods_forEach">
     <h5 class="title-headline">#forEachRight</h5>
-    <p>The forEachRight method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The forEach method is a parody of the <a href="#methods_eachRight">eachRight</a> method.</p>
 </div>
 <div id="methods_gather">
     <h5 class="title-headline">#gather</h5>
-    <p>The gather method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
-</div>
-<div id="methods_get">
-    <h5 class="title-headline">#get</h5>
-    <p>The get method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The gather method is a combination of map and concat, where all of the items returned from the map of all of the lists passed into the gather method, are combined in a single concat instead of many pushes.</p>
+    <pre class="code code-section"><code class="language-javascript">var items = factories.List([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [0, 1, 2, 3, 4]], function (list) {
+    return _.map(list, function (item) {
+        return item * 2;
+    });
+}); // [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 0, 2, 4, 6, 8]</code></pre>
 </div>
 <div id="methods_has">
     <h5 class="title-headline">#has</h5>
-    <p>The has method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The has method checks the list using the <a href="#methods_indexOf">indexOf</a> method and returns a true value if the list contains the item passed in and a false value if it does not.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List(['a', 'big', 'red', 'dog']);
+list.has('red'); // true
+list.has('cat'); // false</code></pre>
 </div>
 <div id="methods_index">
     <h5 class="title-headline">#index</h5>
-    <p>The index method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The index method returns the item at the index that is passed into the method. If no argument is passed in then the first item is returned.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([5, 6, 3, 1]);
+list.index(2); // 3
+list.index();  // 5
+list.index(10); // undefined</code></pre>
 </div>
 <div id="methods_indexOf">
     <h5 class="title-headline">#indexOf</h5>
-    <p>The indexOf method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The indexOf method checks the array for the item that was passed in. Other optional parameters can be passed in as well such as the starting index, the limiting index, and whether or not the list should be checked in reverse.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List(['one', 'two', 'three', 'four', 'five']);
+list.indexOf('two'); // 1
+list.indexOf('two', 1); // 1
+list.indexOf('two', 2); // undefined
+list.indexOf('five', 2); // 4
+list.indexOf('five', 2, 4); // undefined
+list.indexOf('five', 0, 5, true); // undefined</code></pre>
 </div>
 <div id="methods_insertAt">
     <h5 class="title-headline">#insertAt</h5>
-    <p>The insertAt method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The insertAt method is basically a singular splice convenience function that makes the process of adding a singular item to a list less convoluted.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3]);
+list.insertAt(4, 2); // true
+list.unwrap(); // [0, 1, 4, 2, 3]</code></pre>
 </div>
 <div id="methods_join">
     <h5 class="title-headline">#join</h5>
-    <p>The join method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The join method is simply applied to the array. Useful to replace with custom behaviors, such as the one that the <a href="doma">DOMA</a> uses.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3]);
+list.join('->'); // "0->1->2->3"</code></pre>
 </div>
 <div id="methods_last">
     <h5 class="title-headline">#last</h5>
-    <p>The last method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The last method returns the last item on the list.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3]);
+list.last(); // 3
+list = factories.List();
+list.last(); // undefined</code></pre>
 </div>
 <div id="methods_length">
     <h5 class="title-headline">#length</h5>
-    <p>The length method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The length method returns the length of the items array beneath it.</p>
+    <pre class="code code-section"><code class="language-javascript">factories.List([0, 1, 2, 3]).length(); // 4</code></pre>
 </div>
 <div id="methods_map">
     <h5 class="title-headline">#map</h5>
-    <p>The map method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The map method returns a new list object with the returned values of the iterator that was passed in.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3]);
+list.map(function (item, index) {
+    return item * index;
+}).unwrap(); // [0, 1, 4, 9]</code></pre>
 </div>
 <div id="methods_mapCall">
     <h5 class="title-headline">#mapCall</h5>
-    <p>The mapCall method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
-</div>
-<div id="methods_merge">
-    <h5 class="title-headline">#merge</h5>
-    <p>The merge method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
-</div>
-<div id="methods_pluck">
-    <h5 class="title-headline">#pluck</h5>
-    <p>The pluck method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The mapCall method collects all of the results of the call method and creates a new list object to wrap them.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([function (item) {
+    return item * 5;
+}]);</code></pre>
 </div>
 <div id="methods_pop">
     <h5 class="title-headline">#pop</h5>
-    <p>The pop method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
-</div>
-<div id="methods_posit">
-    <h5 class="title-headline">#posit</h5>
-    <p>The posit method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The pop method removes the last item from the list and returns it from the pop method.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3, 4, 5]);
+list.length(); // 6
+list.pop(); // 5
+list.length(); // 5</code></pre>
 </div>
 <div id="methods_push">
     <h5 class="title-headline">#push</h5>
-    <p>The push method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The push method applies a push against the array. If an array like object is passed into the method, then it will apply the array like object to the method. The method returns the length of the array.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List();
+list.push([9, 3, 0]); // 3
+list.push(5); // 4</code></pre>
 </div>
 <div id="methods_range">
     <h5 class="title-headline">#range</h5>
-    <p>The range method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The range method produces a new array of numbers and puts it in a new List.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List();
+list = list.range(0, 100, 10);       // [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+list = list.range(0, 100, 10, true); // [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]</code></pre>
 </div>
 <div id="methods_reduce">
     <h5 class="title-headline">#reduce</h5>
-    <p>The reduce method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
-</div>
-<div id="methods_register">
-    <h5 class="title-headline">#register</h5>
-    <p>The register method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The reduce method is a <a href="#methods_foldl">foldl</a> with a different name.</p>
+    <pre class="code code-section"><code class="language-javascript">factories.List([0, 1, 2, 3, 4]).reduce(function (memo, item) {
+    return memo + item;
+}, 0);</code></pre>
 </div>
 <div id="methods_remove">
     <h5 class="title-headline">#remove</h5>
-    <p>The remove method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The remove method removes the first item from the list.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3, 4]);
+list.remove(2); // true
+list.remove(2); // false</code></pre>
 </div>
 <div id="methods_removeAt">
     <h5 class="title-headline">#removeAt</h5>
-    <p>The removeAt method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The removeAt method removes any item at the passed index.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3]);
+list.removeAt(2);
+list.unwrap(); // [0, 1, 3, 4]</code></pre>
 </div>
 <div id="methods_reset">
     <h5 class="title-headline">#reset</h5>
     <p>The reset method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3]);
+list.unwrap(); // [0, 1, 2, 3]
+list.reset();
+list.unwrap(); // []</code></pre>
 </div>
 <div id="methods_results">
     <h5 class="title-headline">#results</h5>
-    <p>The results method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The results method maps a loop of function calls from the items in the list to a new list.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List(["HERE", "wHere", "Name"]);
+list.results('toLowerCase').unwrap(); // ["here", "where", "name"]</code></pre>
 </div>
 <div id="methods_reverse">
     <h5 class="title-headline">#reverse</h5>
-    <p>The reverse method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The reverse method calls reverse on the list and toggles a marker on the list as reversed.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3]);
+list.reverse().unwrap(); // [3, 2, 1, 0]
+list.reversed // true</code></pre>
 </div>
 <div id="methods_shift">
     <h5 class="title-headline">#shift</h5>
-    <p>The shift method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The shift method is a parody for the original shift method, but takes an array instead of a splat as it's argument.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2]);
+list.shift([3, 4, 5]);
+list.unwrap(); // [3, 4, 5, 0, 1, 2]</code></pre>
 </div>
 <div id="methods_sort">
     <h5 class="title-headline">#sort</h5>
-    <p>The sort method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The sort method allows you to sort your list in any particular way, and will create correct comparators if you have marked the list as reversed. Normally in js, if you were to call sort, like on the last line of the following example, your list would revert back into an ascending list. But because odette tracks whether or not a list is reversed using the StatusManager, you can always be sure that your list will be sorted correctly.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 2, 1]);
+list.sort();
+list.unwrap(); // [0, 1, 2]
+list.reverse();
+list.unwrap(); // [2, 1, 0]
+list.sort();
+list.unwrap(); // [2, 1, 0]</code></pre>
 </div>
 <div id="methods_splice">
     <h5 class="title-headline">#splice</h5>
-    <p>The splice method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The splice method add items to arbitrary indexes of your list. This is simply a parody method of the original splice, which will modify the array in place instead of creating a copy.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List(['bop', 'boop', 'bloop', 'blorp']);
+list.splice(2, 0, 'bleep');
+list.unwrap(); // ["bop", "boop", "bleep", "bloop", "blorp"]</code></pre>
 </div>
 <div id="methods_swapRegister">
     <h5 class="title-headline">#swapRegister</h5>
@@ -448,23 +483,21 @@ list.flatten(true, function (items) {
 </div>
 <div id="methods_toJSON">
     <h5 class="title-headline">#toJSON</h5>
-    <p>The toJSON method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The toJSON method is a super helpful method whenever converting a list into a serializable object. toJSON should always return a serializable object or base data type. This method useful for things like sorted collections, which are used in the children definition.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([{}]);
+list.toJSON(); // [{}]</code></pre>
 </div>
 <div id="methods_toString">
     <h5 class="title-headline">#toString</h5>
-    <p>The toString method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The toString method rounds out the process of serialization by assisting in turning the list into a string.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([{}]);
+list.toString(); // "[{}]"</code></pre>
 </div>
 <div id="methods_uncycle">
     <h5 class="title-headline">#uncycle</h5>
-    <p>The uncycle method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
-</div>
-<div id="methods_unRegister">
-    <h5 class="title-headline">#unRegister</h5>
-    <p>The unRegister method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>While the cycle method shifts elements forward and moves them to the back, the uncycle event does the opposite, and shifts elements backward and moves them to the front when they fall of the back.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([0, 1, 2, 3, 4, 5]);
+list.uncycle(1).unwrap(); // [5, 0, 1, 2, 3, 4]</code></pre>
 </div>
 <div id="methods_unshift">
     <h5 class="title-headline">#unshift</h5>
@@ -473,16 +506,39 @@ list.flatten(true, function (items) {
 </div>
 <div id="methods_unwrap">
     <h5 class="title-headline">#unwrap</h5>
-    <p>The unwrap method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The unwrap method has been used a lot in these examples. It is simply a convenience method for consistantly returning an array of the items being held on the list. This same methodology should be used for parodied objects that need a consistant api. Things like the DomManager, StringManagers, and other object types benefit greatly from consistantly accessing the list through a function rather than simply getting the property.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List();
+list.unwrap(); // []</code></pre>
 </div>
 <div id="methods_where">
     <h5 class="title-headline">#where</h5>
-    <p>The where method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The where method is a filter that targets objects that match all of the properties of the object that is passed into the method.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([{
+    one: 1
+}, {
+    one: 2
+}, {
+    one: 1
+}, {
+    one: 3
+}]);
+list.where({
+    one: 1
+}).unwrap(); // [{one:1}, {one:1}]</code></pre>
 </div>
 <div id="methods_whereNot">
     <h5 class="title-headline">#whereNot</h5>
-    <p>The whereNot method</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <p>The whereNot method is the same as the where method, except its results are negated.</p>
+    <pre class="code code-section"><code class="language-javascript">var list = factories.List([{
+    one: 1
+}, {
+    one: 2
+}, {
+    one: 1
+}, {
+    one: 3
+}]);
+list.whereNot({
+    one: 1
+}).unwrap(); // [{one:2}, {one:3}]</code></pre>
 </div>

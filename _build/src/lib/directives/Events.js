@@ -17,7 +17,7 @@ app.scope(function (app) {
         returnsId = function () {
             return this.id;
         },
-        PASSED_DATA = '_passedData',
+        PASSED_DATA = 'passedData',
         ObjectEvent = factories.ObjectEvent = factories.Directive.extend('ObjectEvent', {
             constructor: function (target, data, name, options, when) {
                 var evnt = this;
@@ -25,7 +25,8 @@ app.scope(function (app) {
                 evnt[ORIGIN] = target;
                 evnt[NAME] = name;
                 evnt[TYPE] = name.split(COLON)[0];
-                evnt.timeStamp = when || now();
+                evnt.timestamp = now();
+                evnt.timeStamp = when || evnt.timestamp;
                 evnt[PASSED_DATA] = {};
                 evnt.data(data);
                 if (options) {
@@ -208,7 +209,7 @@ app.scope(function (app) {
                 return each(this.handlers, this.scrub, this);
             },
             queue: function (stack, handler, evnt) {
-                return stack.push([handler]);
+                return stack.unwrap().push(handler);
             },
             unQueue: function (stack, handler, evnt) {
                 return stack.pop();
@@ -217,7 +218,8 @@ app.scope(function (app) {
                 return this.handlers[key] && this.handlers[key][LENGTH]();
             },
             dispatch: function (name, evnt) {
-                var events = this,
+                var subset, subLength, handler, i = 0,
+                    events = this,
                     stack = events[STACK],
                     handlers = events[HANDLERS],
                     list = handlers[name],
@@ -231,14 +233,17 @@ app.scope(function (app) {
                     return;
                 }
                 running[name] = BOOLEAN_TRUE;
-                if (List(events.subset(list.unwrap(), evnt)).find(function (handler) {
+                subset = events.subset(list.unwrap(), evnt);
+                subLength = subset[LENGTH];
+                for (; i < subLength && !stopped; i++) {
+                    handler = subset[i];
                     if (!handler.disabled && events.queue(stack, handler, evnt)) {
                         handler.fn(evnt);
                         stopped = !!evnt[IMMEDIATE_PROP_IS_STOPPED];
                         events.unQueue(stack, handler, evnt);
                     }
-                    return stopped;
-                })) {
+                }
+                if (stopped) {
                     events.cancelled(stack, evnt);
                 }
                 evnt.finished();

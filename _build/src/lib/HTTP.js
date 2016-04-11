@@ -1,7 +1,6 @@
 app.scope(function (app) {
     var _ = app._,
         factories = _.factories,
-        posit = _.posit,
         PROMISE = 'Promise',
         ERROR = 'error',
         STATUS = 'status',
@@ -13,13 +12,6 @@ app.scope(function (app) {
         GET = 'GET',
         validTypes = gapSplit(GET + ' POST PUT DELETE HEAD TRACE OPTIONS CONNECT'),
         baseEvents = gapSplit('progress timeout abort ' + ERROR),
-        /**
-         * @description helper function to attach a bunch of event listeners to the request object as well as help them trigger the appropriate events on the http object itself
-         * @private
-         * @arg {http} instance to listen to
-         * @arg {Xhr} instance to place event handlers to trigger events on the http instance
-         * @arg {string} event name
-         */
         attachBaseListeners = function (ajax) {
             var prog = 0,
                 req = ajax.requestObject;
@@ -71,18 +63,17 @@ app.scope(function (app) {
             setTimeout(sendthething(xhrReq, args, ajax));
         },
         /**
-         * @class http
-         * @alias factories.http
-         * @augments Model
+         * @class HTTP
+         * @alias factories.HTTP
          * @augments Model
          * @classdesc XHR object wrapper Triggers events based on xhr state changes and abstracts many anomalies that have to do with IE
          */
         HTTP = factories.HTTP = factories.Promise.extend('HTTP', {
             /**
              * @func
-             * @name http#constructor
+             * @name HTTP#constructor
              * @param {string} str - url to get from
-             * @returns {http} new ajax object
+             * @returns {HTTP} new ajax object
              */
             parse: parse,
             constructor: function (str, secondary) {
@@ -100,7 +91,7 @@ app.scope(function (app) {
                     str = str || EMPTY_STRING;
                     type = GET;
                     typeThing = str.toUpperCase();
-                    if (posit(validTypes, typeThing)) {
+                    if (indexOf(validTypes, typeThing) !== -1) {
                         type = typeThing;
                     } else {
                         url = str;
@@ -134,7 +125,7 @@ app.scope(function (app) {
             /**
              * @description specialized function to stringify url if it is an object
              * @returns {string} returns the completed string that will be fetched / posted / put / or deleted against
-             * @name http#getUrl
+             * @name HTTP#getUrl
              */
             getUrl: function () {
                 var url = this.get('url');
@@ -147,7 +138,7 @@ app.scope(function (app) {
              * @description makes public the ability to attach a response handler if one has not already been attached. We recommend not passing a function in and instead just listening to the various events that the xhr object will trigger directly, or indirectly on the ajax object
              * @param {function} [fn=handler] - pass in a function to have a custom onload, onreadystatechange handler
              * @returns {ajax}
-             * @name http#attachResponseHandler
+             * @name HTTP#attachResponseHandler
              */
             auxiliaryStates: function () {
                 return {
@@ -167,8 +158,8 @@ app.scope(function (app) {
                     'status:502': ERROR,
                     'status:505': ERROR,
                     'status:511': ERROR,
-                    timeout: FAILURE,
-                    abort: FAILURE
+                    'timeout': FAILURE,
+                    'abort': FAILURE
                 };
             },
             attachResponseHandler: function () {

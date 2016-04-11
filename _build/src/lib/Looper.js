@@ -5,7 +5,6 @@ app.scope(function (app) {
         lastTime = 0,
         frameTime = 0,
         pI = _.pI,
-        posit = _.posit,
         nowish = _.now,
         gapSplit = _.gapSplit,
         vendors = gapSplit('ms moz webkit o'),
@@ -64,7 +63,7 @@ app.scope(function (app) {
             allLoopers.push(looper);
         },
         start = function (looper) {
-            if (!posit(runningLoopers, looper)) {
+            if (indexOf(runningLoopers, looper) === -1) {
                 runningLoopers.push(looper);
             }
             if (!running) {
@@ -74,7 +73,7 @@ app.scope(function (app) {
         shim = (function () {
             for (; x < vendors[LENGTH] && !win[REQUEST_ANIMATION_FRAME]; ++x) {
                 win[REQUEST_ANIMATION_FRAME] = win[vendors[x] + 'RequestAnimationFrame'];
-                win[CANCEL_ANIMATION_FRAME] = win[vendors[x] + _.upCase(CANCEL_ANIMATION_FRAME)] || win[vendors[x] + 'CancelRequestAnimationFrame'];
+                win[CANCEL_ANIMATION_FRAME] = win[vendors[x] + upCase(CANCEL_ANIMATION_FRAME)] || win[vendors[x] + 'CancelRequestAnimationFrame'];
             }
             if (!win[REQUEST_ANIMATION_FRAME]) {
                 win[REQUEST_ANIMATION_FRAME] = function (callback) {
@@ -172,7 +171,7 @@ app.scope(function (app) {
                             for (; i < fnList[LENGTH] && !ret; i++) {
                                 fnObj = fnList[i];
                                 if (fnObj.id === id) {
-                                    if (!posit(removeList, fnObj)) {
+                                    if (indexOf(removeList, fnObj) !== -1) {
                                         removeList.push(fnObj);
                                         ret = BOOLEAN_TRUE;
                                     }
