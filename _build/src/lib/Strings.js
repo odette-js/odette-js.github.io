@@ -71,22 +71,19 @@ var cacheable = function (fn) {
         };
     }()),
     uniqueId = (function () {
-        var cache = {};
-        return function (prefix, isInt) {
-            var val;
-            if (!prefix) {
-                prefix = EMPTY_STRING;
+        var stash = {};
+        var globalPrefix = 0;
+        return function (prefix) {
+            var value;
+            if (prefix) {
+                stash[prefix] = stash[prefix] || 0;
+                ++stash[prefix];
+                value = stash[prefix];
+            } else {
+                ++globalPrefix;
+                value = globalPrefix;
             }
-            prefix += EMPTY_STRING;
-            val = cache[prefix];
-            if (!val) {
-                val = cache[prefix] = 0;
-            }
-            cache[prefix]++;
-            if (!isInt) {
-                val = prefix + val;
-            }
-            return val;
+            return prefix ? prefix + value : value;
         };
     }()),
     /**

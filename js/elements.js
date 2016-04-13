@@ -32,23 +32,30 @@ application.scope().run(function (app, _, factories) {
             }
         });
         var toggleHash = {};
+        var directedToggle = function (manager, futureOpen_) {
+            var target = manager.data('target'),
+                futureOpen = futureOpen_ === void 0 ? !toggleHash[target] : futureOpen_,
+                wrapped = manager.wrap(),
+                together = target ? wrapped.add(target) : manager;
+            together.add('[data-target="' + target + '"]').data('toggled', futureOpen);
+            toggleHash[target] = futureOpen;
+        };
         $.registerElement('click-toggler', {
             events: {
-                click: 'toggle'
+                click: 'toggle',
+                'attributeChange:data-toggled': function (e) {
+                    this.remark('clickTogglerOpen', e.data().current);
+                }
             },
             prototype: {
                 toggle: function () {
-                    var manager = this,
-                        target = manager.data('target'),
-                        isOpen = toggleHash[target],
-                        futureOpen = !isOpen,
-                        wrapped = manager.wrap(),
-                        together = target ? wrapped.add(target) : manager;
-                    together.data('toggled', futureOpen);
-                    wrapped.add('[data-target="' + target + '"]').each(function (manager) {
-                        // manager.remark('clickTogglerOpen', futureOpen);
-                        toggleHash[target] = futureOpen;
-                    });
+                    return directedToggle(this);
+                },
+                open: function () {
+                    return directedToggle(this, true);
+                },
+                close: function () {
+                    return directedToggle(this, false);
                 }
             }
         });

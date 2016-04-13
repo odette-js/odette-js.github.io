@@ -181,7 +181,7 @@ app.scope(function (app) {
             return isInstance(instance, factories[COLLECTION]) ? instance_ : instance.unwrap();
         },
         REGISTRY = 'Registry',
-        Registry = factories.Registry = factories.Directive.extend(REGISTRY, {
+        Registry = factories[REGISTRY] = factories.Directive.extend(REGISTRY, {
             constructor: function () {
                 this.reset();
                 return this;
@@ -328,7 +328,6 @@ app.scope(function (app) {
             removeAll: removeAll,
             addAll: addAll,
             insertAt: insertAt,
-            concatUnique: concatUnique,
             removeAt: removeAt,
             remove: remove,
             cycle: cycle,
@@ -338,7 +337,6 @@ app.scope(function (app) {
             where: where,
             findWhere: findWhere,
             findLastWhere: findLastWhere,
-            // posit: posit,
             range: range,
             count: count,
             countTo: countTo,
@@ -426,13 +424,18 @@ app.scope(function (app) {
         directiveResult = app.defineDirective(LIST, function () {
             return new List[CONSTRUCTOR]();
         }),
-        // just combining two directives here. nothing to see
+        // just combining two directives here.
+        // One is being extended,
+        // the other is being used on the parent
         Collection = factories[COLLECTION] = factories.List.extend(COLLECTION, extend({
-            empty: _.flow(directives.parody(LIST, 'reset'), directives.parody(REGISTRY, 'reset')),
             get: directives.parody(REGISTRY, 'get'),
             register: directives.parody(REGISTRY, 'keep'),
             unRegister: directives.parody(REGISTRY, 'drop'),
-            swapRegister: directives.parody(REGISTRY, 'swap')
+            swapRegister: directives.parody(REGISTRY, 'swap'),
+            empty: function (one, two, three) {
+                this.reset(one, two, three);
+                this.directive(REGISTRY).reset(one, two, three);
+            }
         })),
         appDirectiveResult = app.defineDirective(COLLECTION, function () {
             return Collection();
@@ -603,20 +606,16 @@ app.scope(function (app) {
             rebuild: function () {
                 // rebuilds the registry
                 var parent = this,
-                    validResult = parent.foldl(function (memo, stringInstance) {
-                        if (stringInstance.isValid()) {
-                            memo.items.push(stringInstance);
-                            memo.Registry.id[stringInstance.value] = stringInstance;
-                        }
-                        return memo;
-                    }, {
-                        items: [],
-                        Registry: {
-                            id: {}
-                        }
-                    });
-                parent.directive(LIST).reset(validResult.items);
-                parent.directive(REGISTRY).reset(validResult.Registry);
+                    collectable = [],
+                    parentRegistry = parent.directive(REGISTRY);
+                parent.each(function (stringInstance) {
+                    if (stringInstance.isValid()) {
+                        this.push(stringInstance);
+                    } else {
+                        parentRegistry.drop(ID, stringInstance.value);
+                    }
+                }, collectable);
+                parent.reset(collectable);
                 return parent;
             },
             generate: function (delimiter_) {

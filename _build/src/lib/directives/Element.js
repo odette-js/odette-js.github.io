@@ -4,30 +4,15 @@ app.scope(function (app) {
         basicViewTrigger = function (name, e) {
             return this[DISPATCH_EVENT](name, e);
         },
-        makeDelegateEventKeys = function (cid, bindings, key, namespace_) {
+        makeDelegateEventKeys = function (cid, bindings, key) {
             var viewNamespace = 'delegateEvents' + cid,
-                namespace = namespace_;
-            if (namespace) {
-                namespace = PERIOD + namespace;
-            } else {
-                namespace = EMPTY_STRING;
-            }
-            return foldl(gapSplit(key), function (memo, _key) {
-                var __key = _key.split(PERIOD);
-                if (__key[0][0] === '@') {
-                    memo[SELECTOR] = normalizeUIString(_key, bindings);
-                } else {
-                    if (__key[1] !== viewNamespace) {
-                        __key.splice(1, 0, viewNamespace);
-                        _key = __key.join(PERIOD);
-                    }
-                    memo.events.push(_key + namespace);
-                }
-                return memo;
-            }, {
-                events: [],
-                selector: ''
-            });
+                indexOfAt = indexOf(key, '@'),
+                hasAt = indexOfAt !== -1;
+            return {
+                selector: hasAt ? normalizeUIString(key.slice(indexOfAt), bindings) : EMPTY_STRING,
+                group: viewNamespace,
+                events: hasAt ? key.slice(0, indexOfAt) : key
+            };
         },
         normalizeUIString = function (uiString, ui) {
             return uiString.replace(/@ui\.[a-zA-Z_$0-9]*/g, function (r) {
@@ -119,11 +104,11 @@ app.scope(function (app) {
                 if (!el) {
                     return directive;
                 }
-                each(elementBindings, function (method, key) {
+                directive.cachedElementBindings = map(elementBindings, function (method, key) {
                     var object = makeDelegateEventKeys(view.cid, directive.uiBindings, key),
-                        bound = object.fn = bind(view[method] || method, view);
+                        bound = object.fn = bind(isString(method) ? view[method] : method, view);
                     __events.push(object);
-                    el.on(object.events.join(SPACE), object[SELECTOR], bound);
+                    el.on(object.events, object[SELECTOR], bound, object.capture, object.group);
                 });
                 directive.cachedElementBindings = __events;
                 return directive;
@@ -157,7 +142,7 @@ app.scope(function (app) {
                 each(elementTriggers, function (method, key) {
                     var object = makeDelegateEventKeys(view.cid, directive.uiBindings, key),
                         bound = object.fn = basicViewTrigger.bind(view, method);
-                    el.on(object.events.join(SPACE), object[SELECTOR], bound);
+                    el.on(object.events, object[SELECTOR], bound, object.capture, object.group);
                 });
                 directive.cachedElementTriggers = __events;
             },

@@ -250,13 +250,13 @@ application.scope().run(function (app, _, factories) {
             });
             _.describe('also capture handlers', function () {
                 _.it('one at a time', function () {
-                    divs.on('_click', handler);
+                    divs.on('click', handler, true);
                     _.expect(count).toEqual(0);
                     divs.dispatchEvent('click', {}, true);
                     _.expect(count).toEqual(5);
                 });
                 _.it('many at a time', function () {
-                    divs.on('_click _mouseover _mouseout', handler);
+                    divs.on('click mouseover mouseout', handler, true);
                     _.expect(count).toEqual(0);
                     divs.dispatchEvent('click', {}, true);
                     divs.dispatchEvent('mouseover', {}, true);

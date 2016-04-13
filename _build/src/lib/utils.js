@@ -630,6 +630,10 @@ var factories = {},
     constructorExtend = function (name, protoProps, attach) {
         var nameString, child, passedParent, hasConstructor, constructor, parent = this,
             nameIsStr = isString(name);
+        if (name === BOOLEAN_FALSE) {
+            extend(parent[PROTOTYPE], protoProps);
+            return parent;
+        }
         if (!nameIsStr) {
             protoProps = name;
         }

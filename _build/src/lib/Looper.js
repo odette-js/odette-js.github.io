@@ -8,6 +8,10 @@ app.scope(function (app) {
         nowish = _.now,
         gapSplit = _.gapSplit,
         vendors = gapSplit('ms moz webkit o'),
+        RUNNING = 'running',
+        HALTED = 'halted',
+        STOPPED = 'stopped',
+        DESTROYED = 'destroyed',
         TIMEOUT = 'Timeout',
         SET_TIMEOUT = 'set' + TIMEOUT,
         CLEAR_TIMEOUT = 'clear' + TIMEOUT,
@@ -49,7 +53,7 @@ app.scope(function (app) {
         },
         teardown = function () {
             duffRight(runningLoopers, function (looper, idx) {
-                if (looper.halted() || looper.stopped() || looper.destroyed() || !looper.length()) {
+                if (looper.is(HALTED) || looper.is(STOPPED) || looper.is(DESTROYED) || !looper.length()) {
                     looper.stop();
                     runningLoopers.splice(idx, 1);
                 }
@@ -92,147 +96,115 @@ app.scope(function (app) {
                 };
             }
         }()),
-        Looper = factories.Looper = factories.Directive.extend('Looper', {
+        LOOPER = 'Looper',
+        Collection = factories.Collection,
+        Looper = factories[LOOPER] = Collection.extend(LOOPER, {
             constructor: function (_runner) {
-                var fns, stopped = BOOLEAN_TRUE,
-                    halted = BOOLEAN_FALSE,
-                    destroyed = BOOLEAN_FALSE,
-                    running = BOOLEAN_FALSE,
-                    looper = this,
-                    counter = 0,
-                    fnList = [],
-                    addList = [],
-                    removeList = [],
-                    combineAdd = function () {
-                        if (addList[LENGTH]) {
-                            fnList = fnList.concat(addList);
-                            addList = [];
-                        }
-                    };
-                // keeps things private
-                extend(looper, {
-                    length: function () {
-                        return fnList[LENGTH];
-                    },
-                    destroy: function () {
-                        destroyed = BOOLEAN_TRUE;
-                        // remove(allLoopers, this);
-                        return this.halt();
-                    },
-                    destroyed: function () {
-                        return destroyed;
-                    },
-                    running: function () {
-                        // actual object that is currently being run
-                        return !!running;
-                    },
-                    started: function () {
-                        return !stopped;
-                    },
-                    run: function (_nowish) {
-                        var tween = this,
-                            removeLater = [];
-                        if (halted || stopped) {
-                            return;
-                        }
-                        combineAdd();
-                        duff(fnList, function (fnObj) {
-                            if (indexOf(removeList, fnObj) !== -1) {
-                                removeLater.push(fnObj);
-                            } else {
-                                if (fnObj.disabled || halted) {
-                                    return;
-                                }
-                                running = fnObj;
-                                wraptry(function () {
-                                    fnObj.fn(_nowish);
-                                }, function () {
-                                    tween.remove(fnObj.id);
-                                });
-                            }
-                        });
-                        running = BOOLEAN_FALSE;
-                        combineAdd();
-                        duff(removeList.concat(removeLater), function (item) {
-                            remove(fnList, item);
-                        });
-                        removeList = [];
-                    },
-                    remove: function (id) {
-                        var fnObj, i = 0,
-                            ret = BOOLEAN_FALSE;
-                        if (!arguments[LENGTH]) {
-                            if (running) {
-                                removeList.push(running);
-                                return BOOLEAN_TRUE;
-                            }
-                        }
-                        if (isNumber(id)) {
-                            for (; i < fnList[LENGTH] && !ret; i++) {
-                                fnObj = fnList[i];
-                                if (fnObj.id === id) {
-                                    if (indexOf(removeList, fnObj) !== -1) {
-                                        removeList.push(fnObj);
-                                        ret = BOOLEAN_TRUE;
-                                    }
-                                }
-                            }
-                        }
-                        return !!ret;
-                    },
-                    stop: function () {
-                        stopped = BOOLEAN_TRUE;
-                        return this;
-                    },
-                    start: function () {
-                        var looper = this;
-                        stopped = BOOLEAN_FALSE;
-                        halted = BOOLEAN_FALSE;
-                        return looper;
-                    },
-                    halt: function () {
-                        halted = BOOLEAN_TRUE;
-                        return this.stop();
-                    },
-                    halted: function () {
-                        return halted;
-                    },
-                    stopped: function () {
-                        return stopped;
-                    },
-                    reset: function () {
-                        fnList = [];
-                        removeList = [];
-                        addList = [];
-                        return this;
-                    },
-                    add: function (fn) {
-                        var obj, id = counter,
-                            tween = this;
-                        if (!isFunction(fn)) {
-                            return;
-                        }
-                        if (!fnList[LENGTH]) {
-                            tween.start();
-                        }
-                        start(tween);
-                        obj = {
-                            fn: tween.bind(fn),
-                            id: id,
-                            disabled: BOOLEAN_FALSE,
-                            bound: tween
-                        };
-                        if (tween.running()) {
-                            addList.push(obj);
-                        } else {
-                            fnList.push(obj);
-                        }
-                        counter++;
-                        return id;
-                    }
-                });
+                var looper = this;
+                looper.mark(STOPPED);
+                looper.unmark(HALTED);
+                looper.unmark(DESTROYED);
+                looper.unmark(RUNNING);
+                Collection[CONSTRUCTOR].call(looper);
+                looper.removable = factories.List();
                 add(looper);
                 return looper;
+            },
+            destroy: function () {
+                this.mark(DESTROYED);
+                return this.halt();
+            },
+            run: function (_nowish) {
+                var tween = this;
+                if (tween.is(HALTED) || tween.is(STOPPED)) {
+                    return;
+                }
+                tween.find(function (obj) {
+                    tween.current = obj;
+                    if (obj.disabled) {
+                        tween.queueRemoval(obj);
+                        return;
+                    }
+                    if (tween.is(HALTED)) {
+                        return BOOLEAN_TRUE;
+                    }
+                    wraptry(function () {
+                        obj.fn(_nowish);
+                    }, function () {
+                        tween.queueRemoval(obj);
+                    });
+                });
+                tween.current = NULL;
+                tween.unmark(RUNNING);
+                tween.removable.each(passesFirstArgument(bind(tween.remove, tween))).reset();
+            },
+            queueRemoval: function (obj) {
+                var tween = this;
+                obj.disabled = BOOLEAN_TRUE;
+                if (tween.current) {
+                    tween.removable.push(obj);
+                } else {
+                    tween.unqueue(obj);
+                }
+            },
+            dequeue: function (id_) {
+                var fnObj, found, i = 0,
+                    tween = this,
+                    id = id_,
+                    ret = BOOLEAN_FALSE;
+                if (!arguments[LENGTH] && tween.current) {
+                    tween.queueRemoval(tween.current);
+                    return BOOLEAN_TRUE;
+                }
+                if (isObject(id)) {
+                    return tween.queueRemoval(id);
+                }
+                if (!isNumber(id)) {
+                    return BOOLEAN_FALSE;
+                }
+                id = tween.findWhere({
+                    id: id
+                });
+                if (tween.current) {
+                    return tween.queueRemoval(id);
+                } else {
+                    return tween.unqueue(id);
+                }
+            },
+            stop: function () {
+                this.mark(STOPPED);
+                return this;
+            },
+            start: function () {
+                var looper = this;
+                if (looper.is(STOPPED)) {
+                    looper.unmark(STOPPED);
+                    looper.unmark(HALTED);
+                }
+                return looper;
+            },
+            halt: function () {
+                this.mark(HALTED);
+                return this.stop();
+            },
+            queue: function (fn) {
+                var obj, id = uniqueId(BOOLEAN_FALSE),
+                    tween = this;
+                if (!isFunction(fn)) {
+                    return;
+                }
+                if (!tween[LENGTH]()) {
+                    tween.start();
+                }
+                start(tween);
+                obj = {
+                    fn: tween.bind(fn),
+                    id: id,
+                    disabled: BOOLEAN_FALSE,
+                    bound: tween
+                };
+                tween.push(obj);
+                return id;
             },
             bind: function (fn) {
                 return bind(fn, this);
@@ -254,11 +226,11 @@ app.scope(function (app) {
                 if (times < 1 || !isNumber(times)) {
                     times = 1;
                 }
-                return this.add(function (ms) {
+                return this.queue(function (ms) {
                     var last = 1;
                     count++;
                     if (count >= times) {
-                        this.remove();
+                        this.unqueue();
                         last = 0;
                     }
                     fn(ms, !last, count);
@@ -279,7 +251,7 @@ app.scope(function (app) {
                         diff = ms - added;
                     if (diff >= time_) {
                         tween = 0;
-                        this.remove();
+                        this.unqueue();
                     }
                     fn(ms, Math.min(1, (diff / time_)), !tween);
                 });
@@ -291,7 +263,7 @@ app.scope(function (app) {
                 }
                 fn = this.bind(fn_);
                 return this.interval(time(time_), function (ms) {
-                    this.remove();
+                    this.unqueue();
                     fn(ms);
                 });
             },
@@ -306,7 +278,7 @@ app.scope(function (app) {
                     return tween;
                 }
                 fn = tween.bind(fn_);
-                return tween.add(function (ms) {
+                return tween.queue(function (ms) {
                     var frameRate = 1000 / (ms - lastDate);
                     if (frameRate > 40) {
                         expectedFrameRate = 60 * minimum;
@@ -315,7 +287,7 @@ app.scope(function (app) {
                         lastSkip = ms;
                     }
                     if (ms - lastSkip > time_) {
-                        tween.remove();
+                        tween.unqueue();
                         fn(ms);
                     }
                     lastDate = ms;
@@ -331,16 +303,19 @@ app.scope(function (app) {
                     time = 0;
                 }
                 fn = tweener.bind(fn_);
-                return tweener.add(function (ms) {
+                return tweener.queue(function (ms) {
                     if (ms - time >= last) {
                         last = ms;
                         fn(ms);
                     }
                 });
             }
+        }),
+        Scheduler = factories.Scheduler = factories.Directive.extend('Scheduler', {
+            //
         });
     Looper.playWhileBlurred = BOOLEAN_TRUE;
-    app.undefine(function () {});
+    app.defineDirective('Scheduler', Scheduler[CONSTRUCTOR]);
     _.exports({
         AF: Looper()
     });

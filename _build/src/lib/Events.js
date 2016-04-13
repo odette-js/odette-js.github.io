@@ -8,14 +8,17 @@ var DISPATCH_EVENT = 'dispatchEvent',
     STATE = 'state',
     HANDLERS = 'handlers';
 app.scope(function (app) {
-    var iterateOverList = function (eventer, directive, names, handler, args, iterator) {
-            // only accepts a string or a function
+    var methodExchange = function (eventer, handler) {
             var fn = isString(handler) ? eventer[handler] : handler,
                 valid = !isFunction(fn) && exception({
                     message: 'handler must be a function or a string with a method on the originating object'
                 });
+            return fn;
+        },
+        iterateOverList = function (eventer, directive, names, handler, args, iterator) {
+            // only accepts a string or a function
             return duff(gapSplit(names), function (eventName) {
-                iterator(eventer, directive, directive.make(eventName, fn, eventer), args);
+                iterator(eventer, directive, directive.make(eventName, handler, eventer), args);
             });
         },
         flattenMatrix = function (iterator, _nameOrObjectIndex, expects, fills) {
@@ -119,9 +122,10 @@ app.scope(function (app) {
                 return fn.apply(this, arguments);
             });
         },
-        attachEventObject = function (eventer, directive, event, args, modifier) {
-            event.context = event.context || args[2];
-            directive.attach(event.name, event, modifier);
+        attachEventObject = function (eventer, directive, evnt, args, modifier) {
+            evnt.context = evnt.context || args[2];
+            evnt.handler = methodExchange(eventer, evnt.handler);
+            directive.attach(evnt.name, evnt, modifier);
         },
         onceHandler = function (eventer, directive, obj, args) {
             attachEventObject(eventer, directive, obj, args, onceModification);
@@ -156,10 +160,11 @@ app.scope(function (app) {
             };
             return listening;
         },
-        listenToHandler = function (eventer, directive, obj, list, modifier) {
+        listenToHandler = function (eventer, directive, evnt, list, modifier) {
             var target = list[0];
-            var targetDirective = listenToModifier(eventer, directive, obj, target);
-            attachEventObject(target, targetDirective, obj, list.slice(1), modifier);
+            var targetDirective = listenToModifier(eventer, directive, evnt, target);
+            evnt.handler = methodExchange(eventer, evnt.handler);
+            attachEventObject(target, targetDirective, evnt, list.slice(1), modifier);
         },
         listenToOnceHandler = function (eventer, directive, obj, list) {
             listenToHandler(eventer, directive, obj, list, onceModification);
@@ -295,26 +300,7 @@ app.scope(function (app) {
                 }
                 evnt = eventsDirective.create(eventer, data, name, options);
                 returnValue = eventsDirective.dispatch(name, evnt);
-                // bus = eventsDirective.proxyStack;
-                // if (!bus[LENGTH]()) {
                 return returnValue;
-                // }
-                // bus.each(function (row) {
-                //     if (row.disabled) {
-                //         return;
-                //     }
-                //     row.fn(name, evnt);
-                // }, NULL);
-                // if (!bus.is('dirty')) {
-                //     return returnValue;
-                // }
-                // bus.obliteration(function (handler, index) {
-                //     if (!handler.disabled) {
-                //         return;
-                //     }
-                //     bus.remove(handler.id, index - 1);
-                // }, NULL);
-                // return returnValue;
             }
         });
 });
