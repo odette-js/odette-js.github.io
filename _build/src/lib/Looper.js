@@ -30,9 +30,11 @@ app.scope(function (app) {
             if (focused) {
                 lastAFId = win[REQUEST_ANIMATION_FRAME](handler);
             } else {
+                win[CLEAR_TIMEOUT](lastTId);
                 lastTId = win.setTimeout(handler, nextFrame);
             }
             if (Looper.playWhileBlurred) {
+                win[CLEAR_TIMEOUT](lastOverrideId);
                 lastOverrideId = win.setTimeout(function () {
                     focused = BOOLEAN_FALSE;
                     handler();
@@ -40,11 +42,15 @@ app.scope(function (app) {
             }
         },
         basicHandler = function () {
+            // snapshot the time
+            frameTime = _.now();
+            // clear all the things
             win[CANCEL_ANIMATION_FRAME](lastAFId);
             win[CLEAR_TIMEOUT](lastTId);
             win[CLEAR_TIMEOUT](lastOverrideId);
-            frameTime = _.now();
+            // run the handlers
             eachCall(runningLoopers, 'run', frameTime);
+            // do it all over again
             teardown();
         },
         setup = function () {
@@ -53,7 +59,7 @@ app.scope(function (app) {
         },
         teardown = function () {
             duffRight(runningLoopers, function (looper, idx) {
-                if (looper.is(HALTED) || looper.is(STOPPED) || looper.is(DESTROYED) || !looper.length()) {
+                if (looper.is(HALTED) || looper.is(STOPPED) || looper.is(DESTROYED) || !looper[LENGTH]()) {
                     looper.stop();
                     runningLoopers.splice(idx, 1);
                 }
@@ -67,7 +73,7 @@ app.scope(function (app) {
             allLoopers.push(looper);
         },
         start = function (looper) {
-            if (indexOf(runningLoopers, looper) === -1) {
+            if (!has(runningLoopers, looper)) {
                 runningLoopers.push(looper);
             }
             if (!running) {
@@ -106,7 +112,6 @@ app.scope(function (app) {
                 looper.unmark(DESTROYED);
                 looper.unmark(RUNNING);
                 Collection[CONSTRUCTOR].call(looper);
-                looper.removable = factories.List();
                 add(looper);
                 return looper;
             },
@@ -116,59 +121,50 @@ app.scope(function (app) {
             },
             run: function (_nowish) {
                 var tween = this;
-                if (tween.is(HALTED) || tween.is(STOPPED)) {
+                if (tween.is(HALTED) || tween.is(STOPPED) || !tween.length()) {
                     return;
                 }
-                tween.find(function (obj) {
+                var sliced = factories.List(tween.unwrap().slice(0));
+                sliced.find(function (obj) {
                     tween.current = obj;
                     if (obj.disabled) {
-                        tween.queueRemoval(obj);
+                        tween.dequeue(obj.id);
                         return;
                     }
                     if (tween.is(HALTED)) {
+                        // stops early
                         return BOOLEAN_TRUE;
                     }
                     wraptry(function () {
                         obj.fn(_nowish);
-                    }, function () {
-                        tween.queueRemoval(obj);
+                    }, function (e) {
+                        console.log(e);
+                        tween.dequeue(obj.id);
                     });
                 });
                 tween.current = NULL;
                 tween.unmark(RUNNING);
-                tween.removable.each(passesFirstArgument(bind(tween.remove, tween))).reset();
-            },
-            queueRemoval: function (obj) {
-                var tween = this;
-                obj.disabled = BOOLEAN_TRUE;
-                if (tween.current) {
-                    tween.removable.push(obj);
-                } else {
-                    tween.unqueue(obj);
-                }
+                // tween.reset();
             },
             dequeue: function (id_) {
                 var fnObj, found, i = 0,
                     tween = this,
                     id = id_,
                     ret = BOOLEAN_FALSE;
-                if (!arguments[LENGTH] && tween.current) {
-                    tween.queueRemoval(tween.current);
-                    return BOOLEAN_TRUE;
-                }
-                if (isObject(id)) {
-                    return tween.queueRemoval(id);
+                if (id === UNDEFINED && !arguments[LENGTH]) {
+                    if (tween.current) {
+                        tween.unRegister(ID, tween.current.id);
+                        id = tween.remove(tween.current);
+                    }
+                    return !!id;
                 }
                 if (!isNumber(id)) {
                     return BOOLEAN_FALSE;
                 }
-                id = tween.findWhere({
-                    id: id
-                });
-                if (tween.current) {
-                    return tween.queueRemoval(id);
-                } else {
-                    return tween.unqueue(id);
+                found = tween.get(ID, id);
+                if (found) {
+                    tween.unRegister(ID, id);
+                    return tween.remove(found);
                 }
             },
             stop: function () {
@@ -196,7 +192,6 @@ app.scope(function (app) {
                 if (!tween[LENGTH]()) {
                     tween.start();
                 }
-                start(tween);
                 obj = {
                     fn: tween.bind(fn),
                     id: id,
@@ -204,6 +199,8 @@ app.scope(function (app) {
                     bound: tween
                 };
                 tween.push(obj);
+                tween.register(ID, obj.id, obj);
+                start(tween);
                 return id;
             },
             bind: function (fn) {
@@ -230,7 +227,7 @@ app.scope(function (app) {
                     var last = 1;
                     count++;
                     if (count >= times) {
-                        this.unqueue();
+                        this.dequeue();
                         last = 0;
                     }
                     fn(ms, !last, count);
@@ -251,7 +248,7 @@ app.scope(function (app) {
                         diff = ms - added;
                     if (diff >= time_) {
                         tween = 0;
-                        this.unqueue();
+                        this.dequeue();
                     }
                     fn(ms, Math.min(1, (diff / time_)), !tween);
                 });
@@ -263,7 +260,7 @@ app.scope(function (app) {
                 }
                 fn = this.bind(fn_);
                 return this.interval(time(time_), function (ms) {
-                    this.unqueue();
+                    this.dequeue();
                     fn(ms);
                 });
             },
@@ -287,7 +284,7 @@ app.scope(function (app) {
                         lastSkip = ms;
                     }
                     if (ms - lastSkip > time_) {
-                        tween.unqueue();
+                        tween.dequeue();
                         fn(ms);
                     }
                     lastDate = ms;

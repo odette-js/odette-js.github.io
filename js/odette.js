@@ -514,29 +514,23 @@ var factories = {},
         }
         // normalize sort function handling for safari
         return obj.sort(function (a, b) {
-            var result = fn(a, b),
-                numericResult = +result;
-            if (numericResult == NULL) {
-                numericResult = 0;
+            var result = fn(a, b);
+            if (isNaN(result)) {
+                result = INFINITY;
             }
-            if (isNaN(numericResult)) {
-                numericResult = 0;
+            if (result === BOOLEAN_TRUE) {
+                result = 1;
             }
-            if (numericResult > 1) {
-                numericResult = 1;
+            if (result === BOOLEAN_FALSE) {
+                result = 0;
             }
-            if (result === BOOLEAN_FALSE || numericResult < -1) {
-                numericResult = -1;
-            }
-            return reversed ? numericResult * -1 : numericResult;
+            return reversed ? result * -1 : result;
         });
     },
-    returnsFirstArgument = function (value) {
-        return value;
-    },
     normalizeToFunction = function (value, context, argCount) {
-        if (value == NULL) return returnsFirstArgument;
+        if (value == NULL) return returns.first;
         if (isFunction(value)) return bind(value, context);
+        // has not been created yet
         if (isObject(value)) return _.matcher(value);
         return property(value);
     },
@@ -563,8 +557,11 @@ var factories = {},
     /**
      * @func
      */
-    has = function (obj, prop) {
+    has = function (obj, prop, useArrayCheck) {
         var val = BOOLEAN_FALSE;
+        if (useArrayCheck) {
+            return indexOf(obj, prop) !== -1;
+        }
         if (obj && isFunction(obj.hasOwnProperty)) {
             val = obj.hasOwnProperty(prop);
         }
@@ -1727,6 +1724,9 @@ var factories = {},
         return function () {
             return thing;
         };
+    },
+    returnsFirstArgument = returns.first = function (value) {
+        return value;
     },
     flow = function (bool, list_) {
         var list = bool === BOOLEAN_TRUE ? list_ : arguments,
@@ -2919,21 +2919,31 @@ app.scope(function (app) {
         },
         wrappedListMethods = extend({
             seeker: function (handler, context) {
-                return _.duffRight(this.items, handler, context);
+                var list = this,
+                    bound = bind(handler, context);
+                return _.duffRight(list.unwrap(), function (one, two, three) {
+                    if (bound(one, two, three)) {
+                        list.removeAt(two);
+                    }
+                });
+            },
+            slice: function (one, two) {
+                return new List(this.unwrap().slice(one, two));
             }
         }, wrap(joinHandlers, function (name) {
             return function (arg) {
-                return this.items[name](arg);
+                return this.unwrap()[name](arg);
             };
         }), wrap(indexers.concat(abstractedCanModify), function (name) {
             return function (one, two, three, four, five) {
                 var list = this;
-                return _[name](list.items, one, two, three, four, five);
+                return _[name](list.unwrap(), one, two, three, four, five);
             };
         }), wrap(splatHandlers, function (name) {
             return function (args_) {
-                var args = isArray(args_) ? args_ : arguments;
-                return this.items[name].apply(this.items, args);
+                var args = isArray(args_) ? args_ : arguments,
+                    items = this.unwrap();
+                return items[name].apply(items, args);
             };
         }), wrap(nativeCannotModify, function (name) {
             return function (one, two, three, four, five, six) {
@@ -2941,7 +2951,7 @@ app.scope(function (app) {
                 if (list.iterating) {
                     return exception(cannotModifyMessage);
                 }
-                return list.items[name](one, two, three, four, five, six);
+                return list.unwrap()[name](one, two, three, four, five, six);
             };
         }), wrap(abstractedCannotModify, function (name) {
             return function (one, two, three, four, five) {
@@ -2949,18 +2959,18 @@ app.scope(function (app) {
                 if (list.iterating) {
                     return exception(cannotModifyMessage);
                 }
-                return _[name](list.items, one, two, three, four, five);
+                return _[name](list.unwrap(), one, two, three, four, five);
             };
         }), wrap(reverseList, function (name) {
             return function () {
                 var list = this;
                 list.directive('StatusManager').toggle(REVERSED);
-                list.items[name]();
+                list.unwrap()[name]();
                 return list;
             };
         }), wrap(eachHandlers, function (fn) {
             return marksIterating(function (list, handler, context) {
-                var args0 = list.items,
+                var args0 = list.unwrap(),
                     args1 = handler,
                     args2 = arguments[LENGTH] > 1 ? context : list;
                 fn(args0, args1, args2);
@@ -2968,16 +2978,16 @@ app.scope(function (app) {
             });
         }), wrap(countingList, function (name) {
             return marksIterating(function (list, runner, fromHere, toThere) {
-                _[name](list.items, runner, list, fromHere, toThere);
+                _[name](list.unwrap(), runner, list, fromHere, toThere);
                 return list;
             });
         }), wrap(recreatingSelfList, function (name) {
             return marksIterating(function (list, one, two, three) {
-                return new List[CONSTRUCTOR](_[name](list.items, one, two, three));
+                return new List[CONSTRUCTOR](_[name](list.unwrap(), one, two, three));
             });
         }), wrap(foldFindIteration, function (name) {
             return marksIterating(function (list, one, two, three) {
-                return _[name](list.items, one, two, three);
+                return _[name](list.unwrap(), one, two, three);
             });
         })),
         ret = _.exports({
@@ -3022,18 +3032,19 @@ app.scope(function (app) {
                 return this;
             },
             obliteration: function (handler, context) {
-                duffRight(this.items, handler, context === UNDEFINED ? this : context);
+                duffRight(this.unwrap(), handler, context === UNDEFINED ? this : context);
                 return this;
             },
+            // good for overwriting and extending
             empty: function () {
                 return this.reset();
             },
             reset: function (items) {
                 // can be array like
                 var list = this,
-                    old = list.items || [];
+                    old = list.unwrap() || [];
                 list.iterating = list.iterating ? exception(cannotModifyMessage) : 0;
-                list.items = items == NULL ? [] : (isArrayLike(items) ? toArray(items) : [items]);
+                list.items = items == NULL ? [] : (List.isInstance(items) ? items.unwrap().slice(0) : toArray(items));
                 list.unmark(REVERSED);
                 return list;
             },
@@ -3041,16 +3052,17 @@ app.scope(function (app) {
                 return this.items;
             },
             length: function () {
-                return this.items.length;
+                return this.unwrap()[LENGTH];
             },
             first: function () {
-                return this.items[0];
+                return this.unwrap()[0];
             },
             last: function () {
-                return this.items[this.items.length - 1];
+                var items = this.unwrap();
+                return items[items[LENGTH] - 1];
             },
             index: function (number) {
-                return this.items[number || 0];
+                return this.unwrap()[number || 0];
             },
             has: function (object) {
                 return this.indexOf(object) !== -1;
@@ -3058,14 +3070,14 @@ app.scope(function (app) {
             sort: function (fn_) {
                 // normalization sort function for cross browsers
                 var list = this;
-                sort(list.items, fn_, list.is(REVERSED), list);
+                sort(list.unwrap(), fn_, list.is(REVERSED), list);
                 return list;
             },
             toString: function () {
-                return stringify(this.items);
+                return stringify(this.unwrap());
             },
             toJSON: function () {
-                return map(this.items, function (item) {
+                return map(this.unwrap(), function (item) {
                     return result(item, TO_JSON);
                 });
             },
@@ -3116,7 +3128,9 @@ app.scope(function (app) {
                 var sorted = this;
                 sort(sorted.unwrap(), sorted.is(REVERSED) ? function (a, b) {
                     return a < b;
-                } : NULL, BOOLEAN_FALSE, sorted);
+                } : function (a, b) {
+                    return a > b;
+                }, BOOLEAN_FALSE, sorted);
                 return sorted;
             },
             reverse: function () {
@@ -6800,7 +6814,6 @@ app.scope(function (app) {
             if (manager.is(CUSTOM) && !isCustomValue) {
                 isCustomValue = BOOLEAN_TRUE;
             }
-            // isCustomValue = isCustomValue || BOOLEAN_TRUE;
             resultant = manager.isElement && writeAttribute(manager.element(), CUSTOM_KEY, isCustomValue);
             if (isCustomValue) {
                 manager.registeredAs = isCustomValue;
@@ -7443,7 +7456,7 @@ app.scope(function (app) {
                     }
                 }
                 duff(evnt.nameStack, function (name) {
-                    evnt.fn = (customEvents[name] || returnsFirstArgument)(evnt.fn, name, evnt) || evnt.fn;
+                    evnt.fn = (customEvents[name] || returns.first)(evnt.fn, name, evnt) || evnt.fn;
                 });
                 if (eventHandler) {
                     el = evnt.origin.element();
@@ -8671,9 +8684,11 @@ app.scope(function (app) {
             if (focused) {
                 lastAFId = win[REQUEST_ANIMATION_FRAME](handler);
             } else {
+                win[CLEAR_TIMEOUT](lastTId);
                 lastTId = win.setTimeout(handler, nextFrame);
             }
             if (Looper.playWhileBlurred) {
+                win[CLEAR_TIMEOUT](lastOverrideId);
                 lastOverrideId = win.setTimeout(function () {
                     focused = BOOLEAN_FALSE;
                     handler();
@@ -8681,11 +8696,15 @@ app.scope(function (app) {
             }
         },
         basicHandler = function () {
+            // snapshot the time
+            frameTime = _.now();
+            // clear all the things
             win[CANCEL_ANIMATION_FRAME](lastAFId);
             win[CLEAR_TIMEOUT](lastTId);
             win[CLEAR_TIMEOUT](lastOverrideId);
-            frameTime = _.now();
+            // run the handlers
             eachCall(runningLoopers, 'run', frameTime);
+            // do it all over again
             teardown();
         },
         setup = function () {
@@ -8694,7 +8713,7 @@ app.scope(function (app) {
         },
         teardown = function () {
             duffRight(runningLoopers, function (looper, idx) {
-                if (looper.is(HALTED) || looper.is(STOPPED) || looper.is(DESTROYED) || !looper.length()) {
+                if (looper.is(HALTED) || looper.is(STOPPED) || looper.is(DESTROYED) || !looper[LENGTH]()) {
                     looper.stop();
                     runningLoopers.splice(idx, 1);
                 }
@@ -8708,7 +8727,7 @@ app.scope(function (app) {
             allLoopers.push(looper);
         },
         start = function (looper) {
-            if (indexOf(runningLoopers, looper) === -1) {
+            if (!has(runningLoopers, looper)) {
                 runningLoopers.push(looper);
             }
             if (!running) {
@@ -8747,7 +8766,6 @@ app.scope(function (app) {
                 looper.unmark(DESTROYED);
                 looper.unmark(RUNNING);
                 Collection[CONSTRUCTOR].call(looper);
-                looper.removable = factories.List();
                 add(looper);
                 return looper;
             },
@@ -8757,59 +8775,50 @@ app.scope(function (app) {
             },
             run: function (_nowish) {
                 var tween = this;
-                if (tween.is(HALTED) || tween.is(STOPPED)) {
+                if (tween.is(HALTED) || tween.is(STOPPED) || !tween.length()) {
                     return;
                 }
-                tween.find(function (obj) {
+                var sliced = factories.List(tween.unwrap().slice(0));
+                sliced.find(function (obj) {
                     tween.current = obj;
                     if (obj.disabled) {
-                        tween.queueRemoval(obj);
+                        tween.dequeue(obj.id);
                         return;
                     }
                     if (tween.is(HALTED)) {
+                        // stops early
                         return BOOLEAN_TRUE;
                     }
                     wraptry(function () {
                         obj.fn(_nowish);
-                    }, function () {
-                        tween.queueRemoval(obj);
+                    }, function (e) {
+                        console.log(e);
+                        tween.dequeue(obj.id);
                     });
                 });
                 tween.current = NULL;
                 tween.unmark(RUNNING);
-                tween.removable.each(passesFirstArgument(bind(tween.remove, tween))).reset();
-            },
-            queueRemoval: function (obj) {
-                var tween = this;
-                obj.disabled = BOOLEAN_TRUE;
-                if (tween.current) {
-                    tween.removable.push(obj);
-                } else {
-                    tween.unqueue(obj);
-                }
+                // tween.reset();
             },
             dequeue: function (id_) {
                 var fnObj, found, i = 0,
                     tween = this,
                     id = id_,
                     ret = BOOLEAN_FALSE;
-                if (!arguments[LENGTH] && tween.current) {
-                    tween.queueRemoval(tween.current);
-                    return BOOLEAN_TRUE;
-                }
-                if (isObject(id)) {
-                    return tween.queueRemoval(id);
+                if (id === UNDEFINED && !arguments[LENGTH]) {
+                    if (tween.current) {
+                        tween.unRegister(ID, tween.current.id);
+                        id = tween.remove(tween.current);
+                    }
+                    return !!id;
                 }
                 if (!isNumber(id)) {
                     return BOOLEAN_FALSE;
                 }
-                id = tween.findWhere({
-                    id: id
-                });
-                if (tween.current) {
-                    return tween.queueRemoval(id);
-                } else {
-                    return tween.unqueue(id);
+                found = tween.get(ID, id);
+                if (found) {
+                    tween.unRegister(ID, id);
+                    return tween.remove(found);
                 }
             },
             stop: function () {
@@ -8837,7 +8846,6 @@ app.scope(function (app) {
                 if (!tween[LENGTH]()) {
                     tween.start();
                 }
-                start(tween);
                 obj = {
                     fn: tween.bind(fn),
                     id: id,
@@ -8845,6 +8853,8 @@ app.scope(function (app) {
                     bound: tween
                 };
                 tween.push(obj);
+                tween.register(ID, obj.id, obj);
+                start(tween);
                 return id;
             },
             bind: function (fn) {
@@ -8871,7 +8881,7 @@ app.scope(function (app) {
                     var last = 1;
                     count++;
                     if (count >= times) {
-                        this.unqueue();
+                        this.dequeue();
                         last = 0;
                     }
                     fn(ms, !last, count);
@@ -8892,7 +8902,7 @@ app.scope(function (app) {
                         diff = ms - added;
                     if (diff >= time_) {
                         tween = 0;
-                        this.unqueue();
+                        this.dequeue();
                     }
                     fn(ms, Math.min(1, (diff / time_)), !tween);
                 });
@@ -8904,7 +8914,7 @@ app.scope(function (app) {
                 }
                 fn = this.bind(fn_);
                 return this.interval(time(time_), function (ms) {
-                    this.unqueue();
+                    this.dequeue();
                     fn(ms);
                 });
             },
@@ -8928,7 +8938,7 @@ app.scope(function (app) {
                         lastSkip = ms;
                     }
                     if (ms - lastSkip > time_) {
-                        tween.unqueue();
+                        tween.dequeue();
                         fn(ms);
                     }
                     lastDate = ms;
@@ -10029,7 +10039,7 @@ app.scope(function (app) {
 });
 
 application.scope().run(function (app, _, factories) {
-    var currentTest, current, pollerTimeout, failedTests = 0,
+    var current, pollerTimeout, failedTests = 0,
         testisrunning = BOOLEAN_FALSE,
         EXPECTED = 'expected',
         SPACE_NOT = ' not',
@@ -10037,7 +10047,6 @@ application.scope().run(function (app, _, factories) {
         AN_ERROR = ' an error',
         TO_BE_THROWN = ' to be thrown',
         TO_BE_STRICTLY_EQUAL_STRING = ' to be strictly equal to ',
-        console = _.console,
         stringify = _.stringify,
         negate = _.negate,
         allIts = [],
@@ -10054,8 +10063,8 @@ application.scope().run(function (app, _, factories) {
         globalAfterEachStack = [],
         errIfFalse = function (handler, makemessage) {
             return function (arg) {
-                var err, expectation = {};
-                if (handler.call(this, current, arg)) {
+                var result, expectation = {};
+                if ((result = handler(current, arg))) {
                     successfulExpectations.push(expectation);
                 } else {
                     ++failedTests;
@@ -10064,7 +10073,7 @@ application.scope().run(function (app, _, factories) {
                     failedExpectations.push(expectation);
                 }
                 allExpectations.push(expectation);
-                return this;
+                return result;
             };
         },
         expectationsHash = {
@@ -10080,7 +10089,7 @@ application.scope().run(function (app, _, factories) {
         },
         internalToThrowResult = maker('toThrow', function (handler) {
             var errRan = BOOLEAN_FALSE;
-            return _.wraptry(handler, function () {
+            return wraptry(handler, function () {
                 errRan = BOOLEAN_TRUE;
             }, function () {
                 return errRan;
@@ -10116,14 +10125,17 @@ application.scope().run(function (app, _, factories) {
             stack.pop();
             if (failedTests || expectation.erred) {
                 failedIts.push(expectation);
+                expectation.promise.reject(expectation.err);
             } else {
                 successfulIts.push(expectation);
+                expectation.promise.fulfill();
             }
             failedTests = 0;
             runningEach(expectation.afterStack);
             testisrunning = BOOLEAN_FALSE;
             if (queue[0]) {
                 queued = queue.shift();
+                clearTimeout(queued.runId);
                 setup(queued);
             }
             setupPoller();
@@ -10138,15 +10150,6 @@ application.scope().run(function (app, _, factories) {
                 stack.pop();
             });
         },
-        makesOwnCallback = function (handler) {
-            var stringHandler = handler.toString();
-            var split = stringHandler.split('(');
-            var shifted = split.shift();
-            var sliced = split.join('(');
-            split = sliced.split(')');
-            var target = split.shift();
-            return target.trim().length;
-        },
         timeoutErr = function (stack) {
             console.error('timeout:\n' + stack.join('\n'));
         },
@@ -10154,10 +10157,10 @@ application.scope().run(function (app, _, factories) {
             testisrunning = BOOLEAN_TRUE;
             expectation.runId = setTimeout(function () {
                 var errThat, doThis, errThis, err, finallyThis;
-                currentTest = expectation;
+                testisrunning = BOOLEAN_TRUE;
                 runningEach(expectation.beforeStack);
                 errThis = errHandler(expectation);
-                if (makesOwnCallback(expectation.handler)) {
+                if (expectation.handler[LENGTH] === 1) {
                     err = new Error();
                     expectation.timeoutId = setTimeout(function () {
                         console.error('timeout:\n' + expectation.current.join('\n'));
@@ -10175,7 +10178,7 @@ application.scope().run(function (app, _, factories) {
                         errThat(e);
                         executedone(expectation);
                     };
-                    finallyThis = _.noop;
+                    finallyThis = noop;
                 } else {
                     doThis = expectation.handler;
                     finallyThis = function () {
@@ -10183,7 +10186,7 @@ application.scope().run(function (app, _, factories) {
                     };
                 }
                 expectation.startTime = _.performance.now();
-                _.wraptry(doThis, errThis, finallyThis);
+                wraptry(doThis, errThis, finallyThis);
             });
         },
         it = function (string, handler) {
@@ -10195,8 +10198,9 @@ application.scope().run(function (app, _, factories) {
                 string: string,
                 handler: handler,
                 current: copy,
+                afterStack: globalAfterEachStack.slice(0),
                 beforeStack: globalBeforeEachStack.slice(0),
-                afterStack: globalAfterEachStack.slice(0)
+                promise: _.Promise()
             };
             allIts.push(expectation);
             if (testisrunning) {
@@ -10204,6 +10208,7 @@ application.scope().run(function (app, _, factories) {
                 return;
             }
             setup(expectation);
+            return expectation.promise;
         },
         runningEach = function (globalStack) {
             for (var i = 0; i < globalStack[LENGTH]; i++) {

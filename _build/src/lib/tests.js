@@ -1,5 +1,5 @@
 application.scope().run(function (app, _, factories) {
-    var currentTest, current, pollerTimeout, failedTests = 0,
+    var current, pollerTimeout, failedTests = 0,
         testisrunning = BOOLEAN_FALSE,
         EXPECTED = 'expected',
         SPACE_NOT = ' not',
@@ -7,7 +7,6 @@ application.scope().run(function (app, _, factories) {
         AN_ERROR = ' an error',
         TO_BE_THROWN = ' to be thrown',
         TO_BE_STRICTLY_EQUAL_STRING = ' to be strictly equal to ',
-        console = _.console,
         stringify = _.stringify,
         negate = _.negate,
         allIts = [],
@@ -24,8 +23,8 @@ application.scope().run(function (app, _, factories) {
         globalAfterEachStack = [],
         errIfFalse = function (handler, makemessage) {
             return function (arg) {
-                var err, expectation = {};
-                if (handler.call(this, current, arg)) {
+                var result, expectation = {};
+                if ((result = handler(current, arg))) {
                     successfulExpectations.push(expectation);
                 } else {
                     ++failedTests;
@@ -34,7 +33,7 @@ application.scope().run(function (app, _, factories) {
                     failedExpectations.push(expectation);
                 }
                 allExpectations.push(expectation);
-                return this;
+                return result;
             };
         },
         expectationsHash = {
@@ -50,7 +49,7 @@ application.scope().run(function (app, _, factories) {
         },
         internalToThrowResult = maker('toThrow', function (handler) {
             var errRan = BOOLEAN_FALSE;
-            return _.wraptry(handler, function () {
+            return wraptry(handler, function () {
                 errRan = BOOLEAN_TRUE;
             }, function () {
                 return errRan;
@@ -86,14 +85,17 @@ application.scope().run(function (app, _, factories) {
             stack.pop();
             if (failedTests || expectation.erred) {
                 failedIts.push(expectation);
+                expectation.promise.reject(expectation.err);
             } else {
                 successfulIts.push(expectation);
+                expectation.promise.fulfill();
             }
             failedTests = 0;
             runningEach(expectation.afterStack);
             testisrunning = BOOLEAN_FALSE;
             if (queue[0]) {
                 queued = queue.shift();
+                clearTimeout(queued.runId);
                 setup(queued);
             }
             setupPoller();
@@ -108,15 +110,6 @@ application.scope().run(function (app, _, factories) {
                 stack.pop();
             });
         },
-        makesOwnCallback = function (handler) {
-            var stringHandler = handler.toString();
-            var split = stringHandler.split('(');
-            var shifted = split.shift();
-            var sliced = split.join('(');
-            split = sliced.split(')');
-            var target = split.shift();
-            return target.trim().length;
-        },
         timeoutErr = function (stack) {
             console.error('timeout:\n' + stack.join('\n'));
         },
@@ -124,10 +117,10 @@ application.scope().run(function (app, _, factories) {
             testisrunning = BOOLEAN_TRUE;
             expectation.runId = setTimeout(function () {
                 var errThat, doThis, errThis, err, finallyThis;
-                currentTest = expectation;
+                testisrunning = BOOLEAN_TRUE;
                 runningEach(expectation.beforeStack);
                 errThis = errHandler(expectation);
-                if (makesOwnCallback(expectation.handler)) {
+                if (expectation.handler[LENGTH] === 1) {
                     err = new Error();
                     expectation.timeoutId = setTimeout(function () {
                         console.error('timeout:\n' + expectation.current.join('\n'));
@@ -145,7 +138,7 @@ application.scope().run(function (app, _, factories) {
                         errThat(e);
                         executedone(expectation);
                     };
-                    finallyThis = _.noop;
+                    finallyThis = noop;
                 } else {
                     doThis = expectation.handler;
                     finallyThis = function () {
@@ -153,7 +146,7 @@ application.scope().run(function (app, _, factories) {
                     };
                 }
                 expectation.startTime = _.performance.now();
-                _.wraptry(doThis, errThis, finallyThis);
+                wraptry(doThis, errThis, finallyThis);
             });
         },
         it = function (string, handler) {
@@ -165,8 +158,9 @@ application.scope().run(function (app, _, factories) {
                 string: string,
                 handler: handler,
                 current: copy,
+                afterStack: globalAfterEachStack.slice(0),
                 beforeStack: globalBeforeEachStack.slice(0),
-                afterStack: globalAfterEachStack.slice(0)
+                promise: _.Promise()
             };
             allIts.push(expectation);
             if (testisrunning) {
@@ -174,6 +168,7 @@ application.scope().run(function (app, _, factories) {
                 return;
             }
             setup(expectation);
+            return expectation.promise;
         },
         runningEach = function (globalStack) {
             for (var i = 0; i < globalStack[LENGTH]; i++) {

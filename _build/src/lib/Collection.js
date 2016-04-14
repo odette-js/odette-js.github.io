@@ -257,21 +257,31 @@ app.scope(function (app) {
         },
         wrappedListMethods = extend({
             seeker: function (handler, context) {
-                return _.duffRight(this.items, handler, context);
+                var list = this,
+                    bound = bind(handler, context);
+                return _.duffRight(list.unwrap(), function (one, two, three) {
+                    if (bound(one, two, three)) {
+                        list.removeAt(two);
+                    }
+                });
+            },
+            slice: function (one, two) {
+                return new List(this.unwrap().slice(one, two));
             }
         }, wrap(joinHandlers, function (name) {
             return function (arg) {
-                return this.items[name](arg);
+                return this.unwrap()[name](arg);
             };
         }), wrap(indexers.concat(abstractedCanModify), function (name) {
             return function (one, two, three, four, five) {
                 var list = this;
-                return _[name](list.items, one, two, three, four, five);
+                return _[name](list.unwrap(), one, two, three, four, five);
             };
         }), wrap(splatHandlers, function (name) {
             return function (args_) {
-                var args = isArray(args_) ? args_ : arguments;
-                return this.items[name].apply(this.items, args);
+                var args = isArray(args_) ? args_ : arguments,
+                    items = this.unwrap();
+                return items[name].apply(items, args);
             };
         }), wrap(nativeCannotModify, function (name) {
             return function (one, two, three, four, five, six) {
@@ -279,7 +289,7 @@ app.scope(function (app) {
                 if (list.iterating) {
                     return exception(cannotModifyMessage);
                 }
-                return list.items[name](one, two, three, four, five, six);
+                return list.unwrap()[name](one, two, three, four, five, six);
             };
         }), wrap(abstractedCannotModify, function (name) {
             return function (one, two, three, four, five) {
@@ -287,18 +297,18 @@ app.scope(function (app) {
                 if (list.iterating) {
                     return exception(cannotModifyMessage);
                 }
-                return _[name](list.items, one, two, three, four, five);
+                return _[name](list.unwrap(), one, two, three, four, five);
             };
         }), wrap(reverseList, function (name) {
             return function () {
                 var list = this;
                 list.directive('StatusManager').toggle(REVERSED);
-                list.items[name]();
+                list.unwrap()[name]();
                 return list;
             };
         }), wrap(eachHandlers, function (fn) {
             return marksIterating(function (list, handler, context) {
-                var args0 = list.items,
+                var args0 = list.unwrap(),
                     args1 = handler,
                     args2 = arguments[LENGTH] > 1 ? context : list;
                 fn(args0, args1, args2);
@@ -306,16 +316,16 @@ app.scope(function (app) {
             });
         }), wrap(countingList, function (name) {
             return marksIterating(function (list, runner, fromHere, toThere) {
-                _[name](list.items, runner, list, fromHere, toThere);
+                _[name](list.unwrap(), runner, list, fromHere, toThere);
                 return list;
             });
         }), wrap(recreatingSelfList, function (name) {
             return marksIterating(function (list, one, two, three) {
-                return new List[CONSTRUCTOR](_[name](list.items, one, two, three));
+                return new List[CONSTRUCTOR](_[name](list.unwrap(), one, two, three));
             });
         }), wrap(foldFindIteration, function (name) {
             return marksIterating(function (list, one, two, three) {
-                return _[name](list.items, one, two, three);
+                return _[name](list.unwrap(), one, two, three);
             });
         })),
         ret = _.exports({
@@ -360,18 +370,19 @@ app.scope(function (app) {
                 return this;
             },
             obliteration: function (handler, context) {
-                duffRight(this.items, handler, context === UNDEFINED ? this : context);
+                duffRight(this.unwrap(), handler, context === UNDEFINED ? this : context);
                 return this;
             },
+            // good for overwriting and extending
             empty: function () {
                 return this.reset();
             },
             reset: function (items) {
                 // can be array like
                 var list = this,
-                    old = list.items || [];
+                    old = list.unwrap() || [];
                 list.iterating = list.iterating ? exception(cannotModifyMessage) : 0;
-                list.items = items == NULL ? [] : (isArrayLike(items) ? toArray(items) : [items]);
+                list.items = items == NULL ? [] : (List.isInstance(items) ? items.unwrap().slice(0) : toArray(items));
                 list.unmark(REVERSED);
                 return list;
             },
@@ -379,16 +390,17 @@ app.scope(function (app) {
                 return this.items;
             },
             length: function () {
-                return this.items.length;
+                return this.unwrap()[LENGTH];
             },
             first: function () {
-                return this.items[0];
+                return this.unwrap()[0];
             },
             last: function () {
-                return this.items[this.items.length - 1];
+                var items = this.unwrap();
+                return items[items[LENGTH] - 1];
             },
             index: function (number) {
-                return this.items[number || 0];
+                return this.unwrap()[number || 0];
             },
             has: function (object) {
                 return this.indexOf(object) !== -1;
@@ -396,14 +408,14 @@ app.scope(function (app) {
             sort: function (fn_) {
                 // normalization sort function for cross browsers
                 var list = this;
-                sort(list.items, fn_, list.is(REVERSED), list);
+                sort(list.unwrap(), fn_, list.is(REVERSED), list);
                 return list;
             },
             toString: function () {
-                return stringify(this.items);
+                return stringify(this.unwrap());
             },
             toJSON: function () {
-                return map(this.items, function (item) {
+                return map(this.unwrap(), function (item) {
                     return result(item, TO_JSON);
                 });
             },
@@ -454,7 +466,9 @@ app.scope(function (app) {
                 var sorted = this;
                 sort(sorted.unwrap(), sorted.is(REVERSED) ? function (a, b) {
                     return a < b;
-                } : NULL, BOOLEAN_FALSE, sorted);
+                } : function (a, b) {
+                    return a > b;
+                }, BOOLEAN_FALSE, sorted);
                 return sorted;
             },
             reverse: function () {

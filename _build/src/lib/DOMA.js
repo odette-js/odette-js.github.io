@@ -1409,7 +1409,6 @@ app.scope(function (app) {
             if (manager.is(CUSTOM) && !isCustomValue) {
                 isCustomValue = BOOLEAN_TRUE;
             }
-            // isCustomValue = isCustomValue || BOOLEAN_TRUE;
             resultant = manager.isElement && writeAttribute(manager.element(), CUSTOM_KEY, isCustomValue);
             if (isCustomValue) {
                 manager.registeredAs = isCustomValue;
@@ -2052,7 +2051,7 @@ app.scope(function (app) {
                     }
                 }
                 duff(evnt.nameStack, function (name) {
-                    evnt.fn = (customEvents[name] || returnsFirstArgument)(evnt.fn, name, evnt) || evnt.fn;
+                    evnt.fn = (customEvents[name] || returns.first)(evnt.fn, name, evnt) || evnt.fn;
                 });
                 if (eventHandler) {
                     el = evnt.origin.element();

@@ -121,29 +121,23 @@ var factories = {},
         }
         // normalize sort function handling for safari
         return obj.sort(function (a, b) {
-            var result = fn(a, b),
-                numericResult = +result;
-            if (numericResult == NULL) {
-                numericResult = 0;
+            var result = fn(a, b);
+            if (isNaN(result)) {
+                result = INFINITY;
             }
-            if (isNaN(numericResult)) {
-                numericResult = 0;
+            if (result === BOOLEAN_TRUE) {
+                result = 1;
             }
-            if (numericResult > 1) {
-                numericResult = 1;
+            if (result === BOOLEAN_FALSE) {
+                result = 0;
             }
-            if (result === BOOLEAN_FALSE || numericResult < -1) {
-                numericResult = -1;
-            }
-            return reversed ? numericResult * -1 : numericResult;
+            return reversed ? result * -1 : result;
         });
     },
-    returnsFirstArgument = function (value) {
-        return value;
-    },
     normalizeToFunction = function (value, context, argCount) {
-        if (value == NULL) return returnsFirstArgument;
+        if (value == NULL) return returns.first;
         if (isFunction(value)) return bind(value, context);
+        // has not been created yet
         if (isObject(value)) return _.matcher(value);
         return property(value);
     },
@@ -170,8 +164,11 @@ var factories = {},
     /**
      * @func
      */
-    has = function (obj, prop) {
+    has = function (obj, prop, useArrayCheck) {
         var val = BOOLEAN_FALSE;
+        if (useArrayCheck) {
+            return indexOf(obj, prop) !== -1;
+        }
         if (obj && isFunction(obj.hasOwnProperty)) {
             val = obj.hasOwnProperty(prop);
         }
@@ -1334,6 +1331,9 @@ var factories = {},
         return function () {
             return thing;
         };
+    },
+    returnsFirstArgument = returns.first = function (value) {
+        return value;
     },
     flow = function (bool, list_) {
         var list = bool === BOOLEAN_TRUE ? list_ : arguments,
