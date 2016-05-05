@@ -730,11 +730,12 @@ var factories = {},
     },
     now_offset = now(),
     now_shim = function () {
-        return now() - this.offset;
+        return now() - now_offset;
     },
     _performance = window.performance,
     performance = _performance ? (_performance.now = (_performance.now || _performance.webkitNow || _performance.msNow || _performance.oNow || _performance.mozNow || now_shim)) && _performance : {
-        now: now_shim
+        now: now_shim,
+        offset: now_offset
     },
     /**
      * @func
@@ -5469,7 +5470,9 @@ app.scope(function (app) {
         REMOVE = 'remove',
         REMOVE_CHILD = REMOVE + UPPER_CHILD,
         PARENT_NODE = 'parentNode',
+        HTML = 'html',
         INNER_HTML = 'innerHTML',
+        TEXT = 'text',
         INNER_TEXT = 'innerText',
         OUTER_HTML = 'outerHTML',
         REGISTERED_AS = 'registeredAs',
@@ -8792,13 +8795,13 @@ app.scope(function (app) {
              * @name DOMA#html
              * @returns {DOMA} instance
              */
-            html: htmlTextManipulator(INNER_HTML),
+            html: htmlTextManipulator(HTML),
             /**
              * @func
              * @name DOMA#text
              * @returns {DOMA} instance
              */
-            text: htmlTextManipulator(INNER_TEXT),
+            text: htmlTextManipulator(TEXT),
             /**
              * @func
              * @name DOMA#childOf
