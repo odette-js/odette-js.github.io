@@ -22,7 +22,9 @@ app.scope(function (app) {
         REMOVE = 'remove',
         REMOVE_CHILD = REMOVE + UPPER_CHILD,
         PARENT_NODE = 'parentNode',
+        HTML = 'html',
         INNER_HTML = 'innerHTML',
+        TEXT = 'text',
         INNER_TEXT = 'innerText',
         OUTER_HTML = 'outerHTML',
         REGISTERED_AS = 'registeredAs',
@@ -3345,13 +3347,13 @@ app.scope(function (app) {
              * @name DOMA#html
              * @returns {DOMA} instance
              */
-            html: htmlTextManipulator(INNER_HTML),
+            html: htmlTextManipulator(HTML),
             /**
              * @func
              * @name DOMA#text
              * @returns {DOMA} instance
              */
-            text: htmlTextManipulator(INNER_TEXT),
+            text: htmlTextManipulator(TEXT),
             /**
              * @func
              * @name DOMA#childOf
