@@ -3,6 +3,7 @@ var ACTIONS = 'actions',
     UPCASED_IS_STOPPED = upCase(IS_STOPPED),
     PROPAGATION = 'propagation',
     DEFAULT_PREVENTED = 'defaultPrevented',
+    PROPAGATION_IS_HALTED = PROPAGATION + 'IsHalted',
     PROPAGATION_IS_STOPPED = PROPAGATION + UPCASED_IS_STOPPED,
     IMMEDIATE_PROP_IS_STOPPED = 'immediate' + upCase(PROPAGATION) + UPCASED_IS_STOPPED;
 app.scope(function (app) {
@@ -11,7 +12,7 @@ app.scope(function (app) {
         __FN_ID__ = '__fnid__',
         event_incrementer = 1,
         Collection = factories.Collection,
-        List = factories.List,
+        // List = factories.List,
         REMOVE_QUEUE = 'removeQueue',
         listeningCounter = 0,
         returnsId = function () {
@@ -21,7 +22,7 @@ app.scope(function (app) {
         ObjectEvent = factories.ObjectEvent = factories.Directive.extend('ObjectEvent', {
             constructor: function (target, data, name, options, when) {
                 var evnt = this;
-                evnt[PROPAGATION_IS_STOPPED] = evnt[IMMEDIATE_PROP_IS_STOPPED] = BOOLEAN_FALSE;
+                evnt[PROPAGATION_IS_HALTED] = evnt[PROPAGATION_IS_STOPPED] = evnt[IMMEDIATE_PROP_IS_STOPPED] = BOOLEAN_FALSE;
                 evnt[ORIGIN] = target;
                 evnt[NAME] = name;
                 evnt[TYPE] = name.split(COLON)[0];
@@ -51,6 +52,7 @@ app.scope(function (app) {
             stopImmediatePropagation: function () {
                 this.stopPropagation();
                 this[IMMEDIATE_PROP_IS_STOPPED] = BOOLEAN_TRUE;
+                this[PROPAGATION_IS_HALTED] = BOOLEAN_TRUE;
             },
             stopPropagation: function () {
                 this[PROPAGATION_IS_STOPPED] = BOOLEAN_TRUE;
@@ -68,7 +70,8 @@ app.scope(function (app) {
             },
             finished: function () {
                 var actions, evnt = this;
-                evnt.isTrusted = BOOLEAN_FALSE;
+                evnt.mark(FINISHED);
+                // evnt.isFinished = BOOLEAN_FALSE;
                 if (evnt.defaultIsPrevented()) {
                     return;
                 }
@@ -79,6 +82,7 @@ app.scope(function (app) {
         }),
         EventsDirective = factories.EventsDirective = factories.Directive.extend('EventsDirective', {
             cancelled: _.noop,
+            validate: returns(BOOLEAN_TRUE),
             constructor: function (target) {
                 var eventsDirective = this;
                 eventsDirective.target = target;
@@ -87,8 +91,8 @@ app.scope(function (app) {
                 eventsDirective.listeningTo = {};
                 eventsDirective.running = {};
                 eventsDirective.queued = {};
-                eventsDirective.stack = List();
-                eventsDirective.removeQueue = List();
+                eventsDirective.stack = Collection();
+                eventsDirective.removeQueue = Collection();
                 eventsDirective.proxyStack = Collection();
                 eventsDirective.proxyStack.unmark('dirty');
                 return eventsDirective;
@@ -104,7 +108,7 @@ app.scope(function (app) {
                 }
                 eventObject.fn = bind(eventObject.fn || eventObject.handler, eventObject.context);
                 // attach the id to the bound function because that instance is private
-                list = handlers[name] = handlers[name] || List();
+                list = handlers[name] = handlers[name] || Collection();
                 // attaching name so list can remove itself from hash
                 list[NAME] = name;
                 // attached so event can remove itself
@@ -117,7 +121,7 @@ app.scope(function (app) {
             make: function (name, handler, origin) {
                 return {
                     disabled: BOOLEAN_FALSE,
-                    namespace: name && name.split(COLON)[0],
+                    namespace: name && name.split && name.split(COLON)[0],
                     name: name,
                     handler: handler,
                     origin: origin
@@ -179,19 +183,20 @@ app.scope(function (app) {
                 evnt.removed = BOOLEAN_TRUE;
                 events.remove(list, evnt, index);
                 // disconnect it from the list above it
+                // we don't care about deleting here
+                // because no one should have access to it.
                 evnt.list = UNDEFINED;
                 events.wipe(list);
                 // check to see if it was a listening type
-                if (!listening) {
-                    return BOOLEAN_TRUE;
+                if (listening) {
+                    // if it was then decrement it
+                    listening.count--;
+                    // if that is the extent of the listening events, then detach it completely
+                    if (!listening.count) {
+                        listeningTo = listening.listeningTo;
+                        listeningTo[listening[TALKER_ID]] = UNDEFINED;
+                    }
                 }
-                // if it was then decrement it
-                listening.count--;
-                if (listening.count) {
-                    return BOOLEAN_TRUE;
-                }
-                listeningTo = listening.listeningTo;
-                listeningTo[listening[TALKER_ID]] = UNDEFINED;
                 return BOOLEAN_TRUE;
             },
             wipe: function (list) {
@@ -239,9 +244,9 @@ app.scope(function (app) {
                     handler = subset[i];
                     if (!handler.disabled && events.queue(stack, handler, evnt)) {
                         handler.fn(evnt);
-                        stopped = !!evnt[IMMEDIATE_PROP_IS_STOPPED];
                         events.unQueue(stack, handler, evnt);
                     }
+                    stopped = !!evnt[PROPAGATION_IS_HALTED];
                 }
                 if (stopped) {
                     events.cancelled(stack, evnt);
@@ -258,8 +263,7 @@ app.scope(function (app) {
                 if (!queued[name]) {
                     queued[name] = 0;
                 }
-                ++queued[name];
-                return queued[name];
+                return ++queued[name];
             },
             unQueueStack: function (name) {
                 if (!--this.queued[name]) {

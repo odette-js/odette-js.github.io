@@ -208,7 +208,7 @@ app.scope(function (app) {
                 data.isDeferred = BOOLEAN_FALSE;
                 message = Message(data);
                 receiveHistory.push(message);
-                receiveHistory.register(ID, data.messageId, message);
+                receiveHistory.keep(ID, data.messageId, message);
                 buster[DISPATCH_EVENT](BEFORE_RECEIVED);
                 buster[DISPATCH_EVENT](RECEIVED + COLON + data.command, data.packet, {
                     message: message
@@ -313,8 +313,8 @@ app.scope(function (app) {
                 var buster = this;
                 var settings = settings_ || {};
                 // normalize to manager
-                var receiveWindow = $(listen).index(0);
-                var manager = $(talk).index(0);
+                var receiveWindow = $(listen).item(0);
+                var manager = $(talk).item(0);
                 settings.id = settings.id === UNDEFINED ? uuid() : settings.id;
                 buster.receiveHistory = factories.Collection();
                 disconnected.call(buster);
@@ -379,11 +379,11 @@ app.scope(function (app) {
                     dataManager.set(FLUSHING, BOOLEAN_TRUE);
                     children = buster.directive(CHILDREN);
                     childrenLen = children[LENGTH]();
-                    queuedMsg = children.index(currentIdx);
+                    queuedMsg = children.item(currentIdx);
                     while (queuedMsg && currentIdx < childrenLen) {
                         queuedMsg.directive(DATA).set(RUN_COUNT, 0);
                         if (currentIdx || connected) {
-                            queuedMsg = children.index(currentIdx);
+                            queuedMsg = children.item(currentIdx);
                             currentIdx = (dataManager.get(SENT_MESSAGE_INDEX) + 1) || 0;
                             dataManager.set(SENT_MESSAGE_INDEX, currentIdx);
                             postMessage(queuedMsg, buster);
@@ -486,7 +486,7 @@ app.scope(function (app) {
             begin: function (command) {
                 var buster = this,
                     children = buster.directive(CHILDREN);
-                return children.index(0) || buster.create(command).response(function (e) {
+                return children.item(0) || buster.create(command).response(function (e) {
                     connectReceived.call(buster, e);
                 }).send();
             }

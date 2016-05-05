@@ -119,7 +119,7 @@ app.scope(function (app) {
             flatten(list, BOOLEAN_TRUE, function (pro) {
                 if (promise.isChildType(pro)) {
                     collection.add(pro);
-                    collection.register('cid', pro.cid, pro);
+                    collection.keep('cid', pro.cid, pro);
                 }
             });
         },
@@ -130,7 +130,7 @@ app.scope(function (app) {
                 if (collection.get('listening', pro.cid)) {
                     return;
                 }
-                collection.register('listening', pro.cid, BOOLEAN_TRUE);
+                collection.keep('listening', pro.cid, BOOLEAN_TRUE);
                 pro.always(function () {
                     bound();
                 });

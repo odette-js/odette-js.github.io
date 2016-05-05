@@ -217,7 +217,7 @@ application.scope().run(function (app, _, factories) {
                     myObj: 1
                 };
                 _.expect(box.directive('Children').get('id', 'key')).toEqual(void 0);
-                box.directive('Children').register('id', 'key', data);
+                box.directive('Children').keep('id', 'key', data);
                 _.expect(box.directive('Children').get('id', 'key')).toEqual(data);
             });
             _.it('and retreive information', function () {
@@ -225,7 +225,7 @@ application.scope().run(function (app, _, factories) {
                     myObj: 1
                 };
                 _.expect(box.directive('Children').get('id', 'key')).toEqual(void 0);
-                box.directive('Children').register('id', 'key', data);
+                box.directive('Children').keep('id', 'key', data);
                 _.expect(box.directive('Children').get('id', 'key') === data).toEqual(true);
             });
         });
@@ -267,7 +267,7 @@ application.scope().run(function (app, _, factories) {
                     one: 4
                 }]);
                 _.expect(children.length()).toEqual(4);
-                box.remove([children.index(1), children.index(3)]);
+                box.remove([children.item(1), children.item(3)]);
                 _.expect(children.length()).toEqual(2);
             });
         });
@@ -283,7 +283,7 @@ application.scope().run(function (app, _, factories) {
                 }, {
                     one: 4
                 }]);
-                var destroyer = box.directive('Children').index(2);
+                var destroyer = box.directive('Children').item(2);
                 _.expect(box.directive('Children').get('cid', destroyer.cid) === destroyer).toEqual(true);
                 _.expect(box.directive('Children').get('id', destroyer.id) === destroyer).toEqual(true);
                 destroyer.destroy();

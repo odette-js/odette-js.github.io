@@ -44,7 +44,7 @@ permalink: /api/v0/module
 <h4 id="members" class="title-headline">Members</h4>
 <h5 id="members_exports" class="title-headline">#exports</h5>
 <p>Exports is a member on module objects that allows for systemic privitization, and publication of data, functions, and anything else you would like to define and share. It is most common to keep this member an object or a function, rather than another data type. The exports method is generally available using module.exports, but in order to ensure initialization has occurred, it is best practice to use the app or module's require method to access it.</p>
-<pre class="code code-section"><code class="language-javascript">var module = app.module('mine');
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var module = app.module('mine');
 // bad - exports object could become a different pointer at any time
 var exported = module.exports; // {}
 // good - ensures module initialization
@@ -52,12 +52,12 @@ var exported = app.require('mine');
 </code></pre>
 <h5 id="members_id" class="title-headline">#id</h5>
 <p>An id is given to each module that is created. The id that is given is determined by splitting apart the name that is passed into the <a href="#methods_module">module</a> method by period (.) and taking the last value. That value becomes the id, and scoped underneath the parent. The global id, is still given to the application.</p>
-<pre class="code code-section"><code class="language-javascript">var module = app.module('super.deep.module.definition');
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var module = app.module('super.deep.module.definition');
 module.id === 'definition'; // returns true</code></pre>
 <h5 id="members_startWithParent" class="title-headline">#startWithParent</h5>
 <p>A boolean on the module object that denotes whether or not the module will start and restart with it's parent including the scoped application object. The default value is true, but can be set to false to prevent parent chain starting from occurring.</p>
 <p>Below is an example of a module that will not start with it's parent, in this case, the scoped application object.</p>
-<pre class="code code-section"><code class="language-javascript">app.module('sentence.word', function (module) {
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">app.module('sentence.word', function (module) {
     module.startWithParent = false;
     module.on('start', function () {
         console.log('starting word');
@@ -69,7 +69,7 @@ app.module('sentence.word').start(); // logs "starting word"</code></pre>
 <h5 id="methods_extend" class="title-headline">#extend</h5>
 <p>Modules can export items setting properties on the exports object, or by simply replacing it entirely. There is not inherently a way to extend the exports object in nodejs. In Odette, however, extend provides that functionality by simply extending whatever object you pass it onto the exports object. You can also pass key value pairs, just like most other api endpoints that accept objects.</p>
 <p>Below are a few examples of different way to set and update the exports object.</p>
-<pre class="code code-section"><code class="language-javascript">var module = app.module('mymod');
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var module = app.module('mymod');
 console.log(module.exports); // logs {}
 // completely replace the object with another object, or a function.
 // this is not recommended, since any other module that has a pointer to this exports object
@@ -92,7 +92,7 @@ console.log(module.exports);
 <h5 id="methods_module" class="title-headline">#module</h5>
 <p>The module method will create submodules, children for whatever module the method is called on. The module handler, which also exists on scoped application objects, will not replace any module that has already been created, and will create modules even if they have not been initialized yet.</p>
 <p>Below is an example showing the flexibilty of module initialization. The first line shows the application creating and initializing a module, which, if not namespaced with periods (.) will be created as a top level module. Subsequent lines show the top level module initializing other modules underneath it, even when they have not yet been defined.</p>
-<pre class="code code-section"><code class="language-javascript">var module = app.module('mymodule');
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var module = app.module('mymodule');
 module.is('initialized') // false
 module.name; // "mymodule"
 module.is('initialized'); // true
@@ -114,14 +114,14 @@ app.require('mymodule.submarine');
 <p>The require method emulates the CommonJS pattern of synchronously requiring the exports of another module. If the required module has not yet been initialized, it will throw an error.</p>
 <p>Another common require pattern is the asynchronous module definition. If the first argument is an array, then the AMD pattern will take over, and execute the second argument (a function) when all of the modules in the first argument have registered themselves with the scoped app. If all of the modules have registered themselves, then the handler will execute immediately.</p>
 <p>Below is an example of the different ways to define modules and require them synchronously. The last line shows an uninitialized module being required, and subsequently throwing an error.</p>
-<pre class="code code-section"><code class="language-javascript">// passing a function automatically initializes the module.
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">// passing a function automatically initializes the module.
 var module = app.module('level', function () {});
 var levelUp = app.module('level.up');
 var exported = app.require('level');
 _.isObject(exported); // true
 app.require('level.up'); // throws: "level.up has not initialized yet"</code></pre>
 <p>Below is an example of the AMD pattern taking over, and executing the handler asynchronously.</p>
-<pre class="code code-section"><code class="language-javascript">app.require(['level.up'], function () {
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">app.require(['level.up'], function () {
     console.log('required modules loaded');
 });
 app.module('level.up', function () {});
@@ -129,7 +129,7 @@ setTimeout(function () {
     app.module('level', function () {}); // logs "required modules loaded"
 });</code></pre>
 <p>Modules themselves can even have dependencies. All you have to do is return a promise and we'll take care of the rest.</p>
-<pre class="code code-section"><code class="language-javascript">app.module('hark', function (module, app, _, factories) {
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">app.module('hark', function (module, app, _, factories) {
     return app.require(['voice', 'lessons'], function (requirements) {
         console.log(requirements[0].what + ' a lovely ' + requirements[1]; + '.');
     });
@@ -146,7 +146,7 @@ app.module('voice', function (module) {
 <h5 id="run" class="title-headline">#run</h5>
 <p>Handles the execution of various definitions, having to do with the module that executes the method. When this method is called, a list of arguments is created and passed into the function that run is given, with the module object as the first argument.</p>
 <p>Arguments passed into the module definition, include the module, the app, the utilities object, and the factories object.</p>
-<pre class="code code-section"><code class="language-javascript">scopedApp.run(function (app, _, factories) {
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">scopedApp.run(function (app, _, factories) {
     console.log(app === scopedApp);                      // logs true
     console.log(_ === app._);                            // logs true
     console.log(factories === app._.factories);          // logs true
@@ -154,12 +154,12 @@ app.module('voice', function (module) {
 <h5 id="run" class="title-headline">#run</h5>
 <p>Handles the execution of various definitions, having to do with the module that executes the method. When this method is called, a list of arguments is created and passed into the function that run is given, with the module object as the first argument.</p>
 <p>Arguments passed into the module definition, include the module, the app, the utilities object, and the factories object.</p>
-<pre class="code code-section"><code class="language-javascript">scopedApp.run(function (app, _, factories) {
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">scopedApp.run(function (app, _, factories) {
     console.log(app === scopedApp);                      // logs true
     console.log(_ === app._);                            // logs true
     console.log(factories === app._.factories);          // logs true
 });</code></pre>
 <h5 id="topLevel" class="title-headline">#topLevel</h5>
 <p>This method returns a boolean if the module this method is called on is a root module or if the module is an application type.</p>
-<pre class="code code-section"><code class="language-javascript">app.module('lower').topLevel();       // true
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">app.module('lower').topLevel();       // true
 app.module('lower.levels').topLevel() // false;</code></pre>

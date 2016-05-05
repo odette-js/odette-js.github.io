@@ -6624,14 +6624,14 @@ application.definition('dev', window, function (app) {
                 manager.html(manager.cachedContent);
                 manager.cachedContent = NULL;
             },
-            cachedDispatch = factories.Events[CONSTRUCTOR][PROTOTYPE][DISPATCH_EVENT],
-            eventDispatcher = function (manager, name, e, capturing_) {
-                var capturing = !!capturing_,
-                    fullName = capturing + COLON + name;
-                return cachedDispatch.call(manager, fullName, validateEvent(e, manager.element(), name), {
-                    capturing: capturing
-                });
-            },
+            // cachedDispatch = factories.Events[CONSTRUCTOR][PROTOTYPE][DISPATCH_EVENT],
+            // eventDispatcher = function (manager, name, e, capturing_) {
+            //     var capturing = !!capturing_,
+            //         fullName = capturing + COLON + name;
+            //     return cachedDispatch.call(manager, fullName, validateEvent(e, manager.element(), name), {
+            //         capturing: capturing
+            //     });
+            // },
             directAttributes = {
                 id: BOOLEAN_FALSE,
                 src: BOOLEAN_FALSE,
@@ -7327,7 +7327,7 @@ application.definition('dev', window, function (app) {
                     }
                 },
                 add: function (list, evnt) {
-                    var __delegateCount, eventHandler, events = this,
+                    var __delegateCount, eventHandler, domTarget, events = this,
                         el = evnt.element,
                         // needs an extra hash to care for the actual event hanlders that get attached to dom
                         elementHandlers = events.elementHandlers = events.elementHandlers || {},
@@ -7341,8 +7341,9 @@ application.definition('dev', window, function (app) {
                         return;
                     }
                     if (!mainHandler) {
+                        domTarget = evnt.domTarget;
                         eventHandler = function (e) {
-                            return eventDispatcher(evnt.domTarget, e.type, e, capture);
+                            return domTarget.dispatchEvent(e.type, e, capture);
                         };
                         el = evnt.origin.element();
                         if (el.addEventListener) {

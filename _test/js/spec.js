@@ -528,17 +528,17 @@ application.scope().run(function (app, _, factories) {
             _.expect(numberCollection.length()).toEqual(10);
         });
         _.it('can give you all of it\'s values at once', function () {
-            _.expect(collection.unwrap()).toEqual(collection.directive('List').items);
+            _.expect(collection.unwrap()).toEqual(collection.items);
         });
         _.it('or one at a time', function () {
             numberCollection.duff(function (item, idx) {
-                _.expect(numberCollection.index(idx)).toEqual(numberCollection.items[idx]);
+                _.expect(numberCollection.item(idx)).toEqual(numberCollection.items[idx]);
             });
         });
         _.it('as well as in reverse order', function () {
             var list = [];
             numberCollection.duffRight(function (item, idx) {
-                _.expect(numberCollection.index(idx)).toEqual(numberCollection.items[idx]);
+                _.expect(numberCollection.item(idx)).toEqual(numberCollection.items[idx]);
                 list.push(item);
             });
             _.expect(list).toEqual([9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
@@ -782,20 +782,20 @@ application.scope().run(function (app, _, factories) {
             sorted.add(1);
             sorted.add(5);
             sorted.add(3);
-            _.expect(sorted.index(0)).toEqual(0);
-            _.expect(sorted.index(1)).toEqual(1);
-            _.expect(sorted.index(2)).toEqual(2);
-            _.expect(sorted.index(3)).toEqual(3);
-            _.expect(sorted.index(4)).toEqual(4);
-            _.expect(sorted.index(5)).toEqual(5);
+            _.expect(sorted.item(0)).toEqual(0);
+            _.expect(sorted.item(1)).toEqual(1);
+            _.expect(sorted.item(2)).toEqual(2);
+            _.expect(sorted.item(3)).toEqual(3);
+            _.expect(sorted.item(4)).toEqual(4);
+            _.expect(sorted.item(5)).toEqual(5);
         });
         _.it('can remove values from the correct place', function () {
             var sorted = SortedCollection(evenNumberList);
             sorted.remove(4);
             sorted.remove(2);
-            _.expect(sorted.index(0)).toEqual(0);
-            _.expect(sorted.index(1)).toEqual(6);
-            _.expect(sorted.index(2)).toEqual(8);
+            _.expect(sorted.item(0)).toEqual(0);
+            _.expect(sorted.item(1)).toEqual(6);
+            _.expect(sorted.item(2)).toEqual(8);
         });
     });
 });
@@ -1342,7 +1342,7 @@ application.scope().run(function (app, _, factories) {
                     myObj: 1
                 };
                 _.expect(box.directive('Children').get('id', 'key')).toEqual(void 0);
-                box.directive('Children').register('id', 'key', data);
+                box.directive('Children').keep('id', 'key', data);
                 _.expect(box.directive('Children').get('id', 'key')).toEqual(data);
             });
             _.it('and retreive information', function () {
@@ -1350,7 +1350,7 @@ application.scope().run(function (app, _, factories) {
                     myObj: 1
                 };
                 _.expect(box.directive('Children').get('id', 'key')).toEqual(void 0);
-                box.directive('Children').register('id', 'key', data);
+                box.directive('Children').keep('id', 'key', data);
                 _.expect(box.directive('Children').get('id', 'key') === data).toEqual(true);
             });
         });
@@ -1392,7 +1392,7 @@ application.scope().run(function (app, _, factories) {
                     one: 4
                 }]);
                 _.expect(children.length()).toEqual(4);
-                box.remove([children.index(1), children.index(3)]);
+                box.remove([children.item(1), children.item(3)]);
                 _.expect(children.length()).toEqual(2);
             });
         });
@@ -1408,7 +1408,7 @@ application.scope().run(function (app, _, factories) {
                 }, {
                     one: 4
                 }]);
-                var destroyer = box.directive('Children').index(2);
+                var destroyer = box.directive('Children').item(2);
                 _.expect(box.directive('Children').get('cid', destroyer.cid) === destroyer).toEqual(true);
                 _.expect(box.directive('Children').get('id', destroyer.id) === destroyer).toEqual(true);
                 destroyer.destroy();
@@ -2453,7 +2453,7 @@ application.scope().run(function (app, _, factories) {
             _.describe('there are also special handlers', function () {
                 _.it('like create', function () {
                     $.registerElement('test0', {
-                        onCreate: handler
+                        creation: handler
                     });
                     _.expect(count).toEqual(0);
                     $.createElement('test0');
@@ -2461,7 +2461,7 @@ application.scope().run(function (app, _, factories) {
                 });
                 _.it('and destroy', function () {
                     $.registerElement('test1', {
-                        onDestroy: handler
+                        destruction: handler
                     });
                     var div = $.createElement('test1');
                     _.expect(count).toEqual(0);
@@ -2472,7 +2472,7 @@ application.scope().run(function (app, _, factories) {
                 //     $.createElement('test2');
                 //     _.expect(count).toEqual(0);
                 //     $.registerElement('test2', {
-                //         onCreate: handler
+                //         creation: handler
                 //     });
                 //     _.expect(count).toEqual(1);
                 // });

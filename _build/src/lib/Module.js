@@ -112,8 +112,8 @@ app.scope(function (app) {
                     } else {
                         module = parent.add({}, arg2)[0];
                     }
-                    parentModulesDirective.register(ID, name, module);
-                    app[CHILDREN].register(ID, globalname, module);
+                    parentModulesDirective.keep(ID, name, module);
+                    app[CHILDREN].keep(ID, globalname, module);
                 }
                 if (isWindow(windo) || isFunction(windo) || isFunction(fn)) {
                     module.exports = module.exports || {};
@@ -198,7 +198,7 @@ app.scope(function (app) {
             var _ = app._;
             return [app, _, _ && _.factories];
         },
-        appextendresult = app.extend(extend({}, factories.Events[CONSTRUCTOR][PROTOTYPE], startableMethods, moduleMethods, {
+        appextendresult = app.extend(extend({}, factories.Directive[CONSTRUCTOR][PROTOTYPE], factories.Events[CONSTRUCTOR][PROTOTYPE], startableMethods, moduleMethods, {
             addModuleArguments: function (arr) {
                 _.addAll(extraModuleArguments, arr);
                 return this;

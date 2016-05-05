@@ -51,7 +51,7 @@ app.scope(function (app) {
                 } else {
                     // defauts back to wrapping the element
                     // creates internal element
-                    el = element.create(view.tagName());
+                    el = element.create(result(view, 'tagName'));
                     // subclassed to expand the attributes that can be used
                 }
                 element.set(el, BOOLEAN_FALSE);
@@ -106,7 +106,7 @@ app.scope(function (app) {
                 }
                 directive.cachedElementBindings = map(elementBindings, function (method, key) {
                     var object = makeDelegateEventKeys(view.cid, directive.uiBindings, key),
-                        bound = object.fn = bind(isString(method) ? view[method] : method, view);
+                        bound = object.fn = bindTo(isString(method) ? view[method] : method, view);
                     __events.push(object);
                     el.on(object.events, object[SELECTOR], bound, object.capture, object.group);
                 });
@@ -141,7 +141,7 @@ app.scope(function (app) {
                 }
                 each(elementTriggers, function (method, key) {
                     var object = makeDelegateEventKeys(view.cid, directive.uiBindings, key),
-                        bound = object.fn = basicViewTrigger.bind(view, method);
+                        bound = object.fn = bindWith(basicViewTrigger, view, method);
                     el.on(object.events, object[SELECTOR], bound, object.capture, object.group);
                 });
                 directive.cachedElementTriggers = __events;

@@ -135,7 +135,7 @@ app.scope(function (app) {
                 var current = sequencer[CURRENT];
                 var value = sequencer.value(value_, defaultFn || curriedEquivalence);
                 var made = makeLogic(sequencer, current, value, negate);
-                sequencer.logic.index(sequencer[GROUP_INDEX]).list.push(made);
+                sequencer.logic.item(sequencer[GROUP_INDEX]).list.push(made);
                 return sequencer;
             },
             check: function () {

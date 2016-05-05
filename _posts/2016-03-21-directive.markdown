@@ -34,20 +34,20 @@ permalink: /api/v0/directive
 <div id="methods_directive">
     <h5 class="title-headline">#directive</h5>
     <p>Directives in Odette are used to share behaviors and patterns between apis, and keep your code dry. In addition to keeping your code dry, the directive method also helps to lazy create objects. There's no need to repeat logic to check if members exist, or create them at multiple points in your API.</p>
-    <pre class="code code-section"><code class="language-javascript">directiveObject.MyDirective; // undefined
+    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">directiveObject.MyDirective; // undefined
 directiveObject.directive('MyDirective');
 directiveObject.MyDirective; // {}</code></pre>
 </div>
 <div id="methods_directiveDestruction">
     <h5 class="title-headline">#directiveDestruction</h5>
     <p>Just as directives can be created, they can also be destroyed. The directiveDestrcution method allows for this type of lifecycle behavior by calling a function that is passed in at the directive's definition.</p>
-    <pre class="code code-section"><code class="language-javascript">directiveObject.directiveDestruction('MyDirective');
+    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">directiveObject.directiveDestruction('MyDirective');
 directiveObject.MyDirective; // undefined</code></pre>
 </div>
 <div id="methods_is">
     <h5 class="title-headline">#is</h5>
     <p>In order to get you started, the Directive Constructor will keep simple states for you.</p>
-    <pre class="code code-section"><code class="language-javascript">directiveObject.is('here');     // false
+    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">directiveObject.is('here');     // false
 directiveObject.mark('here');   // true
 directiveObject.is('here');     // true
 directiveObject.unmark('here'); // true
@@ -64,7 +64,7 @@ directiveObject.is('here');     // false</code></pre>
 <div id="methods_unmark">
     <h5 class="title-headline">#unmark</h5>
     <p>Unmark is used to denote a false status.</p>
-    <pre class="code code-section"><code class="language-javascript">directiveObject.mark('here');   // true
+    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">directiveObject.mark('here');   // true
 directiveObject.is('here');     // true
 directiveObject.mark('here');   // false
 directiveObject.unmark('here'); // true
@@ -76,5 +76,5 @@ directiveObject.mark('here');   // true</code></pre>
 <div id="overwriting">
     <h5 class="title-headline">#overwriting internal apis</h5>
     <p>In order to overwrite internally used apis, it is helpful to have a switch that is easily accessable on the prototype of the object. In this case the creation and destruction lifecycle are overwritable at the following, respective keys: "directive:creation:{{directiveName}}" and "directive:destruction:{{directiveName}}" where {{directiveName}} is the name that begins and finishes the lifecycle of the directive at that key.</p>
-    <pre class="code code-section"><code class="language-javascript"></code></pre>
+    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript"></code></pre>
 </div>

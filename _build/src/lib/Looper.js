@@ -27,11 +27,14 @@ app.scope(function (app) {
         focused = BOOLEAN_TRUE,
         request = function (handler) {
             var nextFrame = Math.max(0, lastTime - frameTime);
-            if (focused) {
-                lastAFId = win[REQUEST_ANIMATION_FRAME](handler);
-            } else {
+            lastAFId = win[REQUEST_ANIMATION_FRAME](function () {
+                // if this handler ever gets called, then you can call it focused
+                focused = BOOLEAN_TRUE;
+                handler();
+            });
+            if (!focused) {
                 win[CLEAR_TIMEOUT](lastTId);
-                lastTId = win.setTimeout(handler, nextFrame);
+                lastTId = win.setTimeout(handler, nextFrame + 1);
             }
             if (Looper.playWhileBlurred) {
                 win[CLEAR_TIMEOUT](lastOverrideId);
@@ -104,6 +107,23 @@ app.scope(function (app) {
         }()),
         LOOPER = 'Looper',
         Collection = factories.Collection,
+        runner = function (tween, obj) {
+            tween.current = obj;
+            if (obj.disabled) {
+                tween.dequeue(obj.id);
+                return;
+            }
+            if (tween.is(HALTED)) {
+                // stops early
+                return BOOLEAN_TRUE;
+            }
+            wraptry(function () {
+                obj.fn(tween.lastRun);
+            }, function (e) {
+                console.error(e);
+                tween.dequeue(obj.id);
+            });
+        },
         Looper = factories[LOOPER] = Collection.extend(LOOPER, {
             constructor: function (_runner) {
                 var looper = this;
@@ -120,31 +140,19 @@ app.scope(function (app) {
                 return this.halt();
             },
             run: function (_nowish) {
-                var tween = this;
+                var sliced, finished, i = 0,
+                    tween = this;
                 if (tween.is(HALTED) || tween.is(STOPPED) || !tween.length()) {
                     return;
                 }
-                var sliced = factories.List(tween.unwrap().slice(0));
-                sliced.find(function (obj) {
-                    tween.current = obj;
-                    if (obj.disabled) {
-                        tween.dequeue(obj.id);
-                        return;
-                    }
-                    if (tween.is(HALTED)) {
-                        // stops early
-                        return BOOLEAN_TRUE;
-                    }
-                    wraptry(function () {
-                        obj.fn(_nowish);
-                    }, function (e) {
-                        console.log(e);
-                        tween.dequeue(obj.id);
-                    });
-                });
+                sliced = factories.Collection(tween.unwrap().slice(0));
+                tween.lastRun = _nowish;
+                for (; i < tween[LENGTH]() && !finished; i++) {
+                    finished = runner(tween, tween.item(i), i);
+                }
+                // sliced.find(runner, tween);
                 tween.current = NULL;
                 tween.unmark(RUNNING);
-                // tween.reset();
             },
             dequeue: function (id_) {
                 var fnObj, found, i = 0,
@@ -153,7 +161,7 @@ app.scope(function (app) {
                     ret = BOOLEAN_FALSE;
                 if (id === UNDEFINED && !arguments[LENGTH]) {
                     if (tween.current) {
-                        tween.unRegister(ID, tween.current.id);
+                        tween.drop(ID, tween.current.id);
                         id = tween.remove(tween.current);
                     }
                     return !!id;
@@ -163,7 +171,7 @@ app.scope(function (app) {
                 }
                 found = tween.get(ID, id);
                 if (found) {
-                    tween.unRegister(ID, id);
+                    tween.drop(ID, id);
                     return tween.remove(found);
                 }
             },
@@ -199,14 +207,14 @@ app.scope(function (app) {
                     bound: tween
                 };
                 tween.push(obj);
-                tween.register(ID, obj.id, obj);
+                tween.keep(ID, obj.id, obj);
                 start(tween);
                 return id;
             },
             bind: function (fn) {
                 return bind(fn, this);
             },
-            once: function (fn) {
+            once: function (fn, time_) {
                 return this.frames(1, fn);
             },
             frames: function (timey, fn_) {
@@ -224,13 +232,13 @@ app.scope(function (app) {
                     times = 1;
                 }
                 return this.queue(function (ms) {
-                    var last = 1;
+                    var last = BOOLEAN_FALSE;
                     count++;
                     if (count >= times) {
                         this.dequeue();
-                        last = 0;
+                        last = BOOLEAN_TRUE;
                     }
-                    fn(ms, !last, count);
+                    fn(ms, last, count);
                 });
             },
             tween: function (time__, fn_) {
@@ -306,6 +314,30 @@ app.scope(function (app) {
                         fn(ms);
                     }
                 });
+            },
+            onceInterval: function (handler, time_) {
+                var fn = handler,
+                    tweener = this,
+                    timey = time(time_);
+                if (!isFunction(fn)) {
+                    return;
+                }
+                if (!isNumber(timey)) {
+                    return;
+                }
+                return this.interval(timey, handler);
+            },
+            defer: function (handler, time) {
+                var id, tweener = this;
+                return function () {
+                    var args = toArray(arguments);
+                    var context = this || tweener;
+                    tweener.dequeue(id);
+                    id = tweener.time(time, function () {
+                        handler.apply(context, args);
+                    });
+                    return id;
+                };
             }
         }),
         Scheduler = factories.Scheduler = factories.Directive.extend('Scheduler', {

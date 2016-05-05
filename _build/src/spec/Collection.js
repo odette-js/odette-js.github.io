@@ -21,17 +21,17 @@ application.scope().run(function (app, _, factories) {
             _.expect(numberCollection.length()).toEqual(10);
         });
         _.it('can give you all of it\'s values at once', function () {
-            _.expect(collection.unwrap()).toEqual(collection.directive('List').items);
+            _.expect(collection.unwrap()).toEqual(collection.items);
         });
         _.it('or one at a time', function () {
             numberCollection.duff(function (item, idx) {
-                _.expect(numberCollection.index(idx)).toEqual(numberCollection.items[idx]);
+                _.expect(numberCollection.item(idx)).toEqual(numberCollection.items[idx]);
             });
         });
         _.it('as well as in reverse order', function () {
             var list = [];
             numberCollection.duffRight(function (item, idx) {
-                _.expect(numberCollection.index(idx)).toEqual(numberCollection.items[idx]);
+                _.expect(numberCollection.item(idx)).toEqual(numberCollection.items[idx]);
                 list.push(item);
             });
             _.expect(list).toEqual([9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
@@ -275,20 +275,20 @@ application.scope().run(function (app, _, factories) {
             sorted.add(1);
             sorted.add(5);
             sorted.add(3);
-            _.expect(sorted.index(0)).toEqual(0);
-            _.expect(sorted.index(1)).toEqual(1);
-            _.expect(sorted.index(2)).toEqual(2);
-            _.expect(sorted.index(3)).toEqual(3);
-            _.expect(sorted.index(4)).toEqual(4);
-            _.expect(sorted.index(5)).toEqual(5);
+            _.expect(sorted.item(0)).toEqual(0);
+            _.expect(sorted.item(1)).toEqual(1);
+            _.expect(sorted.item(2)).toEqual(2);
+            _.expect(sorted.item(3)).toEqual(3);
+            _.expect(sorted.item(4)).toEqual(4);
+            _.expect(sorted.item(5)).toEqual(5);
         });
         _.it('can remove values from the correct place', function () {
             var sorted = SortedCollection(evenNumberList);
             sorted.remove(4);
             sorted.remove(2);
-            _.expect(sorted.index(0)).toEqual(0);
-            _.expect(sorted.index(1)).toEqual(6);
-            _.expect(sorted.index(2)).toEqual(8);
+            _.expect(sorted.item(0)).toEqual(0);
+            _.expect(sorted.item(1)).toEqual(6);
+            _.expect(sorted.item(2)).toEqual(8);
         });
     });
 });

@@ -25,11 +25,14 @@ app.scope(function (app) {
         addRegion = function (key, selector) {
             var regionManagerDirective = this;
             intendedObject(key, selector, function (key, selector) {
-                var region = regionManagerDirective.list.get(key);
+                var region = regionManagerDirective.list.get(ID, key);
                 if (!region) {
                     regionManagerDirective.establish(key, selector);
                 }
             });
+        },
+        noRegionMessage = {
+            message: 'that region does not exist'
         },
         /**
          * @class View
@@ -42,15 +45,33 @@ app.scope(function (app) {
         // very useful for componentizing your ui
         Parent = factories.Parent,
         Model = factories.Model,
-        makesView = function (region, view_) {
-            return View.isInstance(view_) ? view_ : region.Child({
-                model: Model.isInstance(view_) ? view_ : view_ = Model(view_)
-            });
+        makesView = function (region, view_, Child) {
+            var isModel, child, isView, model = view_,
+                children = region.directive(CHILDREN);
+            if ((isView = View.isInstance(view_))) {
+                if ((child = children.get('modelId', view_.model.id))) {
+                    return child;
+                } else {
+                    return view_;
+                }
+            }
+            if ((isModel = Model.isInstance(model))) {
+                if ((child = children.get('modelId', model.id))) {
+                    return child;
+                }
+            } else {
+                return Child({
+                    model: Child[CONSTRUCTOR][PROTOTYPE].Model(view_)
+                });
+            }
         },
-        disown = function (region, view) {
-            var children = region[CHILDREN];
+        disown = function (currentParent, view, region) {
+            var children = currentParent[CHILDREN];
             view[PARENT] = NULL;
             children.remove(view);
+            children.drop('viewCid', view.cid);
+            children.drop('modelCid', view.model.cid);
+            children.drop('modelId', view.model.id);
             return region;
         },
         Region = factories.Region = Parent.extend('Region', {
@@ -64,7 +85,14 @@ app.scope(function (app) {
             add: function (models_, options_) {
                 var bufferedViewsDirective, region = this,
                     options = options_ || {},
-                    unwrapped = Collection(models_).each(region.adopt, region).unwrap();
+                    unwrapped = Collection(models_).foldl(function (memo, item) {
+                        var adoption;
+                        // var model = View.isInstance(item) ? item.model : item;
+                        if ((adoption = region.adopt(item))) {
+                            memo.push(adoption);
+                        }
+                        return memo;
+                    }, []);
                 if (region.el) {
                     region.render();
                 }
@@ -76,17 +104,21 @@ app.scope(function (app) {
                 if (!view_) {
                     return region;
                 }
-                view = makesView(region, view_);
+                view = makesView(region, view_, region.parent.parent.Child || View);
+                // if ((view.model.id)) {}
                 if (view[PARENT]) {
                     if (view[PARENT] === region) {
-                        return region;
+                        return BOOLEAN_FALSE;
                     } else {
-                        disown(view[PARENT], view);
+                        disown(view[PARENT], view, region);
                     }
                 }
                 view[PARENT] = region;
                 children.add(view);
-                return region;
+                children.keep('viewCid', view.cid, view);
+                children.keep('modelCid', view.model.cid, view);
+                children.keep('modelId', view.model.id, view);
+                return view;
             },
             attach: function (view) {
                 var parentNode, bufferDirective, region = this,
@@ -109,10 +141,10 @@ app.scope(function (app) {
                     parent = region[PARENT][PARENT];
                 if (parent !== app) {
                     if (parent.is(RENDERED)) {
-                        manager = parent.el.$(selector)[INDEX](0);
+                        manager = parent.el.$(selector)[ITEM](0);
                     }
                 } else {
-                    manager = (region._owner$ || $)(selector)[INDEX](0);
+                    manager = (region.owner$ || $)(selector)[ITEM](0);
                 }
                 if (!manager) {
                     return region;
@@ -151,39 +183,36 @@ app.scope(function (app) {
         }),
         establishRegions = function (view) {
             var regions = result(view, 'regions');
-            var regionsResult = keys(regions)[LENGTH] && view.directive(REGION_MANAGER).establish(regionsResult);
+            var regionsResult = keys(regions)[LENGTH] && view.directive(REGION_MANAGER).establish(regions);
             return view;
         },
         addChildView = function (region, views) {
             var view = this;
             intendedObject(region, views, function (regionKey, views) {
-                var region = (region = view.directive(REGION_MANAGER).get(region_)) ? region.add(views) : exception({
-                    message: 'that region does not exist'
-                });
+                var region = (region = view.directive(REGION_MANAGER).get(regionKey)) ? region.add(views) : exception(noRegionMessage);
             });
             return view;
         },
         removeChildView = function (region, views) {
             var view = this;
             intendedObject(region, views, function (regionKey, views) {
-                var region = (region = view.directive(REGION_MANAGER).get(region_)) ? region.remove(views) : exception({
-                    message: 'that region does not exist'
-                });
+                var region = (region = view.directive(REGION_MANAGER).get(regionKey)) ? region.remove(views) : exception(noRegionMessage);
             });
             return view;
         },
         // view needs to be pitted against a document
         View = factories.View = Region.extend('View', {
+            Model: Model,
             getRegion: directives.parody(REGION_MANAGER, 'get'),
             addRegion: directives.parody(REGION_MANAGER, 'add'),
             removeRegion: directives.parody(REGION_MANAGER, 'remove'),
-            tagName: function () {
-                return 'div';
-            },
+            addChildView: addChildView,
+            removeChildView: removeChildView,
+            tagName: 'div',
             filter: function () {
                 return BOOLEAN_TRUE;
             },
-            templateIsElement: function () {
+            elementIsTemplate: function () {
                 return BOOLEAN_FALSE;
             },
             template: function () {
@@ -200,10 +229,10 @@ app.scope(function (app) {
                 }
                 return found;
             },
-            addChildView: addChildView,
-            removeChildView: removeChildView,
-            constructor: function (secondary) {
+            constructor: function (secondary_) {
                 var view = this;
+                var secondary = secondary_ || {};
+                secondary.model = Model.isInstance(secondary.model) ? secondary.model : view.Model(secondary.model);
                 Parent[CONSTRUCTOR].call(view, secondary);
                 view.directive(ELEMENT).ensure();
                 this.id = uniqueId(BOOLEAN_FALSE, BOOLEAN_TRUE);
@@ -249,7 +278,7 @@ app.scope(function (app) {
                 // try to generate template
                 html = view.template(json);
                 settingElement = view.el;
-                if (view.templateIsElement()) {
+                if (view.elementIsTemplate()) {
                     settingElement = view.el.owner.fragment(html).children();
                     html = BOOLEAN_FALSE;
                 }
@@ -299,13 +328,11 @@ app.scope(function (app) {
                     region = regionManagerDirective.create(key, selector);
                 }
                 if (parentView !== app) {
-                    $selected = parentView.$(region[SELECTOR])[INDEX](0);
+                    $selected = parentView.el.$(region[SELECTOR])[ITEM](0);
                 } else {
-                    $selected = $(region[SELECTOR])[INDEX](0);
+                    $selected = $(region[SELECTOR])[ITEM](0);
                 }
-                // if ($selected) {
                 region.el = $selected;
-                // }
             });
             return regionManagerDirective;
         },
@@ -313,7 +340,7 @@ app.scope(function (app) {
             // var regionManager = this;
             // var region = isString(region_) ? regionManager.get(region_) : region_;
             // regionManager.remove(region);
-            // regionManager.unRegister(region.id, region);
+            // regionManager.drop(region.id, region);
         },
         createRegion = function (where, region_) {
             var key, regionManagerDirective = this,
@@ -328,11 +355,14 @@ app.scope(function (app) {
                 selector: selector || EMPTY_STRING
             }, isObject(region) ? region : {}, {
                 id: where,
-                parent: regionManagerDirective,
-                isAttached: parent === app ? BOOLEAN_TRUE : parent.isAttached
+                parent: regionManagerDirective
+                // ,
+                // owner$: makeQueryScope(parent)
+                // ,
+                // isAttached: parent === app ? BOOLEAN_TRUE : parent.isAttached
             }));
             regionManagerDirective.list.push(region);
-            regionManagerDirective.list.register(ID, where, region);
+            regionManagerDirective.list.keep(ID, where, region);
             return region;
         },
         bufferedEnsure = function () {

@@ -4,6 +4,7 @@
 @charset "utf-8";
 @import "materialize/mixins";
 @import "materialize/variables";
+@import "custom-scrollbar";
 html, body {
     height: 100%;
     width: 100%;
@@ -55,7 +56,7 @@ html, body {
     bottom: 0;
     margin: auto;
     transition: all 100ms;
-    &:hover {
+    &:hover, .odette-hover-trigger:hover & {
         transform: rotate(30deg);
     }
     &:before {
@@ -160,11 +161,13 @@ html, body {
 }
 .code {
     padding: 0;
+    width: 100%;
     white-space: pre;
     word-break: break-word;
     font-family: courier;
     display: block;
     overflow: auto;
+    position: relative;
 }
 .inline-code {
     background-color: color('grey', 'lighten-4');
@@ -193,7 +196,7 @@ pre.code-section {
     right: 100%;
     left: auto;
     @media #{$medium-and-down} {
-        transition: margin 250ms;
+        transition: transform 250ms;
     }
 }
 
@@ -307,13 +310,14 @@ pre.code-section {
     @media #{$medium-and-down} {
         &[data-toggled] {
             .side-nav {
-                margin-right: -16rem;
+                transform: translateX(16rem);
             }
         }
     }
     .side-nav {
         @media #{$large-and-up} {
-            transform: translateX(16rem);
+            transform: translateX(0);
+            margin-right: -16rem;
         }
     }
 }
@@ -342,10 +346,10 @@ pre.code-section {
 .content-wrapper {
     min-height: 100%;
     position: relative;
-    margin-bottom: 25rem;
-    z-index: 10;
+    padding-bottom: 25rem;
+    // z-index: 10;
     @media #{$medium-and-up} {
-        margin-bottom: 20rem;
+        padding-bottom: 20rem;
     }
 }
 
@@ -379,7 +383,7 @@ footer.page-footer {
     right: 0;
     left: 0;
     margin: 0;
-    z-index: 9;
+    // z-index: 9;
     .gitter-icon {
         height: 1.6rem;
         width: 1.6rem;
@@ -463,4 +467,26 @@ h1,h2,h3,h4,h5,h6 {
 [data-custom="text-reveal"].showing {
     opacity: 1;
     transform: translateY(0);
+}
+.is-scrolling {
+    * {
+        pointer-events: none !important;
+    }
+}
+.triggers-run {
+    height: 40px;
+    width: 40px;
+    line-height: 40px;
+    font-size: 12px;
+    background-color: white;
+    // margin-bottom: -40px;
+    position: relative;
+    float: right;
+    display: block;
+    z-index: 1;
+    text-align: center;
+    font-family: 'Roboto', sans-serif;
+    &.no-op {
+        display: none;
+    }
 }

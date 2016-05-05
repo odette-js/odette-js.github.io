@@ -61,7 +61,7 @@ var factories = {},
         }
         return -1;
     },
-    binaryIndexOf = function (list, item, minIndex_, maxIndex_, fromRight) {
+    sortedIndexOf = function (list, item, minIndex_, maxIndex_, fromRight) {
         var guess, min = minIndex_ || 0,
             max = maxIndex_ || list[LENGTH] - 1,
             bitwise = (max <= TWO_TO_THE_31) ? BOOLEAN_TRUE : BOOLEAN_FALSE;
@@ -98,7 +98,7 @@ var factories = {},
         return -1;
     },
     smartIndexOf = function (array, item, _from, _to, _rtl) {
-        return (_from === BOOLEAN_TRUE && array && array[LENGTH] > 100 ? binaryIndexOf : indexOf)(array, item, _from, _to, _rtl);
+        return (_from === BOOLEAN_TRUE && array && array[LENGTH] > 100 ? sortedIndexOf : indexOf)(array, item, _from, _to, _rtl);
     },
     /**
      * @func
@@ -116,9 +116,9 @@ var factories = {},
         var fn = fn_ || function (a, b) {
             return a > b;
         };
-        if (context) {
-            fn = bind(fn, context);
-        }
+        // if (context) {
+        fn = bindTo(fn, context);
+        // }
         // normalize sort function handling for safari
         return obj.sort(function (a, b) {
             var result = fn(a, b);
@@ -136,7 +136,7 @@ var factories = {},
     },
     normalizeToFunction = function (value, context, argCount) {
         if (value == NULL) return returns.first;
-        if (isFunction(value)) return bind(value, context);
+        if (isFunction(value)) return bindTo(value, context);
         // has not been created yet
         if (isObject(value)) return _.matcher(value);
         return property(value);
@@ -335,11 +335,12 @@ var factories = {},
     },
     now_offset = now(),
     now_shim = function () {
-        return now() - this.offset;
+        return now() - now_offset;
     },
     _performance = window.performance,
     performance = _performance ? (_performance.now = (_performance.now || _performance.webkitNow || _performance.msNow || _performance.oNow || _performance.mozNow || now_shim)) && _performance : {
-        now: now_shim
+        now: now_shim,
+        offset: now_offset
     },
     /**
      * @func
@@ -364,10 +365,10 @@ var factories = {},
     },
     merge = function (obj1, obj2, deep) {
         var key, val, i = 0,
-            keys = allKeys(obj2),
-            l = keys[LENGTH];
+            instanceKeys = keys(obj2),
+            l = instanceKeys[LENGTH];
         for (; i < l; i++) {
-            key = keys[i];
+            key = instanceKeys[i];
             // ignore undefined
             if (obj2[key] !== UNDEFINED) {
                 val = obj2[key];
@@ -438,7 +439,7 @@ var factories = {},
     },
     iterates = function (obj, iterator, context) {
         var list = keys(obj),
-            iteratee = bind(iterator, context);
+            iteratee = bindTo(iterator, context);
         return {
             keys: list,
             handler: function (key, idx, list) {
@@ -474,7 +475,7 @@ var factories = {},
     createPredicateIndexFinder = function (dir) {
         return eachProxy(function (array, predicate, context, index_) {
             var length = array[LENGTH],
-                callback = bind(predicate, context),
+                callback = bindTo(predicate, context),
                 index = index_ || (dir > 0 ? 0 : length - 1);
             for (; index >= 0 && index < length; index += dir) {
                 if (callback(array[index], index, array)) {
@@ -511,8 +512,14 @@ var factories = {},
     },
     find = finder(findIndex),
     findLast = finder(findLastIndex),
-    bind = function (func) {
-        var args = toArray(arguments).slice(1);
+    bind = function (func, context) {
+        return arguments[LENGTH] < 3 ? bindTo(func, context) : bindWith(func, toArray(arguments).slice(1));
+    },
+    bindTo = function (func, context) {
+        return context ? func.bind(context) : func;
+    },
+    bindWith = function (func, args) {
+        // var args = toArray(arguments).slice(1);
         return func.bind.apply(func, args);
     },
     duff = function (values, runner_, context, direction_) {
@@ -528,7 +535,7 @@ var factories = {},
             i = val - 1;
         }
         direction = direction_ || 1;
-        runner = bind(runner_, context);
+        runner = bindTo(runner_, context);
         if (leftover > 0) {
             do {
                 runner(values[i], i, values);
@@ -577,6 +584,7 @@ var factories = {},
         if (thingMod === BOOLEAN_TRUE + EMPTY_STRING) {
             ret = BOOLEAN_TRUE;
         }
+        // if failed to convert, revert
         if (ret === UNDEFINED) {
             ret = thing;
         }
@@ -865,6 +873,9 @@ var factories = {},
             return fn(first);
         };
     },
+    passes = {
+        first: passesFirstArgument
+    },
     concat = function () {
         var base = [];
         return base.concat.apply(base, map(arguments, passesFirstArgument(toArray)));
@@ -919,7 +930,7 @@ var factories = {},
     },
     filter = function (obj, iteratee, context) {
         var isArrayResult = isArrayLike(obj),
-            bound = bind(iteratee, context),
+            bound = bindTo(iteratee, context),
             runCount = 0;
         return foldl(obj, function (memo, item, key, all) {
             runCount++;
@@ -983,40 +994,23 @@ var factories = {},
         return val;
     },
     evaluate = function (context, string_) {
-        var split, string = string_.toString();
+        var split, bound, handler, string = string_.toString();
         if (isFunction(string_)) {
             split = string.split('{');
             string = split.shift();
             string = (string = split.join('{')).slice(0, string[LENGTH] - 1);
         }
-        return new FunctionConstructor('context', 'with(context) {\n' + string + '\n}')(context);
-    },
-    debounce = function (func, wait, immediate) {
-        var timeout;
-        return function () {
-            var context = this,
-                args = arguments,
-                callNow = immediate && !timeout,
-                later = function () {
-                    timeout = NULL;
-                    if (!immediate) {
-                        func.apply(context, args);
-                    }
-                };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-            if (callNow) {
-                func.apply(context, args);
-            }
-            return timeout;
-        };
+        bound = FunctionConstructor.bind(context);
+        handler = new bound('return ' + string);
+        bound = bindTo(handler, context);
+        return bound();
     },
     returnDysmorphicBase = function (obj) {
         return isArrayLike(obj) ? [] : {};
     },
     map = function (objs, iteratee, context) {
         var collection = returnDysmorphicBase(objs),
-            bound = bind(iteratee, context);
+            bound = bindTo(iteratee, context);
         return !objs ? collection : each(objs, function (item, index) {
             collection[index] = bound(item, index, objs);
         }) && collection;
@@ -1097,6 +1091,26 @@ var factories = {},
     /**
      * @func
      */
+    debounce = function (func, wait, immediate) {
+        var timeout;
+        return function () {
+            var context = this,
+                args = arguments,
+                callNow = immediate && !timeout,
+                later = function () {
+                    timeout = NULL;
+                    if (!immediate) {
+                        func.apply(context, args);
+                    }
+                };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) {
+                func.apply(context, args);
+            }
+            return timeout;
+        };
+    },
     throttle = function (fn, threshold, scope) {
         var last,
             deferTimer;
@@ -1118,6 +1132,18 @@ var factories = {},
                 last = _now;
                 fn.apply(context, args);
             }
+        };
+    },
+    defer = function (fn, time, ctx) {
+        var id;
+        return function () {
+            var context = ctx || this,
+                args = toArray(arguments);
+            clearTimeout(id);
+            id = setTimeout(function () {
+                fn.apply(context, args);
+            });
+            return id;
         };
     },
     /**
@@ -1233,12 +1259,12 @@ var factories = {},
             return maths[method].apply(maths, args);
         };
     },
-    ensureFunction = function (fn) {
-        return function (_fn) {
-            _fn = _fn || noop;
-            return fn.call(this, _fn);
-        };
-    },
+    // ensureFunction = function (fn) {
+    //     return function (_fn) {
+    //         _fn = _fn || noop;
+    //         return fn.call(this, _fn);
+    //     };
+    // },
     /**
      * @func
      */
@@ -1255,7 +1281,6 @@ var factories = {},
             return memo;
         };
         return function (obj, iteratee, memo, context) {
-            // iteratee = optimizeCb(iteratee, context, 4);
             var actualKeys = !isArrayLike(obj) && keys(obj),
                 length = (actualKeys || obj)[LENGTH],
                 index = dir > 0 ? 0 : length - 1;
@@ -1289,7 +1314,7 @@ var factories = {},
     _console = win.console || {},
     _log = _console.log || noop,
     // use same name so that we can ensure browser compatability
-    console = extend(wrap(gapSplit('trace log dir error'), function (key) {
+    console = extend(wrap(gapSplit('trace log dir error clear'), function (key) {
         var method = _console[key] || _log;
         return function () {
             return method.apply(_console, arguments);
@@ -1335,18 +1360,9 @@ var factories = {},
     returnsFirstArgument = returns.first = function (value) {
         return value;
     },
-    flow = function (bool, list_) {
-        var list = bool === BOOLEAN_TRUE ? list_ : arguments,
-            length = list[LENGTH];
+    flows = function (fromHere, toHere) {
         return function () {
-            var start = 1,
-                args = arguments,
-                arg = list[0].apply(this, args);
-            while (start < length) {
-                arg = list[start].call(this, arg);
-                ++start;
-            }
-            return arg;
+            return toHere.call(this, fromHere.apply(this, arguments));
         };
     },
     is = {
@@ -1360,18 +1376,17 @@ var factories = {},
         'null': isNull,
         length: isLength,
         validInteger: isValidInteger,
-        arrayLike: isArrayLike
+        arrayLike: isArrayLike,
+        instance: isInstance
     },
     _ = app._ = {
         is: is,
+        passes: passes,
         performance: performance,
-        months: gapSplit('january feburary march april may june july august september october november december'),
-        weekdays: gapSplit('sunday monday tuesday wednesday thursday friday saturday'),
         constructorWrapper: constructorWrapper,
         stringifyQuery: stringifyQuery,
         intendedObject: intendedObject,
         intendedIteration: intendedIteration,
-        ensureFunction: ensureFunction,
         parseDecimal: parseDecimal,
         flatten: flatten,
         gather: gather,
@@ -1380,7 +1395,6 @@ var factories = {},
         hasEnumBug: hasEnumBug,
         roundFloat: roundFloat,
         factories: factories,
-        // listSlice: listSlice,
         fullClone: fullClone,
         toBoolean: toBoolean,
         stringify: stringify,
@@ -1389,26 +1403,23 @@ var factories = {},
         values: values,
         zip: zip,
         object: object,
-        // uniqueId: uniqueId,
         wraptry: wraptry,
         toString: toString,
         throttle: throttle,
         debounce: debounce,
+        defer: defer,
         protoProperty: protoProperty,
         protoProp: protoProperty,
-        // reverse: reverse,
-        binaryIndexOf: binaryIndexOf,
+        sortedIndexOf: sortedIndexOf,
         indexOfNaN: indexOfNaN,
         toInteger: toInteger,
         indexOf: indexOf,
         joinGen: joinGen,
         toArray: toArray,
         isEqual: isEqual,
-        // unshift: unshift,
         gapJoin: gapJoin,
         isArray: isArray,
         isEmpty: isEmpty,
-        // splice: splice,
         returns: returns,
         isBoolean: isBoolean,
         invert: invert,
@@ -1435,28 +1446,25 @@ var factories = {},
         exports: exports,
         allKeys: allKeys,
         evaluate: evaluate,
-        // slice: slice,
         parse: parse,
-        // shift: shift,
         merge: merge,
         fetch: fetch,
-        // split: split,
         clone: clone,
         bind: bind,
+        bindTo: bindTo,
+        bindWith: bindWith,
         duff: duff,
         duffRight: duffRight,
         eachRight: eachRight,
         iterates: iterates,
         sort: sort,
-        // join: join,
         wrap: wrap,
         uuid: uuid,
         keys: keys,
         once: once,
         each: each,
-        // push: push,
-        flow: flow,
-        // pop: pop,
+        flows: flows,
+        baseClamp: baseClamp,
         has: has,
         negate: negate,
         pI: pI,

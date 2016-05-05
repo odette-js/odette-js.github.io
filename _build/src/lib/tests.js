@@ -28,7 +28,7 @@ application.scope().run(function (app, _, factories) {
                     successfulExpectations.push(expectation);
                 } else {
                     ++failedTests;
-                    expectation = new Error(makemessage.apply(this, arguments));
+                    expectation = new Error(makemessage.call(this, current, arg));
                     console.error(expectation);
                     failedExpectations.push(expectation);
                 }
@@ -69,7 +69,7 @@ application.scope().run(function (app, _, factories) {
         internalToEqualResult = maker('toEqual', function (current, comparison) {
             return _.isEqual(current, comparison);
         }, function (current, comparison) {
-            return EXPECTED + SPACE + current + TO_EQUAL + comparison;
+            return EXPECTED + SPACE + stringify(current) + TO_EQUAL + stringify(comparison);
         }, function (current, comparison) {
             return EXPECTED + SPACE + stringify(current) + SPACE_NOT + TO_EQUAL + stringify(comparison);
         }),

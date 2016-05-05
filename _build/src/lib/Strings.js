@@ -126,6 +126,9 @@ var cacheable = function (fn) {
     snakeCase = function (string) {
         return unCamelCase(string, '_');
     },
+    kebabCase = function (string) {
+        return unCamelCase(string, HYPHEN);
+    },
     /**
      * @func
      */
@@ -292,7 +295,7 @@ var cacheable = function (fn) {
             url = url.slice(0, searchIdx - 1);
         }
         if (url[0] === SLASH && url[1] === SLASH) {
-            protocol = win.location.protocol;
+            protocol = windo.location.protocol;
         } else {
             while (protocolLength-- && !protocol) {
                 if (url.slice(0, protocols[protocolLength][LENGTH]) === protocols[protocolLength]) {

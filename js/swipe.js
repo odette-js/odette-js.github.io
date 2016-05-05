@@ -1,10 +1,11 @@
 application.scope().run(function (app, _, factories) {
+    'use strict';
     $.plugin(function ($) {
         var BOOLEAN_TRUE = !0,
             BOOLEAN_FALSE = !1,
             DRAGGING = 'dragging',
             depressed = BOOLEAN_FALSE,
-            startPoint = {},
+            dragStartPoint = {},
             ends = {
                 touchcancel: BOOLEAN_TRUE,
                 mouseup: BOOLEAN_TRUE,
@@ -32,42 +33,64 @@ application.scope().run(function (app, _, factories) {
                         y: e.pageY * dpr
                     };
                 }
+            },
+            targetIsContained = function (e) {
+                return e.origin.element() !== e.target && !e.origin.contains(e.target);
             };
         $.document.expandEvent('drag', ['mousedown', 'mousemove', 'mouseup'].concat($.events.lists.touch));
-        $.document.customEvent('drag', function (originalFn) {
+        $.document.customEvent('drag', function (originalFn, originalName) {
             return function (e) {
+                // console.log(e.origin.element());
                 var scalar, duration, startCopy, currentPoint, deltaX, deltaY;
-                if (e.drag) {
+                if (e.dragStartPoint) {
                     return originalFn(e);
                 } else {
                     // temporarily makes the variable depressed true, so that child elements
                     // do not prevent parents from firing their respective events.
                     depressed = depressed || ends[e.originalType];
                 }
-                if (!depressed && starts[e.originalType]) {
+                if (!e.origin.is(DRAGGING) && starts[e.originalType]) {
                     depressed = BOOLEAN_TRUE;
-                    startPoint = coord(e);
-                    startPoint.timestamp = e.timestamp;
+                    dragStartPoint = e.dragStartPoint = coord(e);
+                    dragStartPoint.timestamp = e.timestamp;
+                    e.unmark(DRAGGING);
+                    _.wraptry(function () {
+                        originalFn(e);
+                    });
+                    e.origin.mark(DRAGGING, targetIsContained(e));
                     return;
                 }
                 if (!depressed) {
                     return;
                 }
-                if (ends[e.originalType]) {
-                    depressed = BOOLEAN_FALSE;
+                if (!dragStartPoint) {
+                    e.origin.mark(DRAGGING);
+                }
+                if (!e.origin.is(DRAGGING)) {
+                    if (ends[e.originalType]) {
+                        depressed = BOOLEAN_FALSE;
+                    }
+                    return;
                 }
                 currentPoint = coord(e);
-                startCopy = e.startPoint = {
-                    x: startPoint.x,
-                    y: startPoint.y,
-                    timestamp: startPoint.timestamp
+                if (ends[e.originalType]) {
+                    e.origin.unmark(DRAGGING);
+                    depressed = BOOLEAN_FALSE;
+                    e.dragEndPoint = currentPoint;
+                }
+                startCopy = e.dragStartPoint = {
+                    x: dragStartPoint.x,
+                    y: dragStartPoint.y,
+                    timestamp: dragStartPoint.timestamp
                 };
                 e.drag = {
+                    movementX: e.movementX,
+                    movementY: e.movementY,
                     depressed: depressed,
                     vector: [startCopy, currentPoint],
                     deltaX: (deltaX = currentPoint.x - startCopy.x),
                     deltaY: (deltaY = startCopy.y - currentPoint.y),
-                    duration: (duration = e.timestamp - startPoint.timestamp),
+                    duration: (duration = e.timestamp - dragStartPoint.timestamp),
                     scalar: (scalar = Math.sqrt((deltaX * deltaX) + (deltaY * deltaY))),
                     angle: (((Math.atan2(deltaY, deltaX) / Math.PI) * 180)),
                     speed: scalar / duration
@@ -75,11 +98,26 @@ application.scope().run(function (app, _, factories) {
                 if (e.drag.angle < 0) {
                     e.drag.angle = 360 + e.drag.angle;
                 }
-                e.mark(DRAGGING);
+                e.remark(DRAGGING, !e.dragEndPoint);
                 return originalFn(e);
             };
         });
-        $.document.expandEvent('swipe', 'drag');
+        $.document.expandEvent('swipe dragstart dragend', 'drag');
+        $.document.customEvent('dragstart', function (originalHandler) {
+            return function (e) {
+                if (!e.is(DRAGGING) && e.dragStartPoint && !e.dragEndPoint) {
+                    originalHandler(e);
+                }
+            };
+        });
+        $.document.customEvent('dragend', function (originalHandler) {
+            return function (e) {
+                if (!e.is(DRAGGING) && e.dragStartPoint && e.dragEndPoint) {
+                    originalHandler(e);
+                }
+            };
+        });
+        // $.document.expandEvent('swipe', 'drag');
         $.document.customEvent('swipe', function (originalHandler) {
             return function (e) {
                 var angle, handlerresult, drag = e.drag,

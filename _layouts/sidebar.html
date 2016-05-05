@@ -6,13 +6,13 @@
             {% include sidebar.html %}
         </div>
         <main class="page-content nav-side-slide">
-            <div class="content-wrapper white z-depth-1">
+            <div class="content-wrapper z-depth-1">
                 {% include header.html %}
-                <div class="row">
+                {% include footer.html %}
+                <div class="row white position-relative">
                     {{ content }}
                 </div>
             </div>
-            {% include footer.html %}
         </main>
         {% include templates/index.html %}
         {% include scripts.html %}

@@ -293,10 +293,15 @@ app.scope(function (app) {
                 return this[DISPATCH_EVENT](name);
             },
             dispatchEvent: function (name, data, options) {
-                var bus, evnt, returnValue, eventer = this,
+                var bus, evnt, eventValidation, returnValue, eventer = this,
                     eventsDirective = eventer[EVENTS];
-                if (!eventsDirective || eventsDirective.running[name] || eventsDirective.queued[name]) {
+                if (!eventsDirective || !eventsDirective.has(name) || eventsDirective.running[name] || eventsDirective.queued[name] || !(eventValidation = eventsDirective.validate(name, data, options))) {
                     return;
+                }
+                if (isArray(eventValidation)) {
+                    name = eventValidation[0];
+                    data = eventValidation[1];
+                    options = eventValidation[2];
                 }
                 evnt = eventsDirective.create(eventer, data, name, options);
                 returnValue = eventsDirective.dispatch(name, evnt);

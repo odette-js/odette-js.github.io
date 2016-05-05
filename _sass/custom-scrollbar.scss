@@ -1,0 +1,40 @@
+$cs-rail-size: 8px;
+.cs-container {
+    -ms-touch-action: none;
+    touch-action: none;
+    overflow: hidden;
+    position: relative;
+    @supports (-ms-overflow-style: none) {
+        overflow: auto !important; }
+    @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+        overflow: auto !important; }
+    > .cs-rail {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        height: $cs-rail-size;
+        width: $cs-rail-size;
+        background-color: transparent;
+        opacity: 0;
+        overflow: hidden;
+        > .cs-bar {
+            background-color: rgba(0,0,0,0.5);
+            position: absolute; }
+        &.cs-rail-x {
+            width: 100%; }
+        &.cs-rail-y {
+            height: 100%; }
+        > .cs-bar-x {
+            left: 0;
+            min-width: $cs-rail-size;
+            height: 100%; }
+        > .cs-bar-y {
+            top: 0;
+            min-height: $cs-rail-size;
+            width: 100%; } }
+    &.cs-active-y {
+        > .cs-rail-y {
+            opacity: 1; } }
+    &.cs-active-x {
+        > .cs-rail-x {
+            opacity: 1 } } }

@@ -63,7 +63,7 @@ app.scope(function (app) {
             mark: parody(STATUS, 'mark'),
             unmark: parody(STATUS, 'unmark'),
             remark: parody(STATUS, 'remark'),
-            is: checkParody(STATUS, 'is', BOOLEAN_FALSE),
+            is: checkParody(STATUS, 'is'),
             directive: function (name) {
                 var Handler, directive, that = this;
                 if ((directive = that[name])) {

@@ -454,7 +454,7 @@ application.scope().run(function (app, _, factories) {
             _.describe('there are also special handlers', function () {
                 _.it('like create', function () {
                     $.registerElement('test0', {
-                        onCreate: handler
+                        creation: handler
                     });
                     _.expect(count).toEqual(0);
                     $.createElement('test0');
@@ -462,7 +462,7 @@ application.scope().run(function (app, _, factories) {
                 });
                 _.it('and destroy', function () {
                     $.registerElement('test1', {
-                        onDestroy: handler
+                        destruction: handler
                     });
                     var div = $.createElement('test1');
                     _.expect(count).toEqual(0);
@@ -473,7 +473,7 @@ application.scope().run(function (app, _, factories) {
                 //     $.createElement('test2');
                 //     _.expect(count).toEqual(0);
                 //     $.registerElement('test2', {
-                //         onCreate: handler
+                //         creation: handler
                 //     });
                 //     _.expect(count).toEqual(1);
                 // });

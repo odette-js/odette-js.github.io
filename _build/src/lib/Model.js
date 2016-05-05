@@ -2,7 +2,7 @@ var CHILDREN = upCase(CHILD + 'ren');
 app.scope(function (app) {
     var Collection = factories.Collection,
         Events = factories.Events,
-        List = factories.List,
+        List = factories.Collection,
         SORT = 'sort',
         ADDED = 'added',
         UNWRAP = 'unwrap',
@@ -65,7 +65,7 @@ app.scope(function (app) {
         Children = factories[CHILDREN] = factories.Collection.extend(CHILDREN, {
             constructor: function (instance) {
                 this[TARGET] = instance;
-                factories.List[CONSTRUCTOR].call(this);
+                factories.Collection[CONSTRUCTOR].call(this);
                 return this;
             },
             // this one forcefully adds
@@ -119,8 +119,8 @@ app.scope(function (app) {
                 // add to collection
                 children.add(newModel);
                 // register with parent
-                children.register(ID, newModel.id, newModel);
-                children.register('cid', newModel.cid, newModel);
+                children.keep(ID, newModel.id, newModel);
+                children.keep('cid', newModel.cid, newModel);
             },
             removeFromHash: function (child) {
                 var directive = this;
@@ -129,9 +129,9 @@ app.scope(function (app) {
                 }
                 // remove the child from the children hash
                 directive.remove(child);
-                directive.unRegister(ID, child.id);
+                directive.drop(ID, child.id);
                 // unregister from the child hash keys
-                directive.unRegister('cid', child.cid);
+                directive.drop('cid', child.cid);
             },
             /**
              * @description resets the model's attributes to the object that is passed in
@@ -213,7 +213,7 @@ app.scope(function (app) {
                     parent = parent[PARENT];
                     return parent.remove(this);
                 }
-                retList = List();
+                retList = Collection();
                 if (!isObject(idModel) && (children = parent.directive(CHILDREN))) {
                     // it's an id
                     idModel = children.get(ID, idModel);
