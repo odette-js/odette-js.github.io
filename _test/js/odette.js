@@ -6240,7 +6240,7 @@ app.scope(function (app) {
         htmlTextManipulator = function (attr) {
             return function (string) {
                 var dom = this;
-                return isString(string) ? dom.eachCall(attr, string) && dom : dom.map(getInnard.bind(NULL, attr)).join(EMPTY_STRING);
+                return string !== UNDEFINED ? dom.eachCall(attr, string) && dom : dom.map(getInnard.bind(NULL, attr)).join(EMPTY_STRING);
             };
         },
         horizontalTraverser = function (method, _idxChange) {
