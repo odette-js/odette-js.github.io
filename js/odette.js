@@ -1028,8 +1028,8 @@ var factories = {},
     /**
      * @func
      */
-    constructorExtend = function (name, protoProps, attach) {
-        var nameString, child, passedParent, hasConstructor, constructor, parent = this,
+    constructorExtend = function (parent_, name, protoProps) {
+        var nameString, child, passedParent, hasConstructor, constructor, parent = parent_,
             nameIsStr = isString(name);
         if (name === BOOLEAN_FALSE) {
             extend(parent[PROTOTYPE], protoProps);
@@ -1065,9 +1065,6 @@ var factories = {},
         child = constructorWrapper(constructor);
         child.__super__ = parent;
         constructor[PROTOTYPE][CONSTRUCTOR_KEY] = child;
-        // if (nameIsStr && attach && !_._preventConstructorAttach) {
-        //     factories[name] = child;
-        // }
         return child;
     },
     constructorWrapper = function (Constructor) {
@@ -1078,8 +1075,8 @@ var factories = {},
             return isInstance(instance, Constructor);
         };
         __[CONSTRUCTOR] = Constructor;
-        __[EXTEND] = Constructor[EXTEND] = function () {
-            return constructorExtend.apply(Constructor, arguments);
+        __[EXTEND] = Constructor[EXTEND] = function (name, protoprops) {
+            return constructorExtend(Constructor, name, protoprops);
         };
         return __;
     },
@@ -1772,6 +1769,7 @@ var factories = {},
     },
     _ = app._ = {
         is: is,
+        constructorExtend: constructorExtend,
         passes: passes,
         performance: performance,
         constructorWrapper: constructorWrapper,
