@@ -956,40 +956,35 @@ var factories = {},
     whereNot = function (obj, attrs) {
         return filter(obj, negate(matches(attrs)));
     },
+    baseDataTypes = {
+        true: BOOLEAN_TRUE,
+        false: BOOLEAN_FALSE,
+        null: NULL,
+        undefined: UNDEFINED
+    },
     parse = function (val_) {
         var coerced, val = val_;
-        if (isString(val)) {
-            val = val.trim();
-            if ((val[0] === '{' && val[val[LENGTH] - 1] === '}') || (val[0] === '[' && val[val[LENGTH] - 1] === ']')) {
-                wraptry(function () {
-                    val = JSON.parse(val);
-                }, console.error);
-            } else {
-                if (val === 'true') {
-                    val = BOOLEAN_TRUE;
-                } else {
-                    coerced = +val;
-                    if (coerced === coerced) {
-                        val = coerced;
-                    } else {
-                        if (val === 'false') {
-                            val = BOOLEAN_FALSE;
-                        } else {
-                            if (val === 'null') {
-                                val = NULL;
-                            } else {
-                                if (val === 'undefined') {
-                                    val = UNDEFINED;
-                                } else {
-                                    if (val.slice(0, 8) === 'function') {
-                                        val = new FunctionConstructor('return ' + val)();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        if (!isString(val)) {
+            return val;
+        }
+        val = val.trim();
+        if (!val[LENGTH]) {
+            return val;
+        }
+        if ((val[0] === '{' && val[val[LENGTH] - 1] === '}') || (val[0] === '[' && val[val[LENGTH] - 1] === ']')) {
+            return wraptry(function () {
+                return JSON.parse(val);
+            }, console.error);
+        }
+        coerced = +val;
+        if (!isNaN(coerced)) {
+            return coerced;
+        }
+        if (has(baseDataTypes, val)) {
+            return baseDataTypes[val];
+        }
+        if (val.slice(0, 8) === 'function') {
+            return new FunctionConstructor('return ' + val)();
         }
         return val;
     },
