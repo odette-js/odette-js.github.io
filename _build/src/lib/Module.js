@@ -133,7 +133,7 @@ app.scope(function (app) {
                     fn = isFunction(windo) ? windo : fn_,
                     args = isWindow(windo) ? [windo.DOMA] : [];
                 if (isFunction(fn)) {
-                    if (module.application) {
+                    if (module.application !== module) {
                         result = fn.apply(module, createArguments(module, args));
                     } else {
                         result = fn.apply(module, module.createArguments(args));
@@ -141,7 +141,7 @@ app.scope(function (app) {
                 }
                 return result === UNDEFINED ? module : result;
             },
-            export: function (one, two) {
+            publicize: function (one, two) {
                 var module = this;
                 intendedObject(one, two, function (key, value) {
                     module.exports[key] = value;
@@ -193,7 +193,7 @@ app.scope(function (app) {
             }
         },
         extraModuleArguments = [],
-        Module = factories.Module = factories.Model.extend('Module', moduleMethods),
+        Module = factories.Module = factories.Model.extend('Module', extend({}, startableMethods, moduleMethods)),
         baseModuleArguments = function (app) {
             var _ = app._;
             return [app, _, _ && _.factories];

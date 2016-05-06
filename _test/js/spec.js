@@ -1977,7 +1977,7 @@ application.scope().run(function (app, _, factories) {
             _.expect(count).toEqual(3);
         });
         _.it('can have exports (can hold data)', function () {
-            level.export({
+            level.publicize({
                 one: 1,
                 two: 2
             });
@@ -1986,7 +1986,7 @@ application.scope().run(function (app, _, factories) {
         });
         _.it('which is like giving public data', function () {
             var mod = app.module('newmodule', function () {
-                this.export({
+                this.publicize({
                     here: 'there'
                 });
             });

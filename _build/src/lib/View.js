@@ -104,7 +104,7 @@ app.scope(function (app) {
                 if (!view_) {
                     return region;
                 }
-                view = makesView(region, view_, region.parent.parent.Child || View);
+                view = makesView(region, view_, region.Child || region.parent.parent.Child || View);
                 // if ((view.model.id)) {}
                 if (view[PARENT]) {
                     if (view[PARENT] === region) {
@@ -314,7 +314,7 @@ app.scope(function (app) {
                 return view;
             }
         }),
-        Child = Region[CONSTRUCTOR][PROTOTYPE].Child = View,
+        // Child = Region[CONSTRUCTOR][PROTOTYPE].Child = View,
         _View = factories.View,
         establishRegion = function (key, selector) {
             var regionManagerDirective = this,

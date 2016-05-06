@@ -29,8 +29,8 @@ _.expect(function () {}).toThrow(); // false</code></pre>
     return 'expected ' + _.stringify(a) + ' not to be greater than ' + _.stringify(b);
 });
 _.expect(5).toBeGreaterThan(4);        // true
-_.expect(10).toBeGreaterThan(100);     // "expected 10 to be greater than 100"
-_.expect(5).not.toBeGreaterThan(4);    // "expected 5 not to be greater than 4"
+_.expect(10).toBeGreaterThan(100);     // false, console.errors "expected 10 to be greater than 100"
+_.expect(5).not.toBeGreaterThan(4);    // false, console.errors "expected 5 not to be greater than 4"
 _.expect(10).not.toBeGreaterThan(100); // true</code></pre>
 </div>
 <div id="methods_it">

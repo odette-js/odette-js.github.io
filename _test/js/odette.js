@@ -102,6 +102,7 @@ this.Odette = function (global, WHERE, version, fn) {
     function Application(name, parent) {
         this.version = name;
         this.scoped = BOOLEAN_TRUE;
+        this.application = this;
         this.missedDefinitions = [];
         this.createdAt = now();
         return this;
@@ -3881,9 +3882,9 @@ app.scope(function (app) {
             fetch: function () {}
         }),
         Parent = factories.Parent = factories.Events.extend('Parent', {
-            Child: BOOLEAN_TRUE,
+            // Child: BOOLEAN_TRUE,
             isChildType: function (child) {
-                return isInstance(child, this.Child === BOOLEAN_TRUE ? this.__constructor__[CONSTRUCTOR] : this.Child);
+                return isInstance(child, this.Child || this.__constructor__[CONSTRUCTOR]);
             },
             // public facing version filters
             add: function (objs_, secondary_) {
@@ -3899,7 +3900,7 @@ app.scope(function (app) {
                     var isChildType = parent.isChildType(obj),
                         // create a new model
                         // call it with new in case they use a constructor
-                        Constructor = parent.Child === BOOLEAN_TRUE ? parent.__constructor__[CONSTRUCTOR] : parent.Child,
+                Constructor = parent.Child || parent.__constructor__[CONSTRUCTOR],
                         newModel = isChildType ? obj : new Constructor(obj, secondary),
                         // unfortunately we can only find by the newly created's id
                         // which we only know for sure after the child has been created ^
@@ -5177,6 +5178,7 @@ app.scope(function (app) {
                     'status:0': FAILURE,
                     'status:200': SUCCESS,
                     'status:202': SUCCESS,
+                    'status:204': SUCCESS,
                     'status:205': SUCCESS,
                     'status:302': SUCCESS,
                     'status:304': SUCCESS,
@@ -5367,7 +5369,7 @@ app.scope(function (app) {
                     fn = isFunction(windo) ? windo : fn_,
                     args = isWindow(windo) ? [windo.DOMA] : [];
                 if (isFunction(fn)) {
-                    if (module.application) {
+                    if (module.application !== module) {
                         result = fn.apply(module, createArguments(module, args));
                     } else {
                         result = fn.apply(module, module.createArguments(args));
@@ -5375,7 +5377,7 @@ app.scope(function (app) {
                 }
                 return result === UNDEFINED ? module : result;
             },
-            export: function (one, two) {
+            publicize: function (one, two) {
                 var module = this;
                 intendedObject(one, two, function (key, value) {
                     module.exports[key] = value;
@@ -5427,7 +5429,7 @@ app.scope(function (app) {
             }
         },
         extraModuleArguments = [],
-        Module = factories.Module = factories.Model.extend('Module', moduleMethods),
+        Module = factories.Module = factories.Model.extend('Module', extend({}, startableMethods, moduleMethods)),
         baseModuleArguments = function (app) {
             var _ = app._;
             return [app, _, _ && _.factories];
@@ -6240,7 +6242,7 @@ app.scope(function (app) {
         htmlTextManipulator = function (attr) {
             return function (string) {
                 var dom = this;
-                return string !== UNDEFINED ? dom.eachCall(attr, string) && dom : dom.map(getInnard.bind(NULL, attr)).join(EMPTY_STRING);
+                return string !== UNDEFINED ? dom.eachCall(attr, string) && dom : dom.results(attr).join(EMPTY_STRING); //dom.map(getInnard.bind(NULL, attr)).join(EMPTY_STRING);
             };
         },
         horizontalTraverser = function (method, _idxChange) {
@@ -9489,7 +9491,7 @@ app.scope(function (app) {
                 if (!view_) {
                     return region;
                 }
-                view = makesView(region, view_, region.parent.parent.Child || View);
+                view = makesView(region, view_, region.Child || region.parent.parent.Child || View);
                 // if ((view.model.id)) {}
                 if (view[PARENT]) {
                     if (view[PARENT] === region) {
@@ -9699,7 +9701,7 @@ app.scope(function (app) {
                 return view;
             }
         }),
-        Child = Region[CONSTRUCTOR][PROTOTYPE].Child = View,
+        // Child = Region[CONSTRUCTOR][PROTOTYPE].Child = View,
         _View = factories.View,
         establishRegion = function (key, selector) {
             var regionManagerDirective = this,

@@ -102,6 +102,7 @@ this.Odette = function (global, WHERE, version, fn) {
     function Application(name, parent) {
         this.version = name;
         this.scoped = BOOLEAN_TRUE;
+        this.application = this;
         this.missedDefinitions = [];
         this.createdAt = now();
         return this;

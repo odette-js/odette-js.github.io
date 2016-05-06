@@ -82,15 +82,6 @@ promise.success(function () {
 promise.fulfill(1, 2); // logs [1], "succeeded", "finished"</code></pre>
 <h5 id="methods_handle" class="title-headline">#handle</h5>
 <p>When the handle method is called, with a string as the first, and a function as the second argument, the function will first be stashed in a queue against that state, then the promise will check to see if it is resolved, and if it is, then it will empty it's resolved state's queue.</p>
-<p>Here are a few examples outlining the behavior of calling the execute function both before and after the state has been resolved. In the following example you will notice that first the handle method is called, and then an addHandler method, and then another method, in this case, circle, which is the same as the string that was passed into the addHandler method. Note that the handle method is called before the addHandler method.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var promise = _.Promise();
-promise.handle('circle', function () {
-    console.log('first-circle');
-});
-promise.resolve(); // logs 'first-circle'
-promise.handle('circle', function () {
-    console.log('second-circle');
-}); // logs 'second-circle'</code></pre>
 <h5 id="methods_isChildType" class="title-headline">#isChildType</h5>
 <p>An isChildType method is used to quickly check the validity of a child that is being added to a all statement. At default, a simple check is made for the success, failure, and always methods, instead of checking the instance. This method can be overwritten in cases where a more specific child check is needed for state resolution.</p>
 <h5 id="methods_reject" class="title-headline">#reject</h5>
@@ -109,7 +100,7 @@ promise.reject(); // logs "failed", "finished"</code></pre>
 <p>Odette's promises can be resolved in as many ways as they can be configured. In order to resolve promises in the correct state and trigger the subsequent tree, Promises proved a resolveAs method which simplifies this process.</p>
 <p>Note: In order to resolve the promise to a non base state, (always, success, failure, error) you need to first add to the auxiliary states. Please see <a href="#auxiliaryStates">Auxiliary States</a> above.</p>
 <p>If you have all of your auxiliary states setup, then you can simply resolve the promise and the tree will be triggered. Below is an example which uses the same auxiliary states used in the <a href="/api/v0/ajax">Ajax</a> constructor, which is outlined in the <a href="#auxiliaryStates">Auxiliary States</a> above.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">promise.handle("status:200", function () {
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">factories.HTTP().handle("status:200", function () {
     console.log(200);
 }).handle("status:204", function () {
     console.log('no content!');
@@ -117,12 +108,12 @@ promise.reject(); // logs "failed", "finished"</code></pre>
     console.log('success');
 }).always(function () {
     console.log('finally finished!');
-});
-promise.resolveAs('status:204'); // logs "no content!", "success", "finally finished!"</code></pre>
+}).resolveAs('status:204'); // logs "no content!", "success", "finally finished!"</code></pre>
 <h5 id="methods_stash" class="title-headline">#stash</h5>
 <p>Sometimes you only want to stash a handler against a resolve state instead of emptying the resolve tree. If you do not want to trigger that same function if the promise has already resolved to that state, then you can just the stash method to stash the handler against that resolution state / branch.</p>
 <p>To invoke this behavior, simply call the stash method and pass in a key, with a handler, or list of handlers that you would like to stash against that key.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">promise.fulfill();
+<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var promise = _.Promise();
+promise.fulfill();
 promise.stash('success', function () {
     console.log('successfully stashed');
 });
@@ -131,7 +122,7 @@ promise.success(function () {
 }); // logs "successfully stashed", "tree emptied"</code></pre>
 <h5 id="methods_all" class="title-headline">#all</h5>
 <p>When is a convenience function to wrap multiple Promises in an all or nothing manner. If you are waiting for 3 different promises to resolve, then you can use the all method, as well as the _.all method to wrap those 3 promises into a singular promise that will only be fulfilled if all of the promises added to it are also fulfilled. If any are rejected, then the parent promise is also rejected.</p>
-<p>Below is an example of three independently resolved promises that both sychronously and asychronously resolve, and use the a all wrapping.</p>
+<p>Below is an example of three independently resolved promises that both sychronously and asychronously resolve, and use the all wrapping.</p>
 <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var promise1 = _.Promise();
 var promise2 = _.Promise();
 var promise3 = _.Promise();

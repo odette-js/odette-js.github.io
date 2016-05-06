@@ -166,9 +166,9 @@ app.scope(function (app) {
             fetch: function () {}
         }),
         Parent = factories.Parent = factories.Events.extend('Parent', {
-            Child: BOOLEAN_TRUE,
+            // Child: BOOLEAN_TRUE,
             isChildType: function (child) {
-                return isInstance(child, this.Child === BOOLEAN_TRUE ? this.__constructor__[CONSTRUCTOR] : this.Child);
+                return isInstance(child, this.Child || this.__constructor__[CONSTRUCTOR]);
             },
             // public facing version filters
             add: function (objs_, secondary_) {
@@ -184,7 +184,7 @@ app.scope(function (app) {
                     var isChildType = parent.isChildType(obj),
                         // create a new model
                         // call it with new in case they use a constructor
-                        Constructor = parent.Child === BOOLEAN_TRUE ? parent.__constructor__[CONSTRUCTOR] : parent.Child,
+                Constructor = parent.Child || parent.__constructor__[CONSTRUCTOR],
                         newModel = isChildType ? obj : new Constructor(obj, secondary),
                         // unfortunately we can only find by the newly created's id
                         // which we only know for sure after the child has been created ^

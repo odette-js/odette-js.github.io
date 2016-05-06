@@ -145,6 +145,7 @@ app.scope(function (app) {
                     'status:0': FAILURE,
                     'status:200': SUCCESS,
                     'status:202': SUCCESS,
+                    'status:204': SUCCESS,
                     'status:205': SUCCESS,
                     'status:302': SUCCESS,
                     'status:304': SUCCESS,
