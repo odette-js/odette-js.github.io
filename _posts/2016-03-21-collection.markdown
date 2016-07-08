@@ -112,8 +112,8 @@ collection.call(1, 2); // logs "a", "b", [1]</code></pre>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([1, 2]);
 var collection2 = factories.Collection([5, 6]);
 var collection3 = collection.concat([3, 4], collection2);
-collection.unwrap(); // [1, 2]
-collection3.unwrap(); // [1, 2, 3, 4, 5, 6]</code></pre>
+collection.toArray(); // [1, 2]
+collection3.toArray(); // [1, 2, 3, 4, 5, 6]</code></pre>
 </div>
 <div id="methods_count">
     <h5 class="title-headline">#count</h5>
@@ -125,7 +125,7 @@ collection.count(function (item, index, array) {
         array.push(0);
     }
 }, 3, 13);
-collection.unwrap(); // [0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0]</code></pre>
+collection.toArray(); // [0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0]</code></pre>
 </div>
 <div id="methods_countFrom">
     <h5 class="title-headline">#countFrom</h5>
@@ -134,7 +134,7 @@ collection.unwrap(); // [0, 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0]</code></pre>
 collection.countFrom(function (item, index, collection) {
     collection.push(item);
 }, 4);
-collection.unwrap(); // [0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7]</code></pre>
+collection.toArray(); // [0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7]</code></pre>
 </div>
 <div id="methods_countTo">
     <h5 class="title-headline">#countTo</h5>
@@ -143,13 +143,13 @@ collection.unwrap(); // [0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7]</code></pre>
 collection.countTo(function (item, index, collection) {
     collection.push(item);
 }, 4);
-collection.unwrap(); // [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3]</code></pre>
+collection.toArray(); // [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3]</code></pre>
 </div>
 <div id="methods_cycle">
     <h5 class="title-headline">#cycle</h5>
     <p>The cycle method cycles items through the array, putting items after the index passed at the front of the array. The cycle method modifies the array in place.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([0, 1, 2, 3, 4, 5, 6, 7]);
-collection.cycle(2).unwrap(); // [2, 3, 4, 5, 6, 7, 0, 1]</code></pre>
+collection.cycle(2).toArray(); // [2, 3, 4, 5, 6, 7, 0, 1]</code></pre>
 </div>
 <div id="methods_duff">
     <h5 class="title-headline">#duff</h5>
@@ -217,16 +217,16 @@ collection.eachCallRight('method', "a"); // logs "a", 3, "a", 2, "a", 1, "a", 0<
     <h5 class="title-headline">#empty</h5>
     <p>The empty method simply replaces the array with a blank array.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([1, 2, 3, 4]);
-collection.unwrap(); // [1, 2, 3, 4]
+collection.toArray(); // [1, 2, 3, 4]
 collection.empty();
-collection.unwrap(); // []</code></pre>
+collection.toArray(); // []</code></pre>
 </div>
 <div id="methods_eq">
     <h5 class="title-headline">#eq</h5>
     <p>The eq method can be passed a number or collection of numbers to create another collection with.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([5, 3, 2, 0, 4, 1]);
-collection.eq(3).unwrap(); // [0]
-collection.eq([3, 0, 1]).unwrap(); // [0, 5, 3]</code></pre>
+collection.eq(3).toArray(); // [0]
+collection.eq([3, 0, 1]).toArray(); // [0, 5, 3]</code></pre>
 </div>
 <div id="methods_filter">
     <h5 class="title-headline">#filter</h5>
@@ -235,7 +235,7 @@ collection.eq([3, 0, 1]).unwrap(); // [0, 5, 3]</code></pre>
 var collection2 = collection.filter(function (item) {
     return item % 2;
 });
-collection2.unwrap(); // [1, 3, 5]</code></pre>
+collection2.toArray(); // [1, 3, 5]</code></pre>
 </div>
 <div id="methods_find">
     <h5 class="title-headline">#find</h5>
@@ -303,14 +303,14 @@ collection.first(); // 5</code></pre>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([[1, 5, 4], [[2], [[0], 3]]]);
 collection.length(); // 2
 var collection2 = collection.flatten();
-collection2.unwrap();       // [1, 5, 4, [2], [[0], 3]]
+collection2.toArray();       // [1, 5, 4, [2], [[0], 3]]
 collection2.length(); // 5
 collection = factories.Collection([[1, 5, 4], [[2], [[0], 3]]]);
-collection.flatten(true).unwrap(); // [1, 5, 4, 2, 0, 3]
+collection.flatten(true).toArray(); // [1, 5, 4, 2, 0, 3]
 collection = factories.Collection([[1, 5, 4], [[2], [[0], 3]]]);
 collection.flatten(true, function (items) {
     // exposure to each that will populate the collection
-}).unwrap(); // [1, 5, 4, 2, 0, 3]</code></pre>
+}).toArray(); // [1, 5, 4, 2, 0, 3]</code></pre>
 </div>
 <div id="methods_foldl">
     <h5 class="title-headline">#foldl</h5>
@@ -347,7 +347,7 @@ var collection2 = collection.gather(function (collection) {
         return item * 2;
     });
 });
-collection2.unwrap(); // [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 0, 2, 4, 6, 8]</code></pre>
+collection2.toArray(); // [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 0, 2, 4, 6, 8]</code></pre>
 </div>
 <div id="methods_has">
     <h5 class="title-headline">#has</h5>
@@ -371,7 +371,7 @@ collection.indexOf('five', 2, 4); // -1</code></pre>
     <p>The insertAt method is basically a singular splice convenience function that makes the process of adding a singular item to a collection less convoluted.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([0, 1, 2, 3]);
 collection.insertAt(4, 2); // true
-collection.unwrap(); // [0, 1, 4, 2, 3]</code></pre>
+collection.toArray(); // [0, 1, 4, 2, 3]</code></pre>
 </div>
 <div id="methods_item">
     <h5 class="title-headline">#item</h5>
@@ -407,7 +407,7 @@ collection.last(); // undefined</code></pre>
 var remapped = collection.map(function (item, index) {
     return item * index;
 });
-remapped.unwrap(); // [0, 1, 4, 9]</code></pre>
+remapped.toArray(); // [0, 1, 4, 9]</code></pre>
 </div>
 <div id="methods_pop">
     <h5 class="title-headline">#pop</h5>
@@ -450,31 +450,31 @@ collection.remove(2); // false</code></pre>
     <p>The removeAt method removes any item at the passed index.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([10, 11, 12, 13]);
 collection.removeAt(2); // 12
-collection.unwrap(); // [10, 11, 13]</code></pre>
+collection.toArray(); // [10, 11, 13]</code></pre>
 </div>
 <div id="methods_reset">
     <h5 class="title-headline">#reset</h5>
     <p>The reset method replaces the list with a new array (with nothing in it) and unmarks the collection as reversed... or it marks it as not reversed.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([0, 1, 2, 3]);
-collection.unwrap(); // [0, 1, 2, 3]
+collection.toArray(); // [0, 1, 2, 3]
 collection.reverse();
 collection.is('reversed'); // true
-collection.unwrap(); // [3, 2, 1, 0]
+collection.toArray(); // [3, 2, 1, 0]
 collection.reset();
 collection.is('reversed'); // false
-collection.unwrap(); // []</code></pre>
+collection.toArray(); // []</code></pre>
 </div>
 <div id="methods_results">
     <h5 class="title-headline">#results</h5>
     <p>The results method maps a loop of function calls from the items in the collection to a new collection.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection(["HERE", "wHere", "Name"]);
-collection.results('toLowerCase').unwrap(); // ["here", "where", "name"]</code></pre>
+collection.results('toLowerCase').toArray(); // ["here", "where", "name"]</code></pre>
 </div>
 <div id="methods_reverse">
     <h5 class="title-headline">#reverse</h5>
     <p>The reverse method calls reverse on the collection and toggles a marker on the collection as reversed.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([0, 1, 2, 3]);
-collection.reverse().unwrap(); // [3, 2, 1, 0]
+collection.reverse().toArray(); // [3, 2, 1, 0]
 collection.is("reversed"); // true</code></pre>
 </div>
 <div id="methods_shift">
@@ -482,25 +482,25 @@ collection.is("reversed"); // true</code></pre>
     <p>The shift method is a parody for the original shift method.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([0, 1, 2]);
 collection.shift();
-collection.unwrap(); // [1, 2]</code></pre>
+collection.toArray(); // [1, 2]</code></pre>
 </div>
 <div id="methods_sort">
     <h5 class="title-headline">#sort</h5>
     <p>The sort method allows you to sort your collection in any particular way, and will create correct comparators if you have marked the collection as reversed. Normally in js, if you were to call sort, like on the last line of the following example, your collection would revert back into an ascending collection. But because odette tracks whether or not a collection is reversed using the StatusManager, you can always be sure that your collection will be sorted correctly.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([0, 2, 1]);
 collection.sort();
-collection.unwrap(); // [0, 1, 2]
+collection.toArray(); // [0, 1, 2]
 collection.reverse();
-collection.unwrap(); // [2, 1, 0]
+collection.toArray(); // [2, 1, 0]
 collection.sort();
-collection.unwrap(); // [2, 1, 0]</code></pre>
+collection.toArray(); // [2, 1, 0]</code></pre>
 </div>
 <div id="methods_splice">
     <h5 class="title-headline">#splice</h5>
     <p>The splice method add items to arbitrary indexes of your collection. This is simply a parody method of the original splice, which will modify the array in place instead of creating a copy.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection(['bop', 'boop', 'bloop', 'blorp']);
 collection.splice(2, 0, 'bleep');
-collection.unwrap(); // ["bop", "boop", "bleep", "bloop", "blorp"]</code></pre>
+collection.toArray(); // ["bop", "boop", "bleep", "bloop", "blorp"]</code></pre>
 </div>
 <div id="methods_swapRegister">
     <h5 class="title-headline">#swapRegister</h5>
@@ -525,20 +525,20 @@ collection.toString(); // "[{}]"</code></pre>
     <h5 class="title-headline">#uncycle</h5>
     <p>While the cycle method shifts elements forward and moves them to the back, the uncycle event does the opposite, and shifts elements backward and moves them to the front when they fall of the back.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([0, 1, 2, 3, 4, 5]);
-collection.uncycle(1).unwrap(); // [5, 0, 1, 2, 3, 4]</code></pre>
+collection.uncycle(1).toArray(); // [5, 0, 1, 2, 3, 4]</code></pre>
 </div>
 <div id="methods_unshift">
     <h5 class="title-headline">#unshift</h5>
     <p>The unshift method does the opposite of the shift method and adds items to the front of the list, instead of knocking elements off of the front of the list.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([0, 1, 2]);
 collection.unshift([3, 4, 5]); // 6 -> length of the array
-collection.unwrap(); // [3, 4, 5, 0, 1, 2]</code></pre>
+collection.toArray(); // [3, 4, 5, 0, 1, 2]</code></pre>
 </div>
 <div id="methods_unwrap">
     <h5 class="title-headline">#unwrap</h5>
     <p>The unwrap method has been used a lot in these examples. It is simply a convenience method for consistantly returning an array of the items being held on the collection. This same methodology should be used for parodied objects that need a consistant api. Things like the DomManager, StringManagers, and other object types benefit greatly from consistantly accessing the collection through a function rather than simply getting the property.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection();
-collection.unwrap(); // []</code></pre>
+collection.toArray(); // []</code></pre>
 </div>
 <div id="methods_where">
     <h5 class="title-headline">#where</h5>
@@ -555,7 +555,7 @@ collection.unwrap(); // []</code></pre>
 var collection2 = collection.where({
     one: 1
 });
-collection2.unwrap(); // [{one:1}, {one:1}]</code></pre>
+collection2.toArray(); // [{one:1}, {one:1}]</code></pre>
 </div>
 <div id="methods_whereNot">
     <h5 class="title-headline">#whereNot</h5>
@@ -572,5 +572,5 @@ collection2.unwrap(); // [{one:1}, {one:1}]</code></pre>
 var collection2 = collection.whereNot({
     one: 1
 });
-collection2.unwrap(); // [{one:2}, {one:3}]</code></pre>
+collection2.toArray(); // [{one:2}, {one:3}]</code></pre>
 </div>

@@ -8,7 +8,7 @@ this.Odette = this.Odette || function (global, WHERE, version, fn, alt) {
         TOUCH = 'touch',
         HAS_ACCESS = 'hasAccess',
         PERIOD = '.',
-        global_ = this || window || global,
+        global_ = this || window || this,
         doc = global_.document,
         BOOLEAN_TRUE = !0,
         BOOLEAN_FALSE = !1,
@@ -35,6 +35,7 @@ this.Odette = this.Odette || function (global, WHERE, version, fn, alt) {
         isString = typeConstructor('string'),
         isNumber = typeConstructor('number'),
         isFunction = typeConstructor('function'),
+        isObject = typeConstructor('object'),
         executionTime = now(),
         makeParody = function (parent, fn) {
             return function () {
@@ -166,7 +167,7 @@ this.Odette = this.Odette || function (global, WHERE, version, fn, alt) {
     };
     Application[PROTOTYPE].undefine = function (handler) {
         this.missedDefinitions.push(handler);
-        if (this.isDefining) {
+        if (this.defining) {
             handler.apply(this, [this, this.definingAgainst, this.definingWith]);
         }
         return this;
@@ -187,6 +188,7 @@ this.Odette = this.Odette || function (global, WHERE, version, fn, alt) {
         var fn = name_ && (isFunction(name_) ? name_ : (isFunction(fn_) ? fn_ : NULL));
         return this[PARENT].scope(name, fn);
     };
+    if (!WHERE || !global_) {}
     var app, application = global_[WHERE] = global_[WHERE] || (function () {
         Odette.where.push(WHERE);
         return {
@@ -211,11 +213,19 @@ this.Odette = this.Odette || function (global, WHERE, version, fn, alt) {
                 }
                 return newApp;
             },
-            definition: function (version, globl, options) {
-                var opts, context, application = this,
-                    app = application.registerVersion(version),
-                    odebt = globl.Odette,
-                    definitionOptions = odebt.options;
+            definition: function (version_, globl_, options_) {
+                var app, odebt, definitionOptions, opts, context, application = this,
+                    version = version_,
+                    globl = globl_,
+                    options = options_;
+                if (isObject(version)) {
+                    options = globl;
+                    globl = version;
+                    version = application.scope().VERSION;
+                }
+                app = application.registerVersion(version);
+                odebt = globl.Odette;
+                definitionOptions = odebt.options;
                 if (!definitionOptions) {
                     return app;
                 }
@@ -227,11 +237,11 @@ this.Odette = this.Odette || function (global, WHERE, version, fn, alt) {
                     });
                 } else {
                     app.defined = BOOLEAN_TRUE;
-                    app.isDefining = BOOLEAN_TRUE;
+                    app.defining = BOOLEAN_TRUE;
                     app.definingAgainst = context;
                     app.definingWith = opts;
                     definitionOptions.handler.apply(app, [app, context, opts]);
-                    app.isDefining = BOOLEAN_FALSE;
+                    app.defining = BOOLEAN_FALSE;
                     delete odebt.options;
                 }
                 return app;
@@ -320,11 +330,15 @@ this.Odette = this.Odette || function (global, WHERE, version, fn, alt) {
                     var doc = toHere.document;
                     // overwrite the scoped application variable
                     application = toHere[WHERE] || application;
+                    // doc has to be true, if it is undefined (safari) then we did not make it
                     return !!doc;
                 }, function () {
                     return BOOLEAN_FALSE;
                 })) {
                     toHere[WHERE] = application;
+                    if (toHere.Odette.where.indexOf(application.WHERE) === -1) {
+                        toHere.Odette.where.push(application.WHERE);
+                    }
                     if (!preventMap && fromHere[WHERE] !== application) {
                         fromHere[WHERE] = application;
                         map(origin.versionOrder, function (version) {
