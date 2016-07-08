@@ -278,9 +278,9 @@ this.Odette = this.Odette || function (global, WHERE, version, fn, alt) {
                 if (!isFunction(fn)) {
                     return scoped;
                 }
-                this.wraptry(function () {
-                    fn.apply(app, [scoped]);
-                });
+                // this.wraptry(function () {
+                fn.apply(app, [scoped]);
+                // });
                 return scoped;
             },
             map: map,
