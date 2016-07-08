@@ -374,7 +374,7 @@ collection.insertAt(4, 2); // true
 collection.unwrap(); // [0, 1, 4, 2, 3]</code></pre>
 </div>
 <div id="methods_item">
-    <h5 class="title-headline">#index</h5>
+    <h5 class="title-headline">#item</h5>
     <p>The item method returns the item at the index that is passed into the method. If no argument is passed in then the first item is returned.</p>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([5, 6, 3, 1]);
 collection.item(2); // 3
