@@ -1,0 +1,1 @@
+application.scope().run(window, function (app, _, factories, documentView, scopedFactories, $) {});
