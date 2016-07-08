@@ -5868,18 +5868,19 @@ app.scope(function (app) {
             if (templateIsFunction) {
                 render = text;
             } else {
-                if (text.match(/return(\s*)\[/igm)) {
-                    trimmed = text.trim();
-                    if (trimmed[trimmed[LENGTH] - 1] !== ';') {
-                        trimmed += ';';
-                    }
-                    trimmed = text;
-                    render = wraptry(function () {
-                        return new FUNCTION_CONSTRUCTOR_CONSTRUCTOR('helpers', '_', blockWrapper(trimmed));
-                    });
-                } else {
-                    exception('templates must return a json structure');
+                // text = text.trim();
+                // if (text.match(/return(\s*)\[/igm)) {
+                trimmed = text.trim();
+                if (trimmed[trimmed[LENGTH] - 1] !== ';') {
+                    trimmed += ';';
                 }
+                trimmed = text;
+                render = wraptry(function () {
+                    return new FUNCTION_CONSTRUCTOR_CONSTRUCTOR('helpers', '_', blockWrapper(trimmed));
+                });
+                // } else {
+                //     exception('templates must return a json structure');
+                // }
             }
             return function (data, helpers) {
                 return render.call(data, helpers, _);

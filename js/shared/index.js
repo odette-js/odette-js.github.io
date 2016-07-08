@@ -6,11 +6,11 @@ application.scope().run(window, function (app, _, factories, documentView, scope
             globalSidebarToggleManager = documentManager.$('.global-sidebar-toggler').first(),
             wasopen = false,
             lastScrolling,
-            deferredFinished = _.AF.defer(function () {
+            deferredFinished = _.AF.defer(100, function () {
                 var $body = $('body');
                 var scopedClass = 'scrolling-' + lastScrolling;
                 return $body.hasClass(scopedClass) ? $body.removeClass('is-scrolling ' + scopedClass) : false;
-            }, 100);
+            });
         documentManager.on('mousedown', function () {
             // check if it was open on the way up
             wasopen = globalSidebarToggleManager.is('clickTogglerOpen');
