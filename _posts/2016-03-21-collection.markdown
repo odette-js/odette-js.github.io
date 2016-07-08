@@ -43,9 +43,9 @@ permalink: /api/v0/collection
                 <li class="left clear-left"><a href="#methods_forEachRight">forEachRight</a></li>
                 <li class="left clear-left"><a href="#methods_gather">gather</a></li>
                 <li class="left clear-left"><a href="#methods_has">has</a></li>
-                <li class="left clear-left"><a href="#methods_index">index</a></li>
                 <li class="left clear-left"><a href="#methods_indexOf">indexOf</a></li>
                 <li class="left clear-left"><a href="#methods_insertAt">insertAt</a></li>
+                <li class="left clear-left"><a href="#methods_item">item</a></li>
                 <li class="left clear-left"><a href="#methods_join">join</a></li>
                 <li class="left clear-left"><a href="#methods_last">last</a></li>
                 <li class="left clear-left"><a href="#methods_length">length</a></li>
@@ -356,14 +356,6 @@ collection2.unwrap(); // [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 0, 2, 4, 6, 8]</co
 collection.has('red'); // true
 collection.has('cat'); // false</code></pre>
 </div>
-<div id="methods_index">
-    <h5 class="title-headline">#index</h5>
-    <p>The index method returns the item at the index that is passed into the method. If no argument is passed in then the first item is returned.</p>
-    <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([5, 6, 3, 1]);
-collection.index(2); // 3
-collection.index();  // 5
-collection.index(10); // undefined</code></pre>
-</div>
 <div id="methods_indexOf">
     <h5 class="title-headline">#indexOf</h5>
     <p>The indexOf method checks the array for the item that was passed in. Other optional parameters can be passed in as well such as the starting index, the limiting index, and whether or not the collection should be checked in reverse.</p>
@@ -380,6 +372,14 @@ collection.indexOf('five', 2, 4); // -1</code></pre>
     <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([0, 1, 2, 3]);
 collection.insertAt(4, 2); // true
 collection.unwrap(); // [0, 1, 4, 2, 3]</code></pre>
+</div>
+<div id="methods_item">
+    <h5 class="title-headline">#index</h5>
+    <p>The item method returns the item at the index that is passed into the method. If no argument is passed in then the first item is returned.</p>
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">var collection = factories.Collection([5, 6, 3, 1]);
+collection.item(2); // 3
+collection.item();  // 5
+collection.item(10); // undefined</code></pre>
 </div>
 <div id="methods_join">
     <h5 class="title-headline">#join</h5>
