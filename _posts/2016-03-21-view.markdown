@@ -14,6 +14,7 @@ permalink: /api/v0/view
         <ul class="list nested-list">
             <li class="left clear-left"><a href="#methods_addChildView">addChildView</a></li>
             <li class="left clear-left"><a href="#methods_destroy">destroy</a></li>
+            <li class="left clear-left"><a href="#methods_elementIsTemplate">elementIsTemplate</a></li>
             <li class="left clear-left"><a href="#methods_filter">filter</a></li>
             <li class="left clear-left"><a href="#methods_getRegion">getRegion</a></li>
             <li class="left clear-left"><a href="#methods_parentView">parentView</a></li>
@@ -21,7 +22,6 @@ permalink: /api/v0/view
             <li class="left clear-left"><a href="#methods_render">render</a></li>
             <li class="left clear-left"><a href="#methods_tagName">tagName</a></li>
             <li class="left clear-left"><a href="#methods_template">template</a></li>
-            <li class="left clear-left"><a href="#methods_templateIsElement">templateIsElement</a></li>
         </ul>
     </li>
     <li class="left clear-left">
@@ -42,14 +42,14 @@ permalink: /api/v0/view
     &lt;div class=&quot;head&quot;&gt;&lt;/div&gt;
     &lt;div class=&quot;body&quot;&gt;&lt;/div&gt;
 &lt;/script&gt;</code></pre>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var MyView = factories.View.extend({
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var MyView = factories.View.extend({
     regions: {
         head: '.head',
         body: '.body'
     }
 });</code></pre>
 <p>After you have established where in the template the child views should be put, you can start adding child views.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var myView = MyView();
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var myView = MyView();
 var headView = factories.View();
 var bodyView = factories.View();
 myView.addChildView('head', headView);
@@ -59,41 +59,41 @@ myView.addChildView('body', bodyView);</code></pre>
 <h5 id="destroy" class="title-headline">#destroy</h5>
 <p>The destroy method marks first marks the view as being destroyed, then begins to destroy all of its child views, then it destroys the <a href="/api/v0/doma">DOMA</a> elements that it is housing, the element directive, the children directive, and the finally stops listening to other evented objects.</p>
 <p>This is how you can invoke a destroy method on a view.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">myView.destroy(function () {
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">myView.destroy(function () {
     // something async to run after the element has been destroyed (if iframe).
 });</code></pre>
 <h5 id="filter" class="title-headline">#filter</h5>
 <p>Filters can be utilized to prevent a view from showing and attaching itself to its parent's element at when it (the view being filtered) is rendered.</p>
 <p>Filters are always functions. A default filter looks like the following code.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">filter: function () {
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">filter: function () {
     return true;
 },</code></pre>
 <p>Filters eventually boil down to: should I be rendered, or should I be skipped?</p>
 <h5 id="getRegion" class="title-headline">#getRegion</h5>
 <p>In order to get an already added region object you can simply call getRegion on any view, or the application (scoped) itself, and pass it a key.</p>
 <p>Regions must first be added to their view or scoped application in order to return something.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">app.addRegion('main', '.main-region');
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">app.addRegion('main', '.main-region');
 var mainRegion = app.getRegion('main');</code></pre>
 <h5 id="parentView" class="title-headline">#parentView</h5>
 <p>The parent view can also be retrieved by any <a href="/api/v0/view">View</a> that has been added to a region, and has not yet been subsequently removed.</p>
 <p>To get the parent view, you can just call the method: <a href="#parentView">parentView</a>.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var secondView = factories.View();
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var secondView = factories.View();
 myView.showChildView('content', secondView);
 secondView.parentView(); // returns myView;</code></pre>
 <p>The region is also available as a property on the view, at parent.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">secondView.parent === myView.getRegion('content'); // returns true;</code></pre>
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">secondView.parent === myView.getRegion('content'); // returns true;</code></pre>
 <h5 id="render" class="title-headline">#render</h5>
 <p>The render pipeline is subly different than most other render pipelines in most other frameworks. Yes, it creates a template, puts it in an element. The only difference is that while it swaps out the guts of the element, a new element is not created during the render process. This is to save time and ensure an accurate lifecycle of dom elements being used. If it looks like the element you previously had, you will probably assume it is the previous element, odette plays off of this assumption that you implicitly make as a user to your advantage.</p>
 <p>Render should almost never need to be called. It is called implicitly when views are added or removed from a parent region, but besides that most of your logic for updating an attribute or content should come from hyperlocalized reactions to events on the view, element, and, most importantly, the model.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var secondView = factories.View();
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var secondView = factories.View();
 myView.showChildView('content', secondView);
 secondView.parentView(); // returns myView;</code></pre>
 <p>The region is also available as a property on the view, at parent.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">secondView.parent === myView.getRegion('content'); // returns true;</code></pre>
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">secondView.parent === myView.getRegion('content'); // returns true;</code></pre>
 <h5 id="tagName" class="title-headline">#tagName</h5>
 <p>The tagName of the <a href="/api/v0/view">View</a>'s element can also be set on the prototype or as an instance variable. It is always a method.</p>
-<p>Pro tip: use the returns utility to always return what you passed into it if you don't need any special logic surrounding which tagName to use. Odette always tries to solve in singularities. Therefore when given the choice between a string and a function, the function always wins out because it can produce a string. Also, if your resulting tagName is not an html5 standard tagName, then the element will be pumped through the <a href="/api/v0/doma#registerAs">registerAs</a> method on the <a href="/api/v0/doma">DOMA</a> and automatically be setup as a custom element.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var MyView = factories.View.extend({
+<p>Pro tip: use the returns utility to always return what you passed into it if you don't need any special logic surrounding which tagName to use. Odette always tries to solve in singularities. When creating an api endpoint, like tagName, it is better to call a function, and return a string, rather than test whether or not the key contains a string, a function or another type. Odette will run faster, and make everyone's job easier if the underlying complexity of its assumptions are culled down to single decisions. Also, if your resulting tagName is not an html5 standard tagName, then the element will be pumped through the <a href="/api/v0/doma#registerAs">registerAs</a> method on the <a href="/api/v0/doma">DOMA</a> and automatically be setup as a custom element.</p>
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var MyView = factories.View.extend({
     tagName: _.returns('div')
 });</code></pre>
 <h5 id="template" class="title-headline">#template</h5>
@@ -103,7 +103,7 @@ secondView.parentView(); // returns myView;</code></pre>
     &lt;div class=&quot;head&quot;&gt;&lt;%=head%&gt;&lt;/div&gt;
     &lt;div class=&quot;body&quot;&gt;&lt;%=body%&gt;&lt;/div&gt;
 &lt;/script&gt;</code></pre>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var MyView = factories.View({
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var MyView = factories.View({
     template: $.compile('head-body')
 });
 var myModel = factories.Model({
@@ -113,11 +113,11 @@ var myModel = factories.Model({
 var myView = MyView({
     model: myModel
 });</code></pre>
-<h5 id="templateIsElement" class="title-headline">#templateIsElement</h5>
-<p>Sometimes, your template will actually contain the element that you would like to be controlling in your view. If this is the case, simply return a truthy value in your templateIsElement function.</p>
+<h5 id="elementIsTemplate" class="title-headline">#elementIsTemplate</h5>
+<p>Sometimes, your template will actually contain the element that you would like to be controlling in your view. If this is the case, simply return a truthy value in your elementIsTemplate function.</p>
 <p>Warning, this will cause a different dom abstraction to be invoked, with different methods, from a different constructor, outlined in the <a href="/api/v0/doma">DOMA</a> section. Doing this is also less efficient than the default way, because the element has to be recreated each time and because odette has to apply all of its changes to multiple elements, instead of only applying it to one.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var MyView = factories.View({
-    templateIsElement: function () {
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var MyView = factories.View({
+    elementIsTemplate: function () {
         return true;
     }
 });</code></pre>

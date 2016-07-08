@@ -9,9 +9,9 @@ permalink: /api/v0/registry
 
 
 <p>The registry object is a great way to keep track of lots of unique objects under different categories. The registry api is a dependancy of the Collection object. It assists in finding objects by specific id types, while the list helps quickly iterate objects in the collection.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var registry = factories.Registry();</code></pre>
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var registry = factories.Registry();</code></pre>
 <p>The registry object is also available by default under the "Registry" directive.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">object.directive('Registry');</code></pre>
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">object.directive('Registry');</code></pre>
 <ul class="list">
     <li class="left clear-left">
         <a href="#methods">Methods</a>
@@ -36,6 +36,6 @@ permalink: /api/v0/registry
 <div id="methods_keep">
     <h5 class="title-headline">#keep</h5>
     <p>The keep method is how your internal apis will tell the Registry to keep an object. Each keep call must have 3 arguments. The first being the category that the object should be held under, the second is the id that the object should be held under, and the third is the object itself.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">registry.keep('category', 'id', {});
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">registry.keep('category', 'id', {});
 registry.keep('category', 'id2', {});</code></pre>
 </div>

@@ -9,7 +9,7 @@ permalink: /api/v0/promise
 
 <p>Promises are a great way to steer clear of heavily nested javascript structures that rely on passing in callbacks, by flattening the structural logic into a singular, definable, and maliable resolution tree. Most promises today are not well thought out, and even when they are, they can be highly limiting and extremely dumb. Odette's promises are backed by an extendable resolution tree that can be used to resolve to multiple "states" at a time, and create a logic pathway for your code.</p>
 <p>Because of a promises usefulness, it has actually been included on the utilities object _ as well as the factories object for your extensability needs. All promises can be created in the following manner:</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var promise = _.Promise();</code></pre>
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var promise = _.Promise();</code></pre>
 <p>An optional array, nested arrays, or singular function can also be passed as the first argument to be attached to the success state. Errors are a special type of state resoltion. Not only can you resolve into an error state, but if there is an execution error in your code, the promise will automatically switch it's resoltion state to error. Also, promises are not resolved with an event object, but rather, the first argument that they are resolved with.</p>
 <ul class="list">
     <li class="left clear-left">
@@ -43,7 +43,7 @@ permalink: /api/v0/promise
 <h5 id="methods_addHandler" class="title-headline">#addHandler</h5>
 <p>The add handler method is a convenience function that makes the meat of the promise object slightly easier to grasp. The real value offering of an odette promise is that it is extensible and custom resolution states can be fulfilled. This is generally done using the <a href="#handle">handle</a> function, outlined below. However, if you would like to create a convenience function then you can use the addHandler method to directly add a method and tie it to a resolution state of the same name.</p>
 <p>Below is an example of how to use the addHandler method.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var promise = _.Promise();
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var promise = _.Promise();
 _.isFunction(promise.circle); // false
 promise.handle('circle', function () {
     // do something
@@ -56,7 +56,7 @@ promise.circle(function () {
 });</code></pre>
 <h5 id="methods_allStates" class="title-headline">#allStates</h5>
 <p>It is useful when creating a resolution tree to have all of the possible state resolutions available at any given time. Below is the base state resolution.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">promise.allStates();
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">promise.allStates();
 // {
 //     success: 'always',
 //     failure: 'always',
@@ -70,7 +70,7 @@ promise.circle(function () {
 <h5 id="methods_fulfill" class="title-headline">#fulfill</h5>
 <p>A Promise can be fulfilled in either a failure state, or a success state. Fulfill resolves into a success state.</p>
 <p>To fulfill a promise in the success state and only trigger the success and always handlers, simply call the fulfill method.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var promise = _.Promise();
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var promise = _.Promise();
 promise.success(function () {
     console.log(arguments);
     console.log('succeeded');
@@ -87,7 +87,7 @@ promise.fulfill(1, 2); // logs [1], "succeeded", "finished"</code></pre>
 <h5 id="methods_reject" class="title-headline">#reject</h5>
 <p>A Promise can be resolved in either a failure state, or a success state. Reject resolves into a failure state. Consider the following code for the next couple of examples.</p>
 <p>To resolve a promise in the rejected state and only trigger the failure and always handlers, simply call the reject method.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var promise = _.Promise();
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var promise = _.Promise();
 promise.success(function () {
     console.log('succeeded');
 }).failure(function () {
@@ -100,7 +100,7 @@ promise.reject(); // logs "failed", "finished"</code></pre>
 <p>Odette's promises can be resolved in as many ways as they can be configured. In order to resolve promises in the correct state and trigger the subsequent tree, Promises proved a resolveAs method which simplifies this process.</p>
 <p>Note: In order to resolve the promise to a non base state, (always, success, failure, error) you need to first add to the auxiliary states. Please see <a href="#auxiliaryStates">Auxiliary States</a> above.</p>
 <p>If you have all of your auxiliary states setup, then you can simply resolve the promise and the tree will be triggered. Below is an example which uses the same auxiliary states used in the <a href="/api/v0/ajax">Ajax</a> constructor, which is outlined in the <a href="#auxiliaryStates">Auxiliary States</a> above.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">factories.HTTP().handle("status:200", function () {
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">factories.HTTP().handle("status:200", function () {
     console.log(200);
 }).handle("status:204", function () {
     console.log('no content!');
@@ -112,7 +112,7 @@ promise.reject(); // logs "failed", "finished"</code></pre>
 <h5 id="methods_stash" class="title-headline">#stash</h5>
 <p>Sometimes you only want to stash a handler against a resolve state instead of emptying the resolve tree. If you do not want to trigger that same function if the promise has already resolved to that state, then you can just the stash method to stash the handler against that resolution state / branch.</p>
 <p>To invoke this behavior, simply call the stash method and pass in a key, with a handler, or list of handlers that you would like to stash against that key.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var promise = _.Promise();
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var promise = _.Promise();
 promise.fulfill();
 promise.stash('success', function () {
     console.log('successfully stashed');
@@ -123,7 +123,7 @@ promise.success(function () {
 <h5 id="methods_all" class="title-headline">#all</h5>
 <p>When is a convenience function to wrap multiple Promises in an all or nothing manner. If you are waiting for 3 different promises to resolve, then you can use the all method, as well as the _.all method to wrap those 3 promises into a singular promise that will only be fulfilled if all of the promises added to it are also fulfilled. If any are rejected, then the parent promise is also rejected.</p>
 <p>Below is an example of three independently resolved promises that both sychronously and asychronously resolve, and use the all wrapping.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var promise1 = _.Promise();
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var promise1 = _.Promise();
 var promise2 = _.Promise();
 var promise3 = _.Promise();
 var parentPromise = _.Promise();
@@ -138,7 +138,7 @@ setTimeout(function () {
 });
 promise3.fulfill();</code></pre>
 <p>Interesting conditions can be created when using all. Take the following for example. Because promises are only resolved once, and they automatically try to resolve as soon as the all method ends, certain conditions and groupings can be created.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var p1 = _.Promise();
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var p1 = _.Promise();
 var p2 = _.Promise();
 var p3 = _.Promise();
 var p4 = _.Promise();
@@ -150,7 +150,7 @@ p3.resolve(3);
 p1.resolve(1);
 p4.resolve(4); // logs "finished", [1, 2, 3, 4]</code></pre>
 <p>The same is true of the race method, which resolves as soon as first of a group resolves. Take the following for example. Because promises are only resolved once, and they automatically try to resolve as soon as the race method ends, certain conditions and groupings can be created. In the following example, p3, and p4 are never even looked at since p2 had already resolved.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var p1 = _.Promise();
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var p1 = _.Promise();
 var p2 = _.Promise();
 var p3 = _.Promise();
 var p4 = _.Promise();

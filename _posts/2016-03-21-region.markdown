@@ -30,7 +30,7 @@ permalink: /api/v0/region
 <h5 id="methods_add" class="title-headline">#add</h5>
 <p>We can simply give our regions data to render our in it's default view state if we do not have to do anything special.</p>
 <p>Consider the following, which will not only create 2 views, but also models that those views can latch onto.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">var region = app.getRegion('myRegion');
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var region = app.getRegion('myRegion');
 region.add([{
     text: 'one'
 }, {
@@ -39,7 +39,7 @@ region.add([{
 <h5 id="methods_render" class="title-headline">#render</h5>
 <p>We can render a set of views all at the same time by simply calling render on the region, and all of its children will be rendered.</p>
 <p>Consider the following, which will not only create 2 views, but also models that those views can latch onto.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">app.addChildView('main', factories.View());
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">app.addChildView('main', factories.View());
 app.addChildView('main', factories.View());
 var mainRegion = app.getRegion('main');
 mainRegion.render(); // re-renders the two views that were just passed in.</code></pre>

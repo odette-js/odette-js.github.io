@@ -428,7 +428,7 @@ h1,h2,h3,h4,h5,h6 {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.hero [data-custom="text-reveal"] {
+.hero [is="text-reveal"] {
     font-size: 1.64rem;
 }
 .marketing-card {
@@ -458,13 +458,13 @@ h1,h2,h3,h4,h5,h6 {
     min-width: 5rem;
     text-align: center;
 }
-[data-custom="text-reveal"] {
+[is="text-reveal"] {
     opacity: 0;
     display: inline-block;
     transform: translateY(100%);
     transition: all 250ms;
 }
-[data-custom="text-reveal"].showing {
+[is="text-reveal"].showing {
     opacity: 1;
     transform: translateY(0);
 }

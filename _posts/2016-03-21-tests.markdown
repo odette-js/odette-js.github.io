@@ -8,11 +8,11 @@ permalink: /api/v0/tests
 ---
 
 <p>Testing is paramount when ensuring expected behaviors and cross browser compatability. Use the various tests available to verify your own work. The tests available in Odette are very much like jasmine tests. You can group them using describe and it, to group your tests together. But if you want to straight test your assumptions, you can just use the expect pattern described below.</p>
-<pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">expect(1).toEqual(1); // true</code></pre>
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">expect(1).toEqual(1); // true</code></pre>
 <div id="methods_expect">
     <h5 class="title-headline">expect</h5>
     <p>Quickly test your assumptions with the expect method.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">_.expect({}).toEqual({}); // true
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">_.expect({}).toEqual({}); // true
 _.expect({}).toBe({}); // false
 var obj = {};
 _.expect(obj).toBe(obj); // true
@@ -21,7 +21,7 @@ _.expect(function () {
 }).toThrow(); // true
 _.expect(function () {}).toThrow(); // false</code></pre>
     <p>Add your own tests to the mix with the maker function.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">_.expect.maker('toBeGreaterThan', function (a, b) {
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">_.expect.maker('toBeGreaterThan', function (a, b) {
     return a > b;
 }, function (a, b) {
     return 'expected ' + _.stringify(a) + ' to be greater than ' + _.stringify(b);
@@ -36,7 +36,7 @@ _.expect(10).not.toBeGreaterThan(100); // true</code></pre>
 <div id="methods_it">
     <h5 class="title-headline">it</h5>
     <p>It creates an asynchronously executing block. They usually execute asynchronously, so a promise is returned to be fulfilled or rejected by the testing suite.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">_.it('can test things', function () {
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">_.it('can test things', function () {
     _.expect(1).toBe(1);
 }).success(function () {
     console.log('success');
@@ -47,7 +47,7 @@ _.expect(10).not.toBeGreaterThan(100); // true</code></pre>
 <div id="methods_describe">
     <h5 class="title-headline">describe</h5>
     <p>Describe also creates an asynchronously executing code block that can host multiple it calls. While its cannot contain other its, describe can contain many.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">_.describe('wrapper', function () {
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">_.describe('wrapper', function () {
     _.it('can be tested', function () {
         //
     });
@@ -59,7 +59,7 @@ _.expect(10).not.toBeGreaterThan(100); // true</code></pre>
 <div id="methods_beforeEach">
     <h5 class="title-headline">#beforeEach, #afterEach</h5>
     <p>The beforeEach and afterEach methods are run before and after each it method execution. Nest the handlers to be executed under describe blocks.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">_.describe('wrapper', function () {
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">_.describe('wrapper', function () {
     _.beforeEach(function () {
         console.log('before');
     });

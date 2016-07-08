@@ -43,50 +43,50 @@ permalink: /api/v0/buster
 <div id="methods_begin">
     <h5 class="title-headline">#begin</h5>
     <p>The begin method is a method that is called on initialization. It posts up to it's parent if it is in a nested global object, and it posts down if it was handed an iframe to watch. The begin method accepts one of two strings for it's first argument. If the buster is watching an iframe and it may have been created after the iframe was appended to the document, then it will pass "initialize" as the first argument. If it is watching the iframe before it was appended, or it did the appending (most likely) then the buster will not call the begin method and simply wait for the inner buster to post out that it is ready to begin. Inner busters are much more likely to utilize this method. They automatically post up a begin message to the parent window, which, if another buster is watching it, will begin a series of posts to eachother to establish a connection.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.begin('connect');</code></pre>
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.begin('connect');</code></pre>
 </div>
 <div id="methods_bounce">
     <h5 class="title-headline">#bounce</h5>
     <p>This method is used to handle events that are to be posted back to the originating object immediately. This particular method expects an id of a message that it has received, so that it might respond to that particular message.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.bounce(1);</code></pre>
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.bounce(1);</code></pre>
 </div>
 <div id="methods_connected">
     <h5 class="title-headline">#connected</h5>
     <p>The connected method takes a function or list of functions to run against the connect promise associated with the buster.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.connect(function () {
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.connect(function () {
     // connected
 });</code></pre>
 </div>
 <div id="methods_create">
     <h5 class="title-headline">#create</h5>
     <p>Creates a new message object. The first argument corresponds to the command (or event suffix) that will be used in triggering events associated with that object on the buster. The message object is then returned to you so that you might attach event handlers to it as well as received and deferred handlers.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.create('human'); // message object</code></pre>
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.create('human'); // message object</code></pre>
 </div>
 <div id="methods_defaultMessage">
     <h5 class="title-headline">#defaultMessage</h5>
     <p>Creates a new message object. The first argument corresponds to the command (or event suffix) that will be used in triggering events associated with that object on the buster. The message object is then returned to you so that you might attach event handlers to it as well as received and deferred handlers.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.create('human'); // message object</code></pre>
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.create('human'); // message object</code></pre>
 </div>
 <div id="methods_defineIframe">
     <h5 class="title-headline">#defineIframe</h5>
     <p>Internally called function that sets up all listeners and begins posting with the iframe that is passed into the handler.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.defineIframe(iframeManager);</code></pre>
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.defineIframe(iframeManager);</code></pre>
 </div>
 <div id="methods_defineWindows">
     <h5 class="title-headline">#defineWindows</h5>
     <p>Method takes 2 arguments, one windowManager for receiving messages, and another manager for emitting messages.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.defineWindows(receiveManager, sendManager);</code></pre>
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.defineWindows(receiveManager, sendManager);</code></pre>
 </div>
 <div id="methods_flush">
     <h5 class="title-headline">#flush</h5>
     <p>Method for wiping all messages that were "created" and "sent" with the buster. Calling flush does not mean that the "sent" or queued messages will be sent. They are only sent if the buster is connected to another buster. This method is automatically called on connect.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.create("human");
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.create("human");
 buster.flush();</code></pre>
 </div>
 <div id="methods_receive">
     <h5 class="title-headline">#receive</h5>
     <p>Method called by window handler for automatically receiving messages from other busters. Messages that come through this method are marked as not deferred, are put on a receivedHistory collection, and their contents are posted through a "received:command" event.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.on('received:human', function (e) {
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.on('received:human', function (e) {
     console.log(e.data());
 });
 // somewhere else
@@ -99,7 +99,7 @@ buster.create("human", {
 <div id="methods_respond">
     <h5 class="title-headline">#respond</h5>
     <p>Method called to respond to messages as deferred. A messageId as well as an optional packet are accepted by this method.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.on('received:human', function (e) {
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.on('received:human', function (e) {
     var buster = this;
     setTimeout(function () {
         buster.respond(e.message.id, {
@@ -118,7 +118,7 @@ buster.create("human", {
 <div id="methods_response">
     <h5 class="title-headline">#response</h5>
     <p>Automatically called by recieve handler passed to windowManager. Used to handle the response of a message that originated from that buster and do something at that time.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.on('received:human', function (e) {
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.on('received:human', function (e) {
     var buster = this;
     buster.respond(e.message.id);
 });
@@ -132,22 +132,22 @@ buster.create("human", {
 <div id="methods_setGroup">
     <h5 class="title-headline">#setGroup</h5>
     <p>Useful if you want to specify a buster group other than the default set by the Buster definition.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.setGroup('my-custom-group');</code></pre>
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.setGroup('my-custom-group');</code></pre>
 </div>
 <div id="methods_setupIframe">
     <h5 class="title-headline">#setupIframe</h5>
     <p>Called internally on construction with iframe. Sets content string or source passed at initialization and opens the doors for connection. If a source was passed then a hash will be set on said source for necessary data to flow through. If content was passed to the Buster it will be set as the content of the buster and an appropriate data attribute will be set for the buster to be initialized.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.setupIframe();</code></pre>
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.setupIframe();</code></pre>
 </div>
 <div id="methods_stripData">
     <h5 class="title-headline">#stripData</h5>
     <p>Called internally on busters inside of iframes. They will automatically try to strip data from it's iframe or parent window hash in order to figure out who to message first.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster.stripData();</code></pre>
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster.stripData();</code></pre>
 </div>
 <div id="methods_sync">
     <h5 class="title-headline">#sync</h5>
     <p>A convenience method simply to send and bounce a message back to the sender. Very useful when you need to make sure you have updated data before beginning any calculations.</p>
-    <pre class="code code-section" data-custom="code-snippet"><code class="language-javascript">buster2.sync(function (e) {
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">buster2.sync(function (e) {
     // code to run after a response has been received
 });</code></pre>
 </div>
