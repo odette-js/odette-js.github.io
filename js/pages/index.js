@@ -4,8 +4,10 @@ application.scope().run(window, function (app, _, factories, documentView, scope
     });
     var marketingCardRegion = documentView.getRegion('marketingCards');
     var MarketingCard = marketingCardRegion.Child = scopedFactories.View.extend('MarketingCard', {
-        className: _.returns('marketing-card col s12 m6 l4'),
-        template: $.compile('marketing-card')
+        template: $.compile('marketing-card'),
+        attributes: {
+            class: 'marketing-card col s12 m6 l4'
+        }
     });
     marketingCardRegion.add([{
         link: '/api/v0/directive',
