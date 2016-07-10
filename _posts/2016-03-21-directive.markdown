@@ -77,8 +77,23 @@ directiveObject.mark('here');   // true</code></pre>
 </div>
 <p>These methods are all greate for measuring state on objects that would normally be difficult to do or would need their own namespace like isDestroying, or isRendering. But what if you want to change the behavior of that object as it interacts with the api that it uses internally? Odette makes this process easy. Simply overwrite the "directive:creation:{{directive_name}}" property on the prototype of the parent object.</p>
 <p>First let's define a directive.</p>
-<div id="overwriting">
-    <h5 class="title-headline">#overwriting internal apis</h5>
-    <p>In order to overwrite internally used apis, it is helpful to have a switch that is easily accessable on the prototype of the object. In this case the creation and destruction lifecycle are overwritable at the following, respective keys: "directive:creation:{{directiveName}}" and "directive:destruction:{{directiveName}}" where {{directiveName}} is the name that begins and finishes the lifecycle of the directive at that key.</p>
-    <pre class="code code-section" is="code-snippet"><code class="language-javascript"></code></pre>
-</div>
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var Person = factories.Directive.extend({
+    sit: function () {
+        this.target.remark('standing', false);
+        this.target.remark('sitting', true);
+    },
+    stand: function () {
+        this.target.remark('standing', true);
+        this.target.remark('sitting', false);
+    }
+});
+app.defineDirective('Person', Person.constructor);</code></pre>
+<p>Defining a directive using the defineDirective method on the app object like this means that the directive is available to any Directive extended prototype. That means that an instance of a Model could start getting the Person Directive by calling <code class="language-javascript">model.directive("Person");</code> and could start "sitting" and "standing".</p>
+<p>This is great, but not always what you want to do. Perhaps, instead, you would like to only give it to a specific branch of constructors, or even a single leaf. Perhaps you have a second Person constructor that you would like to make accessable to a branch.</p>
+<p>In order to overwrite internally used apis, it is helpful to have a switch that is easily accessable on the prototype of the object. In this case the creation and destruction lifecycle are overwritable at the following, respective keys: "directive:creation:{{directiveName}}" and "directive:destruction:{{directiveName}}" where {{directiveName}} is the name that begins and finishes the lifecycle of the directive at that key.</p>
+<pre class="code code-section" is="code-snippet"><code class="language-javascript">var SecondaryModel = factories.Model.extend({
+    'directive:creation:Person': DifferentPersionConstructor
+});
+var secondaryModel = SecondaryModel();
+DifferentPersonDirector.isInstance(secondaryModel.directive("Person"));
+</code></pre>
