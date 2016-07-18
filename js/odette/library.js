@@ -1320,7 +1320,7 @@ var factories = {},
     },
     eachCallBound = function (array, arg) {
         return duff(array, function (fn) {
-            fn();
+            fn(arg);
         });
     },
     eachCallTry = function (array, method, arg, catcher, finallyer) {
@@ -1408,7 +1408,7 @@ var factories = {},
     console = extend(wrap(toArray('trace,warn,log,dir,error,clear,table,profile,profileEnd,time,timeEnd,timeStamp'), function (key) {
         var method = _console[key] || _log;
         return function () {
-            return method.apply(_console, arguments);
+            return method && method.apply && method.apply(_console, arguments);
         };
     }), {
         exception: function (msg) {
@@ -4597,7 +4597,7 @@ app.scope(function (app) {
                         }
                     } else {
                         // terminate the chain
-                        exception(unknownStateErrorMessage);
+                        exception(1 + unknownStateErrorMessage);
                     }
                 }
             } while (isString(finalName));
@@ -7209,16 +7209,18 @@ app.scope(function (app) {
                 }
             }
         },
+        arrayAdds = _.add,
+        arrayRemoves = _.remove,
         classApiShim = {
             add: classApplicationWrapper('add', function (element, list) {
                 element.classList.add.apply(element.classList, list);
             }, function (element, current, list) {
-                duff(list, passesFirstArgument(bind(add, NULL, current)));
+                duff(list, passesFirstArgument(bind(arrayAdds, NULL, current)));
             }),
             remove: classApplicationWrapper('remove', function (element, list) {
                 element.classList.remove.apply(element.classList, list);
             }, function (element, current, list) {
-                duff(list, passesFirstArgument(bind(remove, NULL, current)));
+                duff(list, passesFirstArgument(bind(arrayRemoves, NULL, current)));
             }),
             // mess with toggle here so that you
             toggle: classApplicationWrapper('toggler', noop, function (element, current, list, direction) {
@@ -7236,8 +7238,8 @@ app.scope(function (app) {
                 element.classList.remove.apply(element.classList, list);
                 element.classList.add.apply(element.classList, toArray(second, SPACE));
             }, function (element, current, list, second) {
-                duff(list, passesFirstArgument(bind(remove, NULL, current)));
-                duff(second, passesFirstArgument(bind(add, NULL, toArray(current, SPACE))));
+                duff(list, passesFirstArgument(bind(arrayRemoves, NULL, current)));
+                duff(second, passesFirstArgument(bind(arrayAdds, NULL, toArray(current, SPACE))));
             })
         },
         passer = function (key) {
@@ -10900,7 +10902,6 @@ app.scope(function (app) {
 app.scope(function (app) {
     var current, pollerTimeout, allIts, describes, successfulIts, failedIts, stack, queue, allExpectations, successful, failures, successfulExpectations, failedExpectations, globalBeforeEachStack, globalAfterEachStack, currentItFocus, failedTests = 0,
         testisrunning = BOOLEAN_FALSE,
-        // _ = app._,
         EXPECTED = 'expected',
         SPACE_NOT = ' not',
         TO_EQUAL = ' to equal ',
@@ -10920,13 +10921,11 @@ app.scope(function (app) {
                 } else {
                     ++failedTests;
                     expectation = new Error(makemessage.call(this, current, arg));
-                    // console.error(expectation);
                     expectation.message = expectation.toString();
                     expectation.success = BOOLEAN_FALSE;
                     failedExpectations.push(expectation);
                 }
                 allExpectations.push(expectation);
-                // window.console.log(currentItFocus);
                 expectation.tiedTo = currentItFocus;
                 return result;
             };
@@ -11153,11 +11152,16 @@ app.scope(function (app) {
                     string = successfulExpectations[LENGTH] + ' successful expectations\n' + failedExpectations[LENGTH] + ' failed expectations\n' + allExpectations[LENGTH] + ' expectations ran\n' + successfulIts[LENGTH] + ' out of ' + allIts[LENGTH] + ' tests passed\nin ' + totalTime + 'ms';
                     results = createResults(totalTime);
                     resetTests();
+                    eachCallBound(afters, results);
                     console.log(string, results);
                 } else {
                     pollerTimeout = setTimeout(loops, 100);
                 }
             }, 100) : pollerTimeout;
+        },
+        afters = [],
+        testFinished = function (fn) {
+            afters.push(fn);
         };
     resetTests();
     _.publicize({
@@ -11165,7 +11169,8 @@ app.scope(function (app) {
         beforeEach: beforeEach,
         expect: expect,
         describe: describe,
-        it: it
+        it: it,
+        testFinished: testFinished
     });
 });
 });

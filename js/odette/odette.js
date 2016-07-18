@@ -192,6 +192,7 @@ this.Odette = this.Odette || function (global, WHERE, version, fn, alt) {
     var app, application = global_[WHERE] = global_[WHERE] || (function () {
         Odette.where.push(WHERE);
         return {
+            Application: Application,
             EXECUTED_AT: executionTime,
             WHERE: WHERE,
             VERSION: odette_version,
