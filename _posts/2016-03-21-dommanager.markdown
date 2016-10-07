@@ -581,8 +581,8 @@ newDiv.prop({
 <div id="methods_registerAs">
     <h5 class="title-headline">#registerAs</h5>
     <p>This method allows you to tie custom behaviors to your dom element. It is automatically called by the DomManager's constructor if the element being tied to the manager has a is attribute.</p>
-    <pre class="code code-section" is="code-snippet"><code class="language-javascript">newDivManager.registerAs('someother-div');</code></pre>
-    <pre class="code code-section"><code class="language-html">&lt;div is=&quot;someother-div&quot;&gt;&lt;/div&gt;</code></pre>
+    <pre class="code code-section" is="code-snippet"><code class="language-javascript">newDivManager.registerAs('not-just-a-div');</code></pre>
+    <pre class="code code-section"><code class="language-html">&lt;div is=&quot;not-just-a-div&quot;&gt;&lt;/div&gt;</code></pre>
 </div>
 <div id="methods_registeredElementName">
     <h5 class="title-headline">#registeredElementName</h5>
