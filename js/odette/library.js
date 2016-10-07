@@ -2794,683 +2794,672 @@ var COLLECTION = 'Collection',
     REGISTRY = 'Registry',
     DELIMITED = 'delimited',
     STRING_MANAGER = 'StringManager',
-    SORTED_COLLECTION = 'Sorted' + COLLECTION;
-// now we start with some privacy
-app.scope(function (app) {
-    var isNullMessage = 'object must not be null or ' + UNDEFINED,
-        validIdMessage = 'objects in sorted collections must have either a number or string for their valueOf result',
-        cannotModifyMessage = 'list cannot be modified while it is being iterated over',
-        /**
-         * @func
-         */
-        doToAll = function (handler) {
-            return function (list, items, lookAfter, lookBefore, fromRight) {
-                var count = 0;
-                duff(items, function (item) {
-                    count += remove(list, item, lookAfter, lookBefore, fromRight);
-                });
-                return count === list[LENGTH];
-            };
-        },
-        remove = function (list, item, lookAfter, lookBefore, fromRight) {
-            var index = indexOf(list, item, lookAfter, lookBefore, fromRight);
-            if (index + 1) {
-                removeAt(list, index);
-            }
-            index = index + 1;
-            return !!index;
-        },
-        removeAll = doToAll(remove),
-        removeAt = function (list, index) {
-            return list.splice(index, 1)[0];
-        },
-        add = function (list, item, lookAfter, lookBefore, fromRight) {
-            var value = 0,
-                index = indexOf(list, item, lookAfter, lookBefore, fromRight);
-            if (index === -1) {
-                value = list.push(item);
-            }
-            return !!value;
-        },
-        addAll = doToAll(add),
-        insertAt = function (list, item, index) {
-            var len = list[LENGTH],
-                lastIdx = len || 0;
-            list.splice(index || 0, 0, item);
-            return len !== list[LENGTH];
-        },
-        eq = function (list, num, caller_) {
-            var n, thisNum, caller = caller_ || noop,
-                items = [],
-                numb = num || 0,
-                isNumberResult = isNumber(numb),
-                isArrayLikeResult = isArrayLike(numb);
-            if (numb < 0) {
-                isNumberResult = !1;
-            }
-            if (!list[LENGTH]) {
-                return items;
-            }
-            if (isNumberResult) {
-                items = [list[numb]];
-                caller(items[0]);
-            } else {
-                if (isArrayLikeResult) {
-                    duff(numb, function (num) {
-                        var item = list[num];
-                        items.push(item);
-                        caller(item);
+    SORTED_COLLECTION = 'Sorted' + COLLECTION,
+    // now we start with some privacy
+    Collection = app.block(function (app) {
+        var isNullMessage = 'object must not be null or ' + UNDEFINED,
+            validIdMessage = 'objects in sorted collections must have either a number or string for their valueOf result',
+            cannotModifyMessage = 'list cannot be modified while it is being iterated over',
+            doToAll = function (handler) {
+                return function (list, items, lookAfter, lookBefore, fromRight) {
+                    var count = 0;
+                    duff(items, function (item) {
+                        count += remove(list, item, lookAfter, lookBefore, fromRight);
                     });
-                } else {
-                    items = [list[0]];
+                    return count === list[LENGTH];
+                };
+            },
+            remove = function (list, item, lookAfter, lookBefore, fromRight) {
+                var index = indexOf(list, item, lookAfter, lookBefore, fromRight);
+                if (index + 1) {
+                    removeAt(list, index);
+                }
+                index = index + 1;
+                return !!index;
+            },
+            removeAll = doToAll(remove),
+            removeAt = function (list, index) {
+                return list.splice(index, 1)[0];
+            },
+            add = function (list, item, lookAfter, lookBefore, fromRight) {
+                var value = 0,
+                    index = indexOf(list, item, lookAfter, lookBefore, fromRight);
+                if (index === -1) {
+                    value = list.push(item);
+                }
+                return !!value;
+            },
+            addAll = doToAll(add),
+            insertAt = function (list, item, index) {
+                var len = list[LENGTH],
+                    lastIdx = len || 0;
+                list.splice(index || 0, 0, item);
+                return len !== list[LENGTH];
+            },
+            eq = function (list, num, caller_) {
+                var n, thisNum, caller = caller_ || noop,
+                    items = [],
+                    numb = num || 0,
+                    isNumberResult = isNumber(numb),
+                    isArrayLikeResult = isArrayLike(numb);
+                if (numb < 0) {
+                    isNumberResult = !1;
+                }
+                if (!list[LENGTH]) {
+                    return items;
+                }
+                if (isNumberResult) {
+                    items = [list[numb]];
                     caller(items[0]);
-                }
-            }
-            return items;
-        },
-        range = function (start, stop, step, inclusive) {
-            var length, range, idx;
-            if (stop == NULL) {
-                stop = start || 0;
-                start = 0;
-            }
-            if (!isFinite(start) || !isNumber(start)) {
-                start = 0;
-            }
-            step = +step || 1;
-            length = Math.max(Math.ceil((stop - start) / step), 0) + (+inclusive || 0);
-            range = [];
-            idx = 0;
-            while (idx < length) {
-                range[idx] = start;
-                idx++;
-                start += step;
-            }
-            return range;
-        },
-        count = function (list, runner_, ctx_, start, end) {
-            var runner, obj, idx, ctx;
-            if (start >= end || !isNumber(start) || !isNumber(end) || !isFinite(start) || !isFinite(end)) {
-                return list;
-            }
-            ctx = ctx_ || this;
-            runner = bindTo(runner_, ctx);
-            end = Math.abs(end);
-            idx = start;
-            while (idx < end) {
-                obj = NULL;
-                if (list[LENGTH] > idx) {
-                    obj = list[idx];
-                }
-                runner(obj, idx, list);
-                idx++;
-            }
-            return list;
-        },
-        countTo = function (list, runner, ctx, num) {
-            return count(list, runner, ctx, 0, num);
-        },
-        countFrom = function (list, runner, ctx, num) {
-            return count(list, runner, ctx, num, list[LENGTH]);
-        },
-        /**
-         * @func
-         */
-        closestIndex = function (array, searchElement, minIndex_, maxIndex_) {
-            var currentIndex, currentElement, found,
-                minIndex = minIndex_ || 0,
-                maxIndex = maxIndex_ || array[LENGTH] - 1;
-            while (minIndex <= maxIndex) {
-                currentIndex = (minIndex + maxIndex) / 2 | 0;
-                currentElement = array[currentIndex];
-                // calls valueOf
-                if (currentElement < searchElement) {
-                    minIndex = currentIndex + 1;
-                } else if (currentElement > searchElement) {
-                    maxIndex = currentIndex - 1;
                 } else {
-                    return currentIndex;
-                }
-            }
-            found = ~~maxIndex;
-            return found;
-        },
-        /**
-         * @func
-         */
-        /**
-         * @func
-         */
-        recreateSelf = function (fn, ctx) {
-            return function () {
-                return new this[CONSTRUCTOR_KEY](fn.apply(ctx || this, arguments));
-            };
-        },
-        /**
-         * @func
-         */
-        Registry = factories[REGISTRY] = factories.Directive.extend(REGISTRY, {
-            constructor: function () {
-                this.reset();
-                return this;
-            },
-            get: function (category, id, method) {
-                var cat = this.register[category];
-                var item = cat && cat[id];
-                if (item === UNDEFINED && method) {
-                    item = method();
-                    this.keep(category, id, item);
-                }
-                return item;
-            },
-            keep: function (category, id, value) {
-                var register = this.register,
-                    cat = register[category] = register[category] || {};
-                if (value === UNDEFINED) {
-                    delete cat[id];
-                } else {
-                    cat[id] = value;
-                }
-                return this;
-            },
-            ungroup: function (category) {
-                return this.group(category, {});
-            },
-            group: function (category, setter) {
-                var register = this.register;
-                register[category] = setter || register[category] || {};
-                return register[category];
-            },
-            swap: function (category, id, value) {
-                var cached = this.get(category, id);
-                this.keep(category, id, value);
-                return cached;
-            },
-            drop: function (category, id) {
-                return this.swap(category, id);
-            },
-            reset: function (registry, count) {
-                var cached = this.register;
-                this.register = registry || {};
-                return cached;
-            }
-        }),
-        recreatingSelfCollection = toArray('eq,where,whereNot,map,results,filter,cycle,uncycle,flatten,gather,unique'),
-        eachHandlers = {
-            each: duff,
-            duff: duff,
-            forEach: duff,
-            eachCall: eachCall,
-            eachCallTry: eachCallTry,
-            eachRight: duffRight,
-            duffRight: duffRight,
-            forEachRight: duffRight,
-            eachCallRight: eachCallRight
-        },
-        eachHandlerKeys = keys(eachHandlers),
-        abstractedCanModify = toArray('add'),
-        abstractedCannotModify = toArray('insertAt,remove,removeAt'),
-        nativeCannotModify = toArray('pop,shift,splice'),
-        reverseCollection = toArray('reverse'),
-        splatHandlers = toArray('push,unshift'),
-        joinHandlers = toArray('join'),
-        countingCollection = toArray('count,countTo,countFrom,merge'),
-        foldIteration = toArray('foldr,foldl,reduce'),
-        findIteration = toArray('find,findLast,findWhere,findLastWhere'),
-        indexers = toArray('indexOf'),
-        foldFindIteration = foldIteration.concat(findIteration),
-        marksIterating = function (fn) {
-            return function (one, two, three, four, five, six) {
-                var result, list = this;
-                ++list.iterating;
-                result = fn(list, one, two, three, four, five, six);
-                --list.iterating;
-                return result;
-            };
-        },
-        wrappedCollectionMethods = extend({
-            seeker: function (handler, context) {
-                var list = this,
-                    bound = bindTo(handler, context);
-                return duffRight(list.toArray(), function (one, two, three) {
-                    if (bound(one, two, three)) {
-                        list.removeAt(two);
-                    }
-                });
-            },
-            slice: function (one, two) {
-                return new Collection(this.toArray().slice(one, two));
-            }
-        }, wrap(joinHandlers, function (name) {
-            return function (arg) {
-                return this.toArray()[name](arg);
-            };
-        }), wrap(indexers.concat(abstractedCanModify), function (name) {
-            return function (one, two, three, four, five) {
-                var list = this;
-                return _[name](list.toArray(), one, two, three, four, five);
-            };
-        }), wrap(splatHandlers, function (name) {
-            return function (args_) {
-                var args = isArray(args_) ? args_ : arguments,
-                    items = this.toArray();
-                return items[name].apply(items, args);
-            };
-        }), wrap(nativeCannotModify, function (name) {
-            return function (one, two, three, four, five, six) {
-                var list = this;
-                if (list.iterating) {
-                    return exception(cannotModifyMessage);
-                }
-                return list.toArray()[name](one, two, three, four, five, six);
-            };
-        }), wrap(abstractedCannotModify, function (name) {
-            return function (one, two, three, four, five) {
-                var list = this;
-                if (list.iterating) {
-                    return exception(cannotModifyMessage);
-                }
-                return _[name](list.toArray(), one, two, three, four, five);
-            };
-        }), wrap(reverseCollection, function (name) {
-            return function () {
-                var list = this;
-                list.remark(REVERSED, !list.is(REVERSED));
-                list.toArray()[name]();
-                return list;
-            };
-        }), wrap(eachHandlers, function (fn) {
-            return marksIterating(function (list, handler, context) {
-                var args0 = list.toArray(),
-                    args1 = handler,
-                    args2 = arguments[LENGTH] > 1 ? context : list;
-                fn(args0, args1, args2);
-                return list;
-            });
-        }), wrap(countingCollection, function (name) {
-            return marksIterating(function (list, runner, fromHere, toThere) {
-                _[name](list.toArray(), runner, list, fromHere, toThere);
-                return list;
-            });
-        }), wrap(recreatingSelfCollection, function (name) {
-            return marksIterating(function (list, one, two, three) {
-                return new Collection[CONSTRUCTOR](_[name](list.toArray(), one, two, three));
-            });
-        }), wrap(foldFindIteration, function (name) {
-            return marksIterating(function (list, one, two, three) {
-                return _[name](list.toArray(), one, two, three);
-            });
-        })),
-        ret = _.publicize({
-            eachCall: eachCall,
-            eachCallRight: eachCallRight,
-            filter: filter,
-            matches: matches,
-            results: results,
-            add: add,
-            removeAll: removeAll,
-            addAll: addAll,
-            insertAt: insertAt,
-            removeAt: removeAt,
-            remove: remove,
-            cycle: cycle,
-            uncycle: uncycle,
-            concat: concat,
-            // pluck: pluck,
-            where: where,
-            findWhere: findWhere,
-            findLastWhere: findLastWhere,
-            range: range,
-            count: count,
-            countTo: countTo,
-            countFrom: countFrom,
-            whereNot: whereNot,
-            eachRight: eachRight,
-            duffRight: duffRight,
-            flatten: flatten,
-            eq: eq
-        }),
-        unwrapper = function () {
-            return this.items;
-        },
-        Collection = factories[COLLECTION] = factories.Directive.extend(COLLECTION, extend({
-            get: parody(REGISTRY, 'get'),
-            keep: parody(REGISTRY, 'keep'),
-            drop: parody(REGISTRY, 'drop'),
-            swap: parody(REGISTRY, 'swap'),
-            comparator: function () {},
-            constructor: function (items) {
-                this.reset(items);
-                return this;
-            },
-            call: function (arg) {
-                this.each(function (fn) {
-                    fn(arg);
-                });
-                return this;
-            },
-            obliteration: function (handler, context) {
-                duffRight(this.toArray(), handler, context === UNDEFINED ? this : context);
-                return this;
-            },
-            empty: function () {
-                this.reset();
-                this.directive(REGISTRY).reset();
-                return this;
-            },
-            reset: function (items) {
-                // can be array like
-                var list = this,
-                    old = list.toArray() || [];
-                list.iterating = list.iterating ? exception(cannotModifyMessage) : 0;
-                list.items = items == NULL ? [] : (Collection.isInstance(items) ? items.toArray().slice(0) : toArray(items));
-                list.unmark(REVERSED);
-                return list;
-            },
-            toArray: unwrapper,
-            unwrap: unwrapper,
-            length: function () {
-                return this.toArray()[LENGTH];
-            },
-            first: function () {
-                return this.toArray()[0];
-            },
-            last: function () {
-                var items = this.toArray();
-                return items[items[LENGTH] - 1];
-            },
-            item: function (number) {
-                return this.toArray()[number || 0];
-            },
-            has: function (object) {
-                return this.indexOf(object) !== -1;
-            },
-            sort: function (fn_) {
-                // normalization sort function for cross browsers
-                var list = this;
-                sort(list.toArray(), fn_ || this.comparator, list.is(REVERSED), list);
-                return list;
-            },
-            sortBy: function (key, fn_) {
-                // normalization sort function for cross browsers
-                var list = this;
-                sortBy(list.toArray(), key, fn_, list.is(REVERSED), list);
-                return list;
-            },
-            toString: function () {
-                return stringify(this.toArray());
-            },
-            toJSON: function () {
-                return results(this.toArray(), TO_JSON);
-            },
-            copy: function () {
-                return this.items.slice(0);
-            },
-            range: recreateSelf(range),
-            concat: recreateSelf(function () {
-                // this allows us to mix collections with regular arguments
-                var base = this.toArray();
-                return base.concat.apply(base, map(arguments, function (arg) {
-                    return Collection(arg).toArray();
-                }));
-            })
-        }, wrappedCollectionMethods)),
-        directiveResult = app.defineDirective(COLLECTION, function () {
-            return new Collection[CONSTRUCTOR]();
-        }),
-        appDirectiveResult = app.defineDirective(COLLECTION, function () {
-            return Collection();
-        }),
-        SortedCollection = factories.SortedCollection = Collection.extend(SORTED_COLLECTION, {
-            constructor: function (list_, skip) {
-                var sorted = this;
-                sorted[CONSTRUCTOR + COLON + COLLECTION]();
-                if (list_ && !skip) {
-                    sorted.load(isArrayLike(list_) ? list_ : [list_]);
-                }
-                return sorted;
-            },
-            reverse: function () {
-                var sorted = this;
-                sorted.remark(REVERSED, !sorted.is(REVERSED));
-                sorted.sort();
-                return sorted;
-            },
-            closestIndex: function (value) {
-                return closestIndex(this.toArray(), value);
-            },
-            closest: function (value) {
-                var index, list = this.toArray();
-                return (index = closestIndex(list, value)) === -1 ? UNDEFINED : list[index];
-            },
-            validIDType: function (id) {
-                return isNumber(id) || isString(id);
-            },
-            indexOf: function (object, min, max) {
-                return smartIndexOf(this.toArray(), object, BOOLEAN_TRUE);
-            },
-            load: function (values) {
-                var sm = this;
-                if (isArray(values)) {
-                    duff(values, sm.add, sm);
-                } else {
-                    sm.add(values);
-                }
-                return sm;
-            },
-            add: function (object) {
-                var registryDirective, sorted = this,
-                    isNotNull = object == NULL && exception(isNullMessage),
-                    valueOfResult = object && object.valueOf(),
-                    retrieved = (registryDirective = sorted[REGISTRY]) && sorted.get(ID, valueOfResult);
-                if (retrieved) {
-                    return BOOLEAN_FALSE;
-                }
-                ret = !sorted.validIDType(valueOfResult) && exception(validIdMessage);
-                sorted.insertAt(object, sorted.closestIndex(valueOfResult) + 1);
-                (registryDirective || sorted.directive(REGISTRY)).keep(ID, valueOfResult, object);
-                return BOOLEAN_TRUE;
-            },
-            remove: function (object, index) {
-                var where, sorted = this,
-                    isNotNull = object == NULL && exception(isNullMessage),
-                    valueOfResult = object && object.valueOf();
-                if (object == NULL || sorted.get(ID, valueOfResult) == NULL) {
-                    return BOOLEAN_FALSE;
-                }
-                sorted.removeAt(index === UNDEFINED ? sorted.indexOf(object) : index);
-                sorted.drop(ID, valueOfResult);
-                return BOOLEAN_TRUE;
-            },
-            pop: function () {
-                var collection = this,
-                    length = collection[LENGTH]();
-                if (length) {
-                    return collection.remove(collection.last(), length - 1);
-                }
-            },
-            shift: function () {
-                return this.remove(this.first(), 0);
-            }
-        }),
-        StringObject = factories.StringObject = factories.Extendable.extend('StringObject', {
-            constructor: function (value, parent) {
-                var string = this;
-                string.value = value;
-                string.parent = parent;
-                string.isValid(BOOLEAN_TRUE);
-                return string;
-            },
-            toggle: function (direction) {
-                this.isValid(toggle(this.isValid(), direction));
-            },
-            isValid: function (value) {
-                var string = this;
-                if (arguments[LENGTH]) {
-                    if (string.valid !== value) {
-                        string.parent.increment();
-                        string.valid = value;
-                    }
-                    return string;
-                } else {
-                    return string.valid;
-                }
-            },
-            valueOf: function () {
-                return this.value;
-            },
-            toString: function () {
-                var string = this,
-                    value = string.value,
-                    parent = string.parent;
-                if (parent.indexer === UNDEFINED) {
-                    return value;
-                }
-                if (!string.isValid()) {
-                    // canibalize the list as you join
-                    string.parent.drop(ID, value);
-                    string.parent.removeAt(parent.indexer);
-                    return EMPTY_STRING;
-                }
-                // is it the first
-                value = parent.indexer ? parent.delimiter + value : value;
-                ++parent.indexer;
-                return value;
-            }
-        }),
-        StringManager = factories[STRING_MANAGER] = SortedCollection.extend(STRING_MANAGER, {
-            Child: StringObject,
-            add: function (string) {
-                var sm = this,
-                    found = sm.get(ID, string);
-                if (string) {
-                    if (found) {
-                        found.isValid(BOOLEAN_TRUE);
+                    if (isArrayLikeResult) {
+                        duff(numb, function (num) {
+                            var item = list[num];
+                            items.push(item);
+                            caller(item);
+                        });
                     } else {
-                        found = new sm.Child(string, sm);
-                        sm.toArray().push(found);
-                        sm.keep(ID, string, found);
+                        items = [list[0]];
+                        caller(items[0]);
                     }
                 }
+                return items;
+            },
+            range = function (start, stop, step, inclusive) {
+                var length, range, idx;
+                if (stop == NULL) {
+                    stop = start || 0;
+                    start = 0;
+                }
+                if (!isFinite(start) || !isNumber(start)) {
+                    start = 0;
+                }
+                step = +step || 1;
+                length = Math.max(Math.ceil((stop - start) / step), 0) + (+inclusive || 0);
+                range = [];
+                idx = 0;
+                while (idx < length) {
+                    range[idx] = start;
+                    idx++;
+                    start += step;
+                }
+                return range;
+            },
+            count = function (list, runner_, ctx_, start, end) {
+                var runner, obj, idx, ctx;
+                if (start >= end || !isNumber(start) || !isNumber(end) || !isFinite(start) || !isFinite(end)) {
+                    return list;
+                }
+                ctx = ctx_ || this;
+                runner = bindTo(runner_, ctx);
+                end = Math.abs(end);
+                idx = start;
+                while (idx < end) {
+                    obj = NULL;
+                    if (list[LENGTH] > idx) {
+                        obj = list[idx];
+                    }
+                    runner(obj, idx, list);
+                    idx++;
+                }
+                return list;
+            },
+            countTo = function (list, runner, ctx, num) {
+                return count(list, runner, ctx, 0, num);
+            },
+            countFrom = function (list, runner, ctx, num) {
+                return count(list, runner, ctx, num, list[LENGTH]);
+            },
+            closestIndex = function (array, searchElement, minIndex_, maxIndex_) {
+                var currentIndex, currentElement, found,
+                    minIndex = minIndex_ || 0,
+                    maxIndex = maxIndex_ || array[LENGTH] - 1;
+                while (minIndex <= maxIndex) {
+                    currentIndex = (minIndex + maxIndex) / 2 | 0;
+                    currentElement = array[currentIndex];
+                    // calls valueOf
+                    if (currentElement < searchElement) {
+                        minIndex = currentIndex + 1;
+                    } else if (currentElement > searchElement) {
+                        maxIndex = currentIndex - 1;
+                    } else {
+                        return currentIndex;
+                    }
+                }
+                found = ~~maxIndex;
                 return found;
             },
-            emptyCollection: Collection[CONSTRUCTOR][PROTOTYPE].empty,
-            empty: function () {
-                var sm = this;
-                // wipes array and id hash
-                sm.emptyCollection();
-                // resets change counter
-                sm.current(EMPTY_STRING);
-                return sm;
+            recreateSelf = function (fn, ctx) {
+                return function () {
+                    return new this[CONSTRUCTOR_KEY](fn.apply(ctx || this, arguments));
+                };
             },
-            increment: function () {
-                var collection = this;
-                collection.changeCounter = collection.changeCounter || 0;
-                collection.changeCounter++;
-                return collection;
-            },
-            decrement: function () {
-                var collection = this;
-                collection.changeCounter = collection.changeCounter || 0;
-                collection.changeCounter--;
-                return collection;
-            },
-            remove: function (string) {
-                var sm = this,
-                    found = sm.get(ID, string);
-                if (string && found) {
-                    found.isValid(BOOLEAN_FALSE);
-                }
-                return sm;
-            },
-            toggle: function (string, direction) {
-                var wasFound = BOOLEAN_TRUE,
-                    sm = this,
-                    found = sm.get(ID, string);
-                if (!found) {
-                    wasFound = BOOLEAN_FALSE;
-                    found = sm.add(string);
-                }
-                if (direction === UNDEFINED) {
-                    if (wasFound) {
-                        found.toggle();
+            Registry = factories[REGISTRY] = factories.Directive.extend(REGISTRY, {
+                constructor: function () {
+                    this.reset();
+                    return this;
+                },
+                get: function (category, id, method) {
+                    var cat = this.register[category];
+                    var item = cat && cat[id];
+                    if (item === UNDEFINED && method) {
+                        item = method();
+                        this.keep(category, id, item);
                     }
-                } else {
-                    found.toggle(direction);
+                    return item;
+                },
+                keep: function (category, id, value) {
+                    var register = this.register,
+                        cat = register[category] = register[category] || {};
+                    if (value === UNDEFINED) {
+                        delete cat[id];
+                    } else {
+                        cat[id] = value;
+                    }
+                    return this;
+                },
+                ungroup: function (category) {
+                    return this.group(category, {});
+                },
+                group: function (category, setter) {
+                    var register = this.register;
+                    register[category] = setter || register[category] || {};
+                    return register[category];
+                },
+                swap: function (category, id, value) {
+                    var cached = this.get(category, id);
+                    this.keep(category, id, value);
+                    return cached;
+                },
+                drop: function (category, id) {
+                    return this.swap(category, id);
+                },
+                reset: function (registry, count) {
+                    var cached = this.register;
+                    this.register = registry || {};
+                    return cached;
                 }
+            }),
+            recreatingSelfCollection = toArray('eq,where,whereNot,map,results,filter,cycle,uncycle,flatten,gather,unique'),
+            eachHandlers = {
+                each: duff,
+                duff: duff,
+                forEach: duff,
+                eachCall: eachCall,
+                eachCallTry: eachCallTry,
+                eachRight: duffRight,
+                duffRight: duffRight,
+                forEachRight: duffRight,
+                eachCallRight: eachCallRight
             },
-            join: function (delimiter_) {
-                var sliced, result, cachedValue, parent = this,
-                    delimiter = (delimiter_ || EMPTY_STRING) + EMPTY_STRING,
-                    parentRegistry = parent.directive(REGISTRY);
-                // slice as a base array
-                // set the delimiter used to join
-                parent.changeCounter = parent.changeCounter || 0;
-                if (parent.changeCounter) {
-                    parent.changeCounter = 0;
-                    parentRegistry.group(DELIMITED, {});
-                }
-                if ((cachedValue = parentRegistry.get(DELIMITED, delimiter)) !== UNDEFINED) {
-                    return cachedValue;
-                }
-                sliced = parent.toArray().slice(0);
-                parent.indexer = 0;
-                parent.delimiter = delimiter;
-                // sliced is thrown away,
-                // leaving the invalidated ones to be collected
-                result = sliced.join(EMPTY_STRING);
-                parent.current(delimiter, result);
-                delete parent.indexer;
-                delete parent.delimiter;
-                return result;
+            eachHandlerKeys = keys(eachHandlers),
+            abstractedCanModify = toArray('add'),
+            abstractedCannotModify = toArray('insertAt,remove,removeAt'),
+            nativeCannotModify = toArray('pop,shift,splice'),
+            reverseCollection = toArray('reverse'),
+            splatHandlers = toArray('push,unshift'),
+            joinHandlers = toArray('join'),
+            countingCollection = toArray('count,countTo,countFrom,merge'),
+            foldIteration = toArray('foldr,foldl,reduce'),
+            findIteration = toArray('find,findLast,findWhere,findLastWhere'),
+            indexers = toArray('indexOf'),
+            foldFindIteration = foldIteration.concat(findIteration),
+            marksIterating = function (fn) {
+                return function (one, two, three, four, five, six) {
+                    var result, list = this;
+                    ++list.iterating;
+                    result = fn(list, one, two, three, four, five, six);
+                    --list.iterating;
+                    return result;
+                };
             },
-            generate: function (delimiter_) {
-                var validResult, currentDelimited, string = EMPTY_STRING,
-                    parent = this,
-                    delimiter = delimiter_;
-                parent.changeCounter = parent.changeCounter || 0;
-                if (!parent.changeCounter && (currentDelimited = parent.current(delimiter))) {
-                    return currentDelimited;
+            wrappedCollectionMethods = extend({
+                seeker: function (handler, context) {
+                    var list = this,
+                        bound = bindTo(handler, context);
+                    return duffRight(list.toArray(), function (one, two, three) {
+                        if (bound(one, two, three)) {
+                            list.removeAt(two);
+                        }
+                    });
+                },
+                slice: function (one, two) {
+                    return new Collection(this.toArray().slice(one, two));
                 }
-                parent.current(delimiter, (string = parent.join(delimiter)));
-                return string;
+            }, wrap(joinHandlers, function (name) {
+                return function (arg) {
+                    return this.toArray()[name](arg);
+                };
+            }), wrap(indexers.concat(abstractedCanModify), function (name) {
+                return function (one, two, three, four, five) {
+                    var list = this;
+                    return _[name](list.toArray(), one, two, three, four, five);
+                };
+            }), wrap(splatHandlers, function (name) {
+                return function (args_) {
+                    var args = isArray(args_) ? args_ : arguments,
+                        items = this.toArray();
+                    return items[name].apply(items, args);
+                };
+            }), wrap(nativeCannotModify, function (name) {
+                return function (one, two, three, four, five, six) {
+                    var list = this;
+                    if (list.iterating) {
+                        return exception(cannotModifyMessage);
+                    }
+                    return list.toArray()[name](one, two, three, four, five, six);
+                };
+            }), wrap(abstractedCannotModify, function (name) {
+                return function (one, two, three, four, five) {
+                    var list = this;
+                    if (list.iterating) {
+                        return exception(cannotModifyMessage);
+                    }
+                    return _[name](list.toArray(), one, two, three, four, five);
+                };
+            }), wrap(reverseCollection, function (name) {
+                return function () {
+                    var list = this;
+                    list.remark(REVERSED, !list.is(REVERSED));
+                    list.toArray()[name]();
+                    return list;
+                };
+            }), wrap(eachHandlers, function (fn) {
+                return function (handler, context) {
+                    var list = this,
+                        args0 = list.toArray(),
+                        args1 = handler,
+                        args2 = arguments[LENGTH] > 1 ? context : list;
+                    fn(args0, args1, args2);
+                    return list;
+                };
+            }), wrap(countingCollection, function (name) {
+                return function (runner, fromHere, toThere) {
+                    var list = this;
+                    _[name](list.toArray(), runner, list, fromHere, toThere);
+                    return list;
+                };
+            }), wrap(recreatingSelfCollection, function (name) {
+                return function (one, two, three) {
+                    var list = this;
+                    return new Collection[CONSTRUCTOR](_[name](list.toArray(), one, two, three));
+                };
+            }), wrap(foldFindIteration, function (name) {
+                return function (one, two, three) {
+                    var list = this;
+                    return _[name](list.toArray(), one, two, three);
+                };
+            })),
+            ret = _.publicize({
+                eachCall: eachCall,
+                eachCallRight: eachCallRight,
+                filter: filter,
+                matches: matches,
+                results: results,
+                add: add,
+                removeAll: removeAll,
+                addAll: addAll,
+                insertAt: insertAt,
+                removeAt: removeAt,
+                remove: remove,
+                cycle: cycle,
+                uncycle: uncycle,
+                concat: concat,
+                // pluck: pluck,
+                where: where,
+                findWhere: findWhere,
+                findLastWhere: findLastWhere,
+                range: range,
+                count: count,
+                countTo: countTo,
+                countFrom: countFrom,
+                whereNot: whereNot,
+                eachRight: eachRight,
+                duffRight: duffRight,
+                flatten: flatten,
+                eq: eq
+            }),
+            unwrapper = function () {
+                return this.items;
             },
-            current: function (delimiter, current) {
-                var value, sm = this;
-                if (arguments[LENGTH] === 1) {
-                    return (value = sm.get(DELIMITED, delimiter)) === UNDEFINED ? sm.join(delimiter) : value;
-                } else {
-                    sm.keep(DELIMITED, delimiter, current);
+            Collection = factories[COLLECTION] = factories.Directive.extend(COLLECTION, extend({
+                get: parody(REGISTRY, 'get'),
+                keep: parody(REGISTRY, 'keep'),
+                drop: parody(REGISTRY, 'drop'),
+                swap: parody(REGISTRY, 'swap'),
+                comparator: function () {},
+                constructor: function (items) {
+                    this.reset(items);
+                    return this;
+                },
+                call: function (arg) {
+                    this.each(function (fn) {
+                        fn(arg);
+                    });
+                    return this;
+                },
+                obliteration: function (handler, context) {
+                    duffRight(this.toArray(), handler, context === UNDEFINED ? this : context);
+                    return this;
+                },
+                empty: function () {
+                    this.reset();
+                    this.directive(REGISTRY).reset();
+                    return this;
+                },
+                reset: function (items) {
+                    // can be array like
+                    var list = this,
+                        old = list.toArray() || [];
+                    list.iterating = list.iterating ? exception(cannotModifyMessage) : 0;
+                    list.items = items == NULL ? [] : (Collection.isInstance(items) ? items.toArray().slice(0) : toArray(items));
+                    list.unmark(REVERSED);
+                    return list;
+                },
+                toArray: unwrapper,
+                unwrap: unwrapper,
+                length: function () {
+                    return this.toArray()[LENGTH];
+                },
+                first: function () {
+                    return this.toArray()[0];
+                },
+                last: function () {
+                    var items = this.toArray();
+                    return items[items[LENGTH] - 1];
+                },
+                item: function (number) {
+                    return this.toArray()[number || 0];
+                },
+                has: function (object) {
+                    return this.indexOf(object) !== -1;
+                },
+                sort: function (fn_) {
+                    // normalization sort function for cross browsers
+                    var list = this;
+                    sort(list.toArray(), fn_ || this.comparator, list.is(REVERSED), list);
+                    return list;
+                },
+                sortBy: function (key, fn_) {
+                    // normalization sort function for cross browsers
+                    var list = this;
+                    sortBy(list.toArray(), key, fn_, list.is(REVERSED), list);
+                    return list;
+                },
+                toString: function () {
+                    return stringify(this.toArray());
+                },
+                toJSON: function () {
+                    return results(this.toArray(), TO_JSON);
+                },
+                copy: function () {
+                    return this.items.slice(0);
+                },
+                range: recreateSelf(range),
+                concat: recreateSelf(function () {
+                    // this allows us to mix collections with regular arguments
+                    var base = this.toArray();
+                    return base.concat.apply(base, map(arguments, function (arg) {
+                        return Collection(arg).toArray();
+                    }));
+                })
+            }, wrappedCollectionMethods)),
+            directiveResult = app.defineDirective(COLLECTION, function () {
+                return new Collection[CONSTRUCTOR]();
+            }),
+            appDirectiveResult = app.defineDirective(COLLECTION, function () {
+                return Collection();
+            }),
+            SortedCollection = factories.SortedCollection = Collection.extend(SORTED_COLLECTION, {
+                constructor: function (list_, skip) {
+                    var sorted = this;
+                    sorted[CONSTRUCTOR + COLON + COLLECTION]();
+                    if (list_ && !skip) {
+                        sorted.load(isArrayLike(list_) ? list_ : [list_]);
+                    }
+                    return sorted;
+                },
+                reverse: function () {
+                    var sorted = this;
+                    sorted.remark(REVERSED, !sorted.is(REVERSED));
+                    sorted.sort();
+                    return sorted;
+                },
+                closestIndex: function (value) {
+                    return closestIndex(this.toArray(), value);
+                },
+                closest: function (value) {
+                    var index, list = this.toArray();
+                    return (index = closestIndex(list, value)) === -1 ? UNDEFINED : list[index];
+                },
+                validIDType: function (id) {
+                    return isNumber(id) || isString(id);
+                },
+                indexOf: function (object, min, max) {
+                    return smartIndexOf(this.toArray(), object, BOOLEAN_TRUE);
+                },
+                load: function (values) {
+                    var sm = this;
+                    if (isArray(values)) {
+                        duff(values, sm.add, sm);
+                    } else {
+                        sm.add(values);
+                    }
+                    return sm;
+                },
+                add: function (object) {
+                    var registryDirective, sorted = this,
+                        isNotNull = object == NULL && exception(isNullMessage),
+                        valueOfResult = object && object.valueOf(),
+                        retrieved = (registryDirective = sorted[REGISTRY]) && sorted.get(ID, valueOfResult);
+                    if (retrieved) {
+                        return BOOLEAN_FALSE;
+                    }
+                    ret = !sorted.validIDType(valueOfResult) && exception(validIdMessage);
+                    sorted.insertAt(object, sorted.closestIndex(valueOfResult) + 1);
+                    (registryDirective || sorted.directive(REGISTRY)).keep(ID, valueOfResult, object);
+                    return BOOLEAN_TRUE;
+                },
+                remove: function (object, index) {
+                    var where, sorted = this,
+                        isNotNull = object == NULL && exception(isNullMessage),
+                        valueOfResult = object && object.valueOf();
+                    if (object == NULL || sorted.get(ID, valueOfResult) == NULL) {
+                        return BOOLEAN_FALSE;
+                    }
+                    sorted.removeAt(index === UNDEFINED ? sorted.indexOf(object) : index);
+                    sorted.drop(ID, valueOfResult);
+                    return BOOLEAN_TRUE;
+                },
+                pop: function () {
+                    var collection = this,
+                        length = collection[LENGTH]();
+                    if (length) {
+                        return collection.remove(collection.last(), length - 1);
+                    }
+                },
+                shift: function () {
+                    return this.remove(this.first(), 0);
+                }
+            }),
+            StringObject = factories.StringObject = factories.Extendable.extend('StringObject', {
+                constructor: function (value, parent) {
+                    var string = this;
+                    string.value = value;
+                    string.parent = parent;
+                    string.isValid(BOOLEAN_TRUE);
+                    return string;
+                },
+                toggle: function (direction) {
+                    this.isValid(toggle(this.isValid(), direction));
+                },
+                isValid: function (value) {
+                    var string = this;
+                    if (arguments[LENGTH]) {
+                        if (string.valid !== value) {
+                            string.parent.increment();
+                            string.valid = value;
+                        }
+                        return string;
+                    } else {
+                        return string.valid;
+                    }
+                },
+                valueOf: function () {
+                    return this.value;
+                },
+                toString: function () {
+                    var string = this,
+                        value = string.value,
+                        parent = string.parent;
+                    if (parent.indexer === UNDEFINED) {
+                        return value;
+                    }
+                    if (!string.isValid()) {
+                        // canibalize the list as you join
+                        string.parent.drop(ID, value);
+                        string.parent.removeAt(parent.indexer);
+                        return EMPTY_STRING;
+                    }
+                    // is it the first
+                    value = parent.indexer ? parent.delimiter + value : value;
+                    ++parent.indexer;
+                    return value;
+                }
+            }),
+            StringManager = factories[STRING_MANAGER] = SortedCollection.extend(STRING_MANAGER, {
+                Child: StringObject,
+                add: function (string) {
+                    var sm = this,
+                        found = sm.get(ID, string);
+                    if (string) {
+                        if (found) {
+                            found.isValid(BOOLEAN_TRUE);
+                        } else {
+                            found = new sm.Child(string, sm);
+                            sm.toArray().push(found);
+                            sm.keep(ID, string, found);
+                        }
+                    }
+                    return found;
+                },
+                emptyCollection: Collection[CONSTRUCTOR][PROTOTYPE].empty,
+                empty: function () {
+                    var sm = this;
+                    // wipes array and id hash
+                    sm.emptyCollection();
+                    // resets change counter
+                    sm.current(EMPTY_STRING);
+                    return sm;
+                },
+                increment: function () {
+                    var collection = this;
+                    collection.changeCounter = collection.changeCounter || 0;
+                    collection.changeCounter++;
+                    return collection;
+                },
+                decrement: function () {
+                    var collection = this;
+                    collection.changeCounter = collection.changeCounter || 0;
+                    collection.changeCounter--;
+                    return collection;
+                },
+                remove: function (string) {
+                    var sm = this,
+                        found = sm.get(ID, string);
+                    if (string && found) {
+                        found.isValid(BOOLEAN_FALSE);
+                    }
+                    return sm;
+                },
+                toggle: function (string, direction) {
+                    var wasFound = BOOLEAN_TRUE,
+                        sm = this,
+                        found = sm.get(ID, string);
+                    if (!found) {
+                        wasFound = BOOLEAN_FALSE;
+                        found = sm.add(string);
+                    }
+                    if (direction === UNDEFINED) {
+                        if (wasFound) {
+                            found.toggle();
+                        }
+                    } else {
+                        found.toggle(direction);
+                    }
+                },
+                join: function (delimiter_) {
+                    var sliced, result, cachedValue, parent = this,
+                        delimiter = (delimiter_ || EMPTY_STRING) + EMPTY_STRING,
+                        parentRegistry = parent.directive(REGISTRY);
+                    // slice as a base array
+                    // set the delimiter used to join
+                    parent.changeCounter = parent.changeCounter || 0;
+                    if (parent.changeCounter) {
+                        parent.changeCounter = 0;
+                        parentRegistry.group(DELIMITED, {});
+                    }
+                    if ((cachedValue = parentRegistry.get(DELIMITED, delimiter)) !== UNDEFINED) {
+                        return cachedValue;
+                    }
+                    sliced = parent.toArray().slice(0);
+                    parent.indexer = 0;
+                    parent.delimiter = delimiter;
+                    // sliced is thrown away,
+                    // leaving the invalidated ones to be collected
+                    result = sliced.join(EMPTY_STRING);
+                    parent.current(delimiter, result);
+                    delete parent.indexer;
+                    delete parent.delimiter;
+                    return result;
+                },
+                generate: function (delimiter_) {
+                    var validResult, currentDelimited, string = EMPTY_STRING,
+                        parent = this,
+                        delimiter = delimiter_;
+                    parent.changeCounter = parent.changeCounter || 0;
+                    if (!parent.changeCounter && (currentDelimited = parent.current(delimiter))) {
+                        return currentDelimited;
+                    }
+                    parent.current(delimiter, (string = parent.join(delimiter)));
+                    return string;
+                },
+                current: function (delimiter, current) {
+                    var value, sm = this;
+                    if (arguments[LENGTH] === 1) {
+                        return (value = sm.get(DELIMITED, delimiter)) === UNDEFINED ? sm.join(delimiter) : value;
+                    } else {
+                        sm.keep(DELIMITED, delimiter, current);
+                        return sm;
+                    }
+                },
+                ensure: function (value_, splitter) {
+                    var sm = this,
+                        value = value_,
+                        delimiter = splitter === UNDEFINED ? SPACE : splitter,
+                        isArrayResult = isArray(value),
+                        madeString = (isArrayResult ? value.join(delimiter) : value);
+                    if (sm.current(delimiter) === madeString) {
+                        return sm;
+                    }
+                    sm.load(isArrayResult ? value : (isString(value) ? value.split(delimiter) : BOOLEAN_FALSE));
+                    sm.current(delimiter, madeString);
+                    return sm;
+                },
+                refill: function (array_) {
+                    var sm = this,
+                        array = array_;
+                    sm.empty();
+                    if (array) {
+                        sm.load(array);
+                    }
+                    sm.increment();
                     return sm;
                 }
-            },
-            ensure: function (value_, splitter) {
-                var sm = this,
-                    value = value_,
-                    delimiter = splitter === UNDEFINED ? SPACE : splitter,
-                    isArrayResult = isArray(value),
-                    madeString = (isArrayResult ? value.join(delimiter) : value);
-                if (sm.current(delimiter) === madeString) {
-                    return sm;
-                }
-                sm.load(isArrayResult ? value : (isString(value) ? value.split(delimiter) : BOOLEAN_FALSE));
-                sm.current(delimiter, madeString);
-                return sm;
-            },
-            refill: function (array_) {
-                var sm = this,
-                    array = array_;
-                sm.empty();
-                if (array) {
-                    sm.load(array);
-                }
-                sm.increment();
-                return sm;
-            }
-        });
-    app.defineDirective(REGISTRY, Registry[CONSTRUCTOR]);
-});
-var Collection = factories[COLLECTION];
+            });
+        app.defineDirective(REGISTRY, Registry[CONSTRUCTOR]);
+        return Collection;
+    });
 var Messenger = factories.Directive.extend('Messenger', {
     constructor: function () {
         var messenger = this,
@@ -4969,7 +4958,11 @@ var Linguistics = app.block(function (app) {
                     sequencer.bind(key);
                     return sequencer;
                 },
-                current: function (key) {
+                /**
+                 * Method for checking the current key being added to.
+                 * @return {String} Property of the logic block that is being added to
+                 */
+                current: function () {
                     return this.directive(REGISTRY).get(INSTANCES, CURRENT);
                 },
                 /**
@@ -5011,6 +5004,12 @@ var Linguistics = app.block(function (app) {
                 /**
                  * Increment counter for change event listener to check. If this function is called, then the next time the change event is dispatched on the origin object the Linguistics object will check through the logic it was given and check to see if the logic has changed.
                  * @return {this}
+                 * @example
+                 * var linguistics = origin.when("key").is(true) //
+                 *     ...
+                 * linguistics.apply();
+                 * linguistics.increment();
+                 * linguistics.apply();
                  */
                 increment: function () {
                     ++this[COUNTER];
@@ -5150,7 +5149,7 @@ var Linguistics = app.block(function (app) {
                 },
                 apply: function (e) {
                     var sequencer = this,
-                        checked = e ? sequencer[COUNTER] && sequencer.check() : sequencer.check();
+                        checked = !!(e ? (sequencer[COUNTER] && sequencer.check()) : sequencer.check());
                     sequencer.restart();
                     if (sequencer[STATE] !== checked) {
                         sequencer[STATE] = checked;
@@ -5164,8 +5163,13 @@ var Linguistics = app.block(function (app) {
             when: function (key) {
                 return this.make().or(key);
             },
+            create: function () {
+                // it is important to use the new keyword and access the constructor
+                // because the origin could be an Linguistics object
+                return new Linguistics[CONSTRUCTOR](this.target.linguisticsOrigin());
+            },
             make: function () {
-                var ling = new Linguistics[CONSTRUCTOR](this.target.linguisticsOrigin());
+                var ling = this.create();
                 this.add(ling);
                 return ling;
             },
@@ -5188,7 +5192,7 @@ var PROMISE = 'Promise',
     QUEUE = 'queue',
     RESULTS = 'results',
     CAUGHT = 'caught',
-    CATCHING = 'catching',
+    // CATCHING = 'catching',
     INSTANCES = 'instances',
     FAILURE = 'failure',
     SUCCESS = 'success',
@@ -5201,227 +5205,249 @@ var PROMISE = 'Promise',
     SETTLED = 'settled',
     REJECTED = 'rejected',
     EMPTYING = 'emptying',
-    FULFILLED = 'fulfilled';
-var Promise = app.scope().block(function (app) {
-    var makeCollection = function () {
-            return Collection();
-        },
-        addToQueue = function (promise, key, list) {
-            var queue = getQueue(promise, key);
-            queue.push([list]);
-        },
-        getQueue = function (p, key) {
-            return p.directive(REGISTRY).get(INSTANCES, key, makeCollection);
-        },
-        isPromise = function (p) {
-            return p && isObject(p) && isFunction(p.then) && isFunction(p.catch);
-        },
-        distillary = function (fn, arg) {
-            return fn ? fn(arg) : arg;
-        },
-        emptyQueue = function (p, bool, arg, original) {
-            var catching, argument, sliced, resultIsPromise, registry = p.directive(REGISTRY),
-                queue = registry.get(INSTANCES, QUEUE);
-            if (original && !p.unmark(PENDING)) {
-                return arg;
-            }
-            p.unmark(PENDING);
-            p.mark(bool ? FULFILLED : REJECTED);
-            p[REGISTRY].keep(INSTANCES, RESULTS, arg);
-            if (!queue || !queue.length()) {
-                return arg;
-            }
-            sliced = queue.slice(0);
-            p[REGISTRY].drop(INSTANCES, QUEUE);
-            sliced.each(function (current) {
-                var caught = registry.get(INSTANCES, CAUGHT),
-                    result = arg;
-                if (!caught) {
-                    argument = wraptry(function () {
-                        var res, target;
-                        if (bool) {
-                            target = current[0];
-                        } else {
-                            target = current[1];
-                        }
-                        res = distillary(target, result);
-                        current[2].directive(REGISTRY).keep(INSTANCES, RESULTS, res);
-                        return res;
-                    }, function (e) {
-                        p.mark(CAUGHT);
-                        registry.keep(INSTANCES, CAUGHT, e);
-                        caught = e;
-                    }, function (e, argument) {
-                        return e ? UNDEFINED : argument;
-                    });
+    FULFILLED = 'fulfilled',
+    Promise = app.scope().block(function (app) {
+        var makeCollection = function () {
+                return Collection();
+            },
+            addToQueue = function (promise, key, list) {
+                var queue = getQueue(promise, key);
+                queue.push([list]);
+            },
+            getQueue = function (p, key) {
+                return p.directive(REGISTRY).get(INSTANCES, key, makeCollection);
+            },
+            isPromise = function (p) {
+                return p && isObject(p) && isFunction(p.then) && isFunction(p.catch);
+            },
+            distillary = function (fn, arg) {
+                return fn ? fn(arg) : arg;
+            },
+            emptyQueue = function (p, bool, result, original, catching) {
+                var erred, argument, sliced, resultIsPromise, registry = p.directive(REGISTRY),
+                    queue = registry.get(INSTANCES, QUEUE);
+                if (original && !p.unmark(PENDING)) {
+                    return result;
                 }
-                if (caught) {
-                    if (!(catching = getQueue(current[2], CATCHING)).length()) {
-                        // discontinue
-                        return;
-                    } else {
-                        return catching.each(function (item) {
-                            item[0](caught);
+                p.unmark(PENDING);
+                p.mark(bool ? FULFILLED : REJECTED);
+                p[REGISTRY].keep(INSTANCES, RESULTS, result);
+                if (!queue || !queue.length()) {
+                    return result;
+                }
+                sliced = queue.slice(0);
+                p[REGISTRY].drop(INSTANCES, QUEUE);
+                sliced.each(function (current) {
+                    var caught = registry.get(INSTANCES, CAUGHT),
+                        // result = arg,
+                        nextp = current[0];
+                    if (!caught) {
+                        argument = wraptry(function () {
+                            var target, res = result;
+                            if (bool) {
+                                target = current[1];
+                            } else {
+                                target = current[2];
+                            }
+                            if (catching) {
+                                target = current[3];
+                                res = catching;
+                            }
+                            res = distillary(target, res);
+                            nextp.directive(REGISTRY).keep(INSTANCES, RESULTS, res);
+                            return res;
+                        }, function (e) {
+                            p.mark(CAUGHT);
+                            registry.keep(INSTANCES, CAUGHT, e);
+                            caught = e;
+                        }, function (e, argument) {
+                            return e ? result : argument;
                         });
                     }
-                }
-                var nextp = current[2];
-                if (isPromise(argument)) {
-                    argument.then(emptiesQueue(nextp, BOOLEAN_TRUE), emptiesQueue(nextp));
-                } else {
-                    emptyQueue(nextp, bool, argument);
-                }
-            });
-            return arg;
-        },
-        emptiesQueue = function (p, bool, original) {
-            return function (argument) {
-                return emptyQueue(p, bool, argument, original);
-            };
-        },
-        decision = function (p, bool) {
-            return once(emptiesQueue(p, bool));
-        },
-        promiseProxy = function (fn) {
-            var s, f, doit = function (pro) {
-                if (s && f) {
-                    fn(pro, s, f);
-                } else {
-                    setTimeout(function () {
-                        doit(pro);
-                    });
-                }
-                return pro;
-            };
-            return doit(Promise(function (success, failure) {
-                s = success;
-                f = failure;
-            }, BOOLEAN_TRUE));
-        },
-        resultant = function (promise) {
-            return promise.directive(REGISTRY).get(INSTANCES, RESULTS);
-        },
-        /**
-         * Implementation just like the native one. Use this object in order to ensure that your promises will work across all browsers, including those that do not support Promises natively.
-         * @class Promise
-         */
-        Promise = _[PROMISE] = factories.Events.extend(PROMISE,
-            /**
-             * @lends Promise.prototype
-             */
-            {
-                constructor: function (one, bool) {
-                    var p = this,
-                        maker = function () {
-                            one(once(emptiesQueue(p, BOOLEAN_TRUE, BOOLEAN_TRUE)), once(emptiesQueue(p, BOOLEAN_FALSE, BOOLEAN_TRUE)));
-                        };
-                    p.mark(PENDING);
-                    if (bool) {
-                        maker();
+                    if (isPromise(argument)) {
+                        if (caught) {
+                            argument.then(emptiesQueue(nextp, BOOLEAN_TRUE, BOOLEAN_TRUE, caught), emptiesQueue(nextp, BOOLEAN_FALSE, BOOLEAN_TRUE, caught));
+                        } else {
+                            argument.then(emptiesQueue(nextp, BOOLEAN_TRUE), emptiesQueue(nextp));
+                        }
                     } else {
-                        setTimeout(maker);
+                        if (caught) {
+                            emptyQueue(nextp, bool, argument, BOOLEAN_FALSE, caught);
+                        } else {
+                            emptyQueue(nextp, bool, argument, BOOLEAN_FALSE);
+                        }
                     }
-                    return p;
-                },
+                });
+                // if (p.is(CAUGHT) && sliced.length()) {
+                //     sliced.each(function (item) {
+                //         console.log(item[3]);
+                //         // emptyQueue(item[0], item[3](caught));
+                //     });
+                // }
+                return result;
+            },
+            emptiesQueue = function (p, bool, original, caught) {
+                return function (argument) {
+                    return emptyQueue(p, bool, argument, original, caught);
+                };
+            },
+            decision = function (p, bool) {
+                return once(emptiesQueue(p, bool));
+            },
+            promiseProxy = function (fn) {
+                var s, f, doit = function (pro) {
+                    if (s && f) {
+                        fn(pro, s, f);
+                    } else {
+                        setTimeout(function () {
+                            doit(pro);
+                        });
+                    }
+                    return pro;
+                };
+                return doit(Promise(function (success, failure) {
+                    s = success;
+                    f = failure;
+                }, BOOLEAN_TRUE));
+            },
+            resultant = function (promise) {
+                return promise.directive(REGISTRY).get(INSTANCES, RESULTS);
+            },
+            /**
+             * Implementation just like the native one. Use this object in order to ensure that your promises will work across all browsers, including those that do not support Promises natively. Pass true as the second argument to make the class execute the function synchronously. This prevents the stack jump that regular promises enforce.
+             * @class Promise
+             * @example <caption>The following promise executes asynchronously.</caption>
+             * _.Promise(function (success, failure) {
+             *     success();
+             * });
+             * @example <caption>The following promise executes synchronously.</caption>
+             * _.Promise(function (success, failure) {
+             *     success();
+             * }, true);
+             */
+            Promise = _[PROMISE] = factories.Events.extend(PROMISE,
                 /**
-                 * Creates a new promise and fulfills it, if the current context is fulfilled / rejected then the new promise will be resolved in the same way.
-                 * @param  {Function} success handler to be called when the promise is fulfilled
-                 * @param  {Function} failure handler to be called when the promise is rejected
-                 * @return {Promise} new promise
+                 * @lends Promise.prototype
                  */
-                then: function (whensuccessful, whenfailed) {
-                    var promise = this;
-                    return promiseProxy(function (pro) {
-                        addToQueue(promise, QUEUE, [whensuccessful, whenfailed, pro]);
-                        if (!promise.is(PENDING)) {
-                            emptyQueue(promise, promise.is(FULFILLED), resultant(promise));
-                        }
-                    });
-                },
-                /**
-                 * Catches errors in the then success / failure handlers.
-                 * @param  {Function} erred Handler to run if a previous handler errs out.
-                 * @return {Promise}
-                 * @example
-                 * Promise(function () {
-                 *     // async process
-                 * }).then(function () {
-                 *     throw new Error("invalid result detected");
-                 * }).catch(function (e) {
-                 *     e.message // "invalid result detected"
-                 *     return "default value";
-                 * }).then(function (result) {
-                 *     result === "default value"; // true
-                 * });
-                 */
-                catch: function (erred) {
-                    var promise = this;
-                    return promiseProxy(function (pro, success, failure) {
-                        if (promise.is(CAUGHT)) {
-                            success(erred(resultant(promise)));
+                {
+                    constructor: function (one, bool) {
+                        var p = this,
+                            maker = function () {
+                                one(once(emptiesQueue(p, BOOLEAN_TRUE, BOOLEAN_TRUE)), once(emptiesQueue(p, BOOLEAN_FALSE, BOOLEAN_TRUE)));
+                            };
+                        p.mark(PENDING);
+                        if (bool) {
+                            maker();
                         } else {
-                            addToQueue(promise, CATCHING, [erred, promise]);
+                            setTimeout(maker);
                         }
-                    });
-                }
-            }),
-        raceAllCurry = function (waits) {
-            return function (list, bool) {
-                if (!isArrayLike(list)) {
-                    exception('promise list is not iteratable.');
-                }
-                return Promise(function (success, failure) {
-                    var length = list[LENGTH];
-                    var memo = [];
-                    var counter = function (index, data) {
-                        length--;
-                        if (waits) {
-                            memo[index] = data;
-                            if (!length) {
-                                success(memo);
+                        return p;
+                    },
+                    /**
+                     * Creates a new promise and fulfills it, if the current context is fulfilled / rejected then the new promise will be resolved in the same way.
+                     * @param  {Function} success handler to be called when the promise is fulfilled
+                     * @param  {Function} failure handler to be called when the promise is rejected
+                     * @return {Promise} new promise
+                     */
+                    then: function (whensuccessful, whenfailed) {
+                        var promise = this;
+                        return promiseProxy(function (pro) {
+                            addToQueue(promise, QUEUE, [pro, whensuccessful, whenfailed]);
+                            if (!promise.is(PENDING)) {
+                                emptyQueue(promise, promise.is(FULFILLED), resultant(promise));
                             }
-                        } else {
-                            success(data);
-                        }
-                    };
-                    duff(list, function (promise, index) {
-                        if (isPromise(promise)) {
-                            promise.then(function (data) {
-                                counter(index, data);
-                            }, failure);
-                        } else {
-                            counter(index, promise);
-                        }
-                    });
-                }, BOOLEAN_TRUE);
+                        });
+                    },
+                    /**
+                     * Catches errors in the then success / failure handlers.
+                     * @param  {Function} erred Handler to run if a previous handler errs out.
+                     * @return {Promise}
+                     * @example
+                     * Promise(function () {
+                     *     // async process
+                     * }).then(function () {
+                     *     throw new Error("invalid result detected");
+                     * }).catch(function (e) {
+                     *     e.message // "invalid result detected"
+                     *     return "default value";
+                     * }).then(function (result) {
+                     *     result === "default value"; // true
+                     * });
+                     */
+                    catch: function (erred) {
+                        var promise = this;
+                        return promiseProxy(function (pro, success, failure) {
+                            var result;
+                            if (promise.is(PENDING)) {
+                                addToQueue(promise, QUEUE, [pro, NULL, NULL, erred]);
+                            } else {
+                                result = erred(resultant(promise));
+                                if (promise.is(FULFILLED)) {
+                                    success(result);
+                                } else {
+                                    failure(result);
+                                }
+                            }
+                        });
+                    }
+                }),
+            raceAllCurry = function (waits) {
+                return function (list, bool) {
+                    if (!isArrayLike(list)) {
+                        exception('promise list is not iteratable.');
+                    }
+                    return Promise(function (success, failure) {
+                        var length = list[LENGTH];
+                        var memo = [];
+                        var counter = function (index, data) {
+                            length--;
+                            if (waits) {
+                                memo[index] = data;
+                                if (!length) {
+                                    success(memo);
+                                }
+                            } else {
+                                success(data);
+                            }
+                        };
+                        duff(list, function (promise, index) {
+                            if (isPromise(promise)) {
+                                promise.then(function (data) {
+                                    counter(index, data);
+                                }, failure);
+                            } else {
+                                counter(index, promise);
+                            }
+                        });
+                    }, BOOLEAN_TRUE);
+                };
             };
-        };
-    /**
-     * Waits for all promises passed into it to wait and succeed. Will be rejected if any of the promises are rejcted
-     * @name Promise#all
-     * @param {Array} promises list of promises to wait to complete.
-     * @example
-     * var newpromise = Promise.all([p1, p2, p3]).then(function (results) {
-     *     _.isArray(results); // true
-     * });
-     */
-    Promise.all = raceAllCurry(BOOLEAN_TRUE);
-    /**
-     * Waits for any of the promises to complete. A fulfillment or rejection of any of the promises passed in would trigger the resolution in the same direction of the promise that gets created.
-     * @name Promise#race
-     * @param {Array} promises list of promises to wait to complete.
-     * @example
-     * var racePromise = Promise.race([p1, p2, p3]).then(function (first) {
-     *     // first one to finish wins!
-     * });
-     */
-    Promise.race = raceAllCurry();
-    _.publicize({
-        Promise: Promise,
-        isPromise: isPromise
+        /**
+         * Waits for all promises passed into it to wait and succeed. Will be rejected if any of the promises are rejcted
+         * @name Promise#all
+         * @param {Array} promises list of promises to wait to complete.
+         * @example
+         * var newpromise = Promise.all([p1, p2, p3]).then(function (results) {
+         *     _.isArray(results); // true
+         * });
+         */
+        Promise.all = raceAllCurry(BOOLEAN_TRUE);
+        /**
+         * Waits for any of the promises to complete. A fulfillment or rejection of any of the promises passed in would trigger the resolution in the same direction of the promise that gets created.
+         * @name Promise#race
+         * @param {Array} promises list of promises to wait to complete.
+         * @example
+         * var racePromise = Promise.race([p1, p2, p3]).then(function (first) {
+         *     // first one to finish wins!
+         * });
+         */
+        Promise.race = raceAllCurry();
+        _.publicize({
+            Promise: Promise,
+            isPromise: isPromise
+        });
+        return Promise;
     });
-    return Promise;
-});
 var Deferred = app.block(function (app) {
     var _ = app._,
         factories = _.factories,
@@ -5620,6 +5646,7 @@ var Deferred = app.block(function (app) {
         /**
          * A class for creating deferred objects. If you are looking for async process management and are able to contain your resolution logic in a single place, then [Promises]{@link Promise} may be for you. Deferred objects allow async processes that may need to be resolved externally. (good for aborts or other types of cancels)
          * @class Deferred
+         * @extends {Events}
          */
         Deferred = factories[DEFERRED] = _[DEFERRED] = Events.extend(DEFERRED,
             /**
@@ -6140,8 +6167,8 @@ app.block(function (app) {
         /**
          * @class HTTP
          * @alias _.HTTP
-         * @augments Model
-         * @classdesc XHR object wrapper Triggers events based on xhr state changes and abstracts many anomalies that have to do with IE
+         * @augments Deferred
+         * @classdesc XHR object wrapper Triggers events based on xhr state changes and abstracts many anomalies that have to do with IE, and other browsers that have historically had difficulty with ajax requests.
          */
         STATUS_200s = 'status:2xx',
         STATUS_300s = 'status:3xx',
@@ -6179,10 +6206,16 @@ app.block(function (app) {
         },
         HTTP = _.HTTP = factories.Deferred.extend('HTTP', {
             /**
-             * Set a parser for the retrieved value. By default the [parse]{@link _.parse} function is used from the {@link _} object, but this can be overwritten if needed. If it is overwritten, the user will have to account for any and all parts of the response.
-             * @method
-             * @example
-             *
+             * Set a parser for the retrieved value. By default the [parse]{@link _.parse} function is used from the {@link _} object, but this can be overwritten if needed. If it is overwritten, the user will have to account for any and all parts of the response. The parse method is not just a JSON.parse. It will account for numbers, as well as wrapped functions, and will check the string for leading and trailing brackets; "{...}" for objects and "[...]" for arrays.
+             * @name HTTP#parse
+             * @example <caption>An example of replacing the parse method with a custom method, in this case, just a JSON.parse.</caption>
+             * var http = _.HTTP({
+             *     url: "https://someurl.com",
+             *     type: "get"
+             * });
+             * http.parse = function (response) {
+             *     return JSON.parse(response);
+             * };
              */
             parse: parse,
             constructor: function (str) {
@@ -6252,8 +6285,9 @@ app.block(function (app) {
                     // attachResponseHandler(ajax);
                     var xhrReqObj = ajax.options.requestObject,
                         hasFinished = BOOLEAN_FALSE,
-                        method = ajax.options.method,
-                        handler = function (evnt) {
+                        method = ajax.options.method;
+                    if (!xhrReqObj[method]) {
+                        xhrReqObj[method] = function (evnt) {
                             var type, lasttype, path, status, doIt, allStates, rawData, xhrReqObj = this;
                             if (!xhrReqObj || hasFinished) {
                                 return;
@@ -6277,10 +6311,7 @@ app.block(function (app) {
                                 }
                             }
                         };
-                    if (!xhrReqObj[method]) {
-                        xhrReqObj[method] = handler;
                     }
-                    // return ajax;
                     wraptry(function () {
                         xhrReq.open(type.toUpperCase(), url, ajax.options.async);
                     });
@@ -6297,14 +6328,22 @@ app.block(function (app) {
             status: function (code, handler) {
                 return this.handle(STATUS + COLON + code, handler);
             },
-            headers: function (headers) {
-                var ajax = this,
-                    xhrReq = ajax.options.requestObject;
-                each(headers, function (val, key) {
-                    xhrReq.setRequestHeader(key, val);
-                });
-                return ajax;
-            },
+            /**
+             * Sets headers on the XMLHttp object that is doing the request.
+             * @param  {Object} headers hash of headers to apply to the request object.
+             * @return {ajax}
+             * @name HTTP#headers
+             */
+            headers: intendedApi(function (key, val) {
+                this.options.requestObject.setRequestHeader(key, val);
+            }),
+            /**
+             * Proxy for the promise that is underlying this object. Allows an access point to chain and return regular old promises.
+             * @param  {Function} one Success handler to be called when promise is fulfilled.
+             * @name HTTP#then
+             * @param  {Function} two Failure handler to be called when the promise is rejected.
+             * @return {Promise} Promise that was created for the HTTP object.
+             */
             then: function (one, two) {
                 return this.promise.then(one, two);
             },
