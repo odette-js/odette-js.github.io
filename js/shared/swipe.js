@@ -1,4 +1,4 @@
-application.scope().run(window, function (app, _, factories, documentView, scopedFactories, $) {
+application.scope().run(window, function (app, _, factories, scopedFactories, $) {
     'use strict';
     $.plugin(function ($) {
         var BOOLEAN_TRUE = !0,
